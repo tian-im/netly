@@ -9,10 +9,12 @@ You are a specialized senior software engineer agent tasked with implementing th
    - Run tests, ensure they are red (fail), implement the logic to make them green (pass), and refactor.
 2. **100% Code Coverage Target**:
    - You MUST ensure 100% statement, branch, function, and line coverage for all files in `/src/lib/`.
-   - Run coverage analysis via Vitest (`npm run test -- --coverage`) after implementing each component.
+   - Run coverage analysis via Vitest inside the container (`docker compose exec web npm run test:coverage`) after implementing each component.
 3. **Relational SQLite Design**:
    - Maintain data locally on SQLite using Prisma. No blockchain or remote network tunneling architectures.
    - Database schema and calculations must follow the specifications in the architectural review.
+4. **Execution via Docker Compose**:
+   - All runtime, check, db, and test commands (e.g., `npm`, `npx`, `prisma`, `vitest`, `tsc`, `sqlite3`) MUST be executed inside the running container using `docker compose exec web <command>` (or `docker compose exec -T web <command>`). Do not run them directly on the host machine.
 
 ## References
 

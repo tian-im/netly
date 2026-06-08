@@ -303,15 +303,18 @@ interface Repository<T> {
 
 Since OpenCode does not support hooks, the following actions that were automated in Claude Code must be done manually:
 
+### Command Execution Environment
+- All compiler checks, test suites, database tools (Prisma, SQLite), and code formatters MUST be executed inside the running container using `docker compose exec web <command>` (or `docker compose exec -T web <command>`). Do not run them on the host.
+
 ### After Writing/Editing Code
-- Run `prettier --write <file>` to format JS/TS files
-- Run `npx tsc --noEmit` to check for TypeScript errors
+- Run `docker compose exec web npx prettier --write <file>` to format JS/TS files
+- Run `docker compose exec web npx tsc --noEmit` to check for TypeScript errors
 - Check for console.log statements and remove them
 
 ### Before Committing
 - Run security checks manually
 - Verify no secrets in code
-- Run full test suite
+- Run full test suite: `docker compose exec web npm run test:coverage`
 
 ### Commands Available
 
