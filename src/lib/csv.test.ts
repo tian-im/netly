@@ -33,6 +33,13 @@ describe('CSV Parser Core', () => {
       expect(date.getDate()).toBe(8);
     });
 
+    it('should parse user format like "03 Jun 26"', () => {
+      const date = parseBankDate('03 Jun 26');
+      expect(date.getFullYear()).toBe(2026);
+      expect(date.getMonth()).toBe(5); // June
+      expect(date.getDate()).toBe(3);
+    });
+
     it('should parse DD/MM/YYYY dates', () => {
       const date = parseBankDate('08/06/2026');
       expect(date.getFullYear()).toBe(2026);
