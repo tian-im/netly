@@ -38,6 +38,18 @@
         "changed-files": true
       }
     },
+    "ledger-builder": {
+      "description": "Specialized agent for implementing the local bank CSV transaction ledger and reports, following strict TDD and 100% test coverage.",
+      "mode": "primary",
+      "prompt": "{file:instructions/ledger-agent.md}",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true,
+        "read": true,
+        "changed-files": true
+      }
+    },
     "planner": {
       "description": "Expert planning specialist for complex features and refactoring. Use for implementation planning, architectural changes, or complex refactoring.",
       "mode": "subagent",

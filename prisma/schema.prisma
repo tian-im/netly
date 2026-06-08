@@ -1,0 +1,53 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+// Represents financial accounts (Assets & Liabilities)
+model Account {
+  id              String        @id @default(uuid())
+  name            String
+  type            String        // "ASSET" or "LIABILITY"
+  startingBalance Float         @default(0) // SQLite Float is fine for personal scale, or standard Decimal which translates to Float in Prisma/SQLite
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transactions    Transaction[]
+}
+
+// Represents financial categories (Income, Expense, Transfer)
+model Category {
+  id           String        @id @default(uuid())
+  name         String        @unique
+  type         String        // "INCOME", "EXPENSE", "TRANSFER"
+  cashFlowType String        // "OPERATING", "INVESTING", "FINANCING"
+  transactions Transaction[]
+  rules        CategoryRule[]
+}
+
+// A ledger transaction record
+model Transaction {
+  id          String   @id @default(uuid())
+  date        DateTime
+  payee       String
+  description String?
+  amount      Float
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  isReviewed  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// Simple rules for payee text matching auto-categorization
+model CategoryRule {
+  id         String   @id @default(uuid())
+  pattern    String   // Regex or substring to match, e.g. "Uber", "Woolworths"
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
