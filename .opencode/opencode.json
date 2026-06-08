@@ -1,37 +1,35 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "anthropic/claude-sonnet-4-5",
   "small_model": "anthropic/claude-haiku-4-5",
   "default_agent": "build",
   "instructions": [
-    "AGENTS.md",
-    "CONTRIBUTING.md",
+    "../.agents/AGENTS.md",
+    "../.agents/CONTRIBUTING.md",
     "instructions/INSTRUCTIONS.md",
-    "skills/tdd-workflow/SKILL.md",
-    "skills/security-review/SKILL.md",
-    "skills/coding-standards/SKILL.md",
-    "skills/frontend-patterns/SKILL.md",
-    "skills/frontend-slides/SKILL.md",
-    "skills/backend-patterns/SKILL.md",
-    "skills/e2e-testing/SKILL.md",
-    "skills/verification-loop/SKILL.md",
-    "skills/api-design/SKILL.md",
-    "skills/strategic-compact/SKILL.md",
-    "skills/eval-harness/SKILL.md"
+    "../.agents/.agents/skills/tdd-workflow/SKILL.md",
+    "../.agents/.agents/skills/security-review/SKILL.md",
+    "../.agents/.agents/skills/coding-standards/SKILL.md",
+    "../.agents/.agents/skills/frontend-patterns/SKILL.md",
+    "../.agents/.agents/skills/frontend-slides/SKILL.md",
+    "../.agents/.agents/skills/backend-patterns/SKILL.md",
+    "../.agents/.agents/skills/e2e-testing/SKILL.md",
+    "../.agents/.agents/skills/verification-loop/SKILL.md",
+    "../.agents/.agents/skills/api-design/SKILL.md",
+    "../.agents/.agents/skills/strategic-compact/SKILL.md",
+    "../.agents/.agents/skills/eval-harness/SKILL.md"
   ],
   "plugin": [
     "./plugins"
   ],
   "skills": {
     "paths": [
-      "../skills"
+      "../.agents/.agents/skills"
     ]
   },
   "agent": {
     "build": {
       "description": "Primary coding agent for development work",
       "mode": "primary",
-      "model": "anthropic/claude-sonnet-4-5",
       "tools": {
         "write": true,
         "edit": true,
@@ -43,8 +41,7 @@
     "planner": {
       "description": "Expert planning specialist for complex features and refactoring. Use for implementation planning, architectural changes, or complex refactoring.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/planner.txt}",
+      "prompt": "{file:../.agents/skills/planner.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -55,8 +52,7 @@
     "architect": {
       "description": "Software architecture specialist for system design, scalability, and technical decision-making.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/architect.txt}",
+      "prompt": "{file:../.agents/skills/architect.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -67,8 +63,7 @@
     "code-reviewer": {
       "description": "Expert code review specialist. Reviews code for quality, security, and maintainability. Use immediately after writing or modifying code.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/code-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/code-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -79,8 +74,7 @@
     "security-reviewer": {
       "description": "Security vulnerability detection and remediation specialist. Use after writing code that handles user input, authentication, API endpoints, or sensitive data.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/security-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/security-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -91,8 +85,7 @@
     "tdd-guide": {
       "description": "Test-Driven Development specialist enforcing write-tests-first methodology. Use when writing new features, fixing bugs, or refactoring code. Ensures 80%+ test coverage.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/tdd-guide.txt}",
+      "prompt": "{file:../.agents/skills/tdd-guide.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -103,8 +96,7 @@
     "build-error-resolver": {
       "description": "Build and TypeScript error resolution specialist. Use when build fails or type errors occur. Fixes build/type errors only with minimal diffs.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/build-error-resolver.txt}",
+      "prompt": "{file:../.agents/skills/build-error-resolver.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -115,8 +107,7 @@
     "e2e-runner": {
       "description": "End-to-end testing specialist using Playwright. Generates, maintains, and runs E2E tests for critical user flows.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/e2e-runner.txt}",
+      "prompt": "{file:../.agents/skills/e2e-runner.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -127,8 +118,7 @@
     "doc-updater": {
       "description": "Documentation and codemap specialist. Use for updating codemaps and documentation.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/doc-updater.txt}",
+      "prompt": "{file:../.agents/skills/doc-updater.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -139,8 +129,7 @@
     "refactor-cleaner": {
       "description": "Dead code cleanup and consolidation specialist. Use for removing unused code, duplicates, and refactoring.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/refactor-cleaner.txt}",
+      "prompt": "{file:../.agents/skills/refactor-cleaner.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -151,8 +140,7 @@
     "go-reviewer": {
       "description": "Expert Go code reviewer specializing in idiomatic Go, concurrency patterns, error handling, and performance.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/go-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/go-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -163,8 +151,7 @@
     "go-build-resolver": {
       "description": "Go build, vet, and compilation error resolution specialist. Fixes Go build errors with minimal changes.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/go-build-resolver.txt}",
+      "prompt": "{file:../.agents/skills/go-build-resolver.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -175,8 +162,7 @@
     "database-reviewer": {
       "description": "PostgreSQL database specialist for query optimization, schema design, security, and performance. Incorporates Supabase best practices.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/database-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/database-reviewer.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -187,8 +173,7 @@
     "cpp-reviewer": {
       "description": "Expert C++ code reviewer specializing in memory safety, modern C++ idioms, concurrency, and performance. Use for all C++ code changes.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/cpp-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/cpp-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -199,8 +184,7 @@
     "cpp-build-resolver": {
       "description": "C++ build, CMake, and compilation error resolution specialist. Fixes build errors, linker issues, and template errors with minimal changes.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/cpp-build-resolver.txt}",
+      "prompt": "{file:../.agents/skills/cpp-build-resolver.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -211,8 +195,7 @@
     "docs-lookup": {
       "description": "Documentation specialist using Context7 MCP to fetch current library and API documentation with code examples.",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:prompts/agents/docs-lookup.txt}",
+      "prompt": "{file:../.agents/skills/docs-lookup.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -223,8 +206,7 @@
     "harness-optimizer": {
       "description": "Analyze and improve the local agent harness configuration for reliability, cost, and throughput.",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:prompts/agents/harness-optimizer.txt}",
+      "prompt": "{file:../.agents/skills/harness-optimizer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -234,8 +216,7 @@
     "java-reviewer": {
       "description": "Expert Java and Spring Boot code reviewer specializing in layered architecture, JPA patterns, security, and concurrency.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/java-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/java-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -246,8 +227,7 @@
     "java-build-resolver": {
       "description": "Java/Maven/Gradle build, compilation, and dependency error resolution specialist. Fixes build errors with minimal changes.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/java-build-resolver.txt}",
+      "prompt": "{file:../.agents/skills/java-build-resolver.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -258,8 +238,7 @@
     "kotlin-reviewer": {
       "description": "Kotlin and Android/KMP code reviewer. Reviews Kotlin code for idiomatic patterns, coroutine safety, Compose best practices.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/kotlin-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/kotlin-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -270,8 +249,7 @@
     "kotlin-build-resolver": {
       "description": "Kotlin/Gradle build, compilation, and dependency error resolution specialist. Fixes Kotlin build errors with minimal changes.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/kotlin-build-resolver.txt}",
+      "prompt": "{file:../.agents/skills/kotlin-build-resolver.md}",
       "tools": {
         "read": true,
         "write": true,
@@ -282,8 +260,7 @@
     "loop-operator": {
       "description": "Operate autonomous agent loops, monitor progress, and intervene safely when loops stall.",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-5",
-      "prompt": "{file:prompts/agents/loop-operator.txt}",
+      "prompt": "{file:../.agents/skills/loop-operator.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -293,8 +270,7 @@
     "php-reviewer": {
       "description": "Expert PHP code reviewer specializing in PSR-12 compliance, PHP type system, Eloquent ORM patterns, security, and performance.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/php-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/php-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -305,8 +281,7 @@
     "python-reviewer": {
       "description": "Expert Python code reviewer specializing in PEP 8 compliance, Pythonic idioms, type hints, security, and performance.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/python-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/python-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -317,8 +292,7 @@
     "rust-reviewer": {
       "description": "Expert Rust code reviewer specializing in idiomatic Rust, ownership, lifetimes, concurrency, and performance.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/rust-reviewer.txt}",
+      "prompt": "{file:../.agents/skills/rust-reviewer.md}",
       "tools": {
         "read": true,
         "bash": true,
@@ -329,8 +303,7 @@
     "rust-build-resolver": {
       "description": "Rust build, Cargo, and compilation error resolution specialist. Fixes Rust build errors with minimal changes.",
       "mode": "subagent",
-      "model": "anthropic/claude-opus-4-5",
-      "prompt": "{file:prompts/agents/rust-build-resolver.txt}",
+      "prompt": "{file:../.agents/skills/rust-build-resolver.md}",
       "tools": {
         "read": true,
         "write": true,
