@@ -15,7 +15,7 @@ export async function getAccounts() {
   });
 }
 
-export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number) {
+export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = 'AUD') {
   if (!name.trim()) throw new Error('Account name is required');
   
   const account = await db.account.create({
@@ -23,6 +23,7 @@ export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', s
       name: name.trim(),
       type,
       startingBalance,
+      currency: currency.trim().toUpperCase(),
     }
   });
 
@@ -148,7 +149,8 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
   
   const transactionsList = await db.transaction.findMany({
     include: {
-      category: true
+      category: true,
+      account: true,
     }
   });
 
@@ -158,6 +160,7 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
     name: a.name,
     type: a.type,
     startingBalance: a.startingBalance,
+    currency: a.currency,
   }));
 
   const mappedTransactions = transactionsList.map((t) => ({
@@ -165,6 +168,7 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
     date: new Date(t.date),
     amount: t.amount,
     accountId: t.accountId,
+    currency: t.account.currency,
     categoryId: t.categoryId,
     category: t.category ? {
       id: t.category.id,

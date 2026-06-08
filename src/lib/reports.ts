@@ -3,6 +3,7 @@ export interface AccountLike {
   name: string;
   type: string; // "ASSET" | "LIABILITY"
   startingBalance: number;
+  currency?: string;
 }
 
 export interface CategoryLike {
@@ -19,6 +20,7 @@ export interface TransactionLike {
   accountId: string;
   categoryId: string | null;
   category: CategoryLike | null;
+  currency?: string;
 }
 
 /**
@@ -45,21 +47,28 @@ export function generateBalanceSheet(
     };
   });
 
-  const totalAssets = accountBalances
-    .filter((a) => a.type === 'ASSET')
-    .reduce((sum, a) => sum + a.balance, 0);
+  const totals: Record<string, { totalAssets: number; totalLiabilities: number; netWorth: number }> = {};
 
-  const totalLiabilities = accountBalances
-    .filter((a) => a.type === 'LIABILITY')
-    .reduce((sum, a) => sum + -a.balance, 0);
+  for (const account of accountBalances) {
+    const currency = account.currency || 'AUD';
+    if (!totals[currency]) {
+      totals[currency] = { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
+    }
 
-  const netWorth = totalAssets - totalLiabilities;
+    if (account.type === 'ASSET') {
+      totals[currency].totalAssets += account.balance;
+    } else if (account.type === 'LIABILITY') {
+      totals[currency].totalLiabilities += -account.balance;
+    }
+  }
+
+  for (const currency of Object.keys(totals)) {
+    totals[currency].netWorth = totals[currency].totalAssets - totals[currency].totalLiabilities;
+  }
 
   return {
     accounts: accountBalances,
-    totalAssets,
-    totalLiabilities,
-    netWorth,
+    totals,
   };
 }
 
@@ -79,40 +88,78 @@ export function generateIncomeStatement(
     return txDate >= parsedStartDate && txDate <= parsedEndDate && tx.category !== null;
   });
 
-  // Group by category name (excluding TRANSFER)
-  const categorySums: Record<string, { type: string; sum: number }> = {};
+  // Find all unique currencies to initialize empty state
+  const uniqueCurrencies = new Set<string>();
+  for (const tx of transactions) {
+    uniqueCurrencies.add(tx.currency || 'AUD');
+  }
+
+  const totals: Record<
+    string,
+    {
+      income: { name: string; amount: number }[];
+      expenses: { name: string; amount: number }[];
+      totalIncome: number;
+      totalExpenses: number;
+      netIncome: number;
+    }
+  > = {};
+
+  uniqueCurrencies.forEach((currency) => {
+    totals[currency] = {
+      income: [],
+      expenses: [],
+      totalIncome: 0,
+      totalExpenses: 0,
+      netIncome: 0,
+    };
+  });
+
+  // Group by currency, then by category name (excluding TRANSFER)
+  const currencyGrouped: Record<string, Record<string, { type: string; sum: number }>> = {};
   
   for (const tx of rangeTransactions) {
+    const currency = tx.currency || 'AUD';
     const category = tx.category!;
     if (category.type === 'TRANSFER') continue;
 
-    if (!categorySums[category.name]) {
-      categorySums[category.name] = { type: category.type, sum: 0 };
+    if (!currencyGrouped[currency]) {
+      currencyGrouped[currency] = {};
     }
-    categorySums[category.name].sum += tx.amount;
+
+    if (!currencyGrouped[currency][category.name]) {
+      currencyGrouped[currency][category.name] = { type: category.type, sum: 0 };
+    }
+    currencyGrouped[currency][category.name].sum += tx.amount;
   }
 
-  const income: { name: string; amount: number }[] = [];
-  const expenses: { name: string; amount: number }[] = [];
+  for (const [currency, categorySums] of Object.entries(currencyGrouped)) {
+    const income: { name: string; amount: number }[] = [];
+    const expenses: { name: string; amount: number }[] = [];
 
-  for (const [name, data] of Object.entries(categorySums)) {
-    if (data.type === 'INCOME') {
-      income.push({ name, amount: data.sum });
-    } else if (data.type === 'EXPENSE') {
-      expenses.push({ name, amount: -data.sum }); // reported as positive spending
+    for (const [name, data] of Object.entries(categorySums)) {
+      if (data.type === 'INCOME') {
+        income.push({ name, amount: data.sum });
+      } else if (data.type === 'EXPENSE') {
+        expenses.push({ name, amount: -data.sum }); // reported as positive spending
+      }
     }
-  }
 
-  const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const netIncome = totalIncome - totalExpenses;
+    const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const netIncome = totalIncome - totalExpenses;
+
+    totals[currency] = {
+      income,
+      expenses,
+      totalIncome,
+      totalExpenses,
+      netIncome,
+    };
+  }
 
   return {
-    income,
-    expenses,
-    totalIncome,
-    totalExpenses,
-    netIncome,
+    totals,
   };
 }
 
@@ -133,35 +180,78 @@ export function generateCashFlowStatement(
   });
 
   const cashFlowTypes = ['OPERATING', 'INVESTING', 'FINANCING'] as const;
+
+  // Find all unique currencies to initialize empty state
+  const uniqueCurrencies = new Set<string>();
+  for (const tx of transactions) {
+    uniqueCurrencies.add(tx.currency || 'AUD');
+  }
+
+  const totals: Record<
+    string,
+    {
+      operating: { inflow: number; outflow: number; net: number };
+      investing: { inflow: number; outflow: number; net: number };
+      financing: { inflow: number; outflow: number; net: number };
+      netCashFlow: number;
+    }
+  > = {};
+
+  uniqueCurrencies.forEach((currency) => {
+    totals[currency] = {
+      operating: { inflow: 0, outflow: 0, net: 0 },
+      investing: { inflow: 0, outflow: 0, net: 0 },
+      financing: { inflow: 0, outflow: 0, net: 0 },
+      netCashFlow: 0,
+    };
+  });
   
-  const cfSections = {
-    OPERATING: { inflow: 0, outflow: 0, net: 0 },
-    INVESTING: { inflow: 0, outflow: 0, net: 0 },
-    FINANCING: { inflow: 0, outflow: 0, net: 0 },
-  };
+  const currencyGrouped: Record<
+    string,
+    {
+      OPERATING: { inflow: number; outflow: number; net: number };
+      INVESTING: { inflow: number; outflow: number; net: number };
+      FINANCING: { inflow: number; outflow: number; net: number };
+    }
+  > = {};
+
+  uniqueCurrencies.forEach((currency) => {
+    currencyGrouped[currency] = {
+      OPERATING: { inflow: 0, outflow: 0, net: 0 },
+      INVESTING: { inflow: 0, outflow: 0, net: 0 },
+      FINANCING: { inflow: 0, outflow: 0, net: 0 },
+    };
+  });
 
   for (const tx of rangeTransactions) {
+    const currency = tx.currency || 'AUD';
     const category = tx.category!;
     if (category.type === 'TRANSFER') continue;
 
     const cfType = category.cashFlowType as typeof cashFlowTypes[number];
-    if (!cfSections[cfType]) continue;
+    if (!currencyGrouped[currency] || !currencyGrouped[currency][cfType]) continue;
 
     if (tx.amount > 0) {
-      cfSections[cfType].inflow += tx.amount;
+      currencyGrouped[currency][cfType].inflow += tx.amount;
     } else {
-      cfSections[cfType].outflow += -tx.amount; // reported as positive outflow
+      currencyGrouped[currency][cfType].outflow += -tx.amount; // reported as positive outflow
     }
-    cfSections[cfType].net += tx.amount;
+    currencyGrouped[currency][cfType].net += tx.amount;
   }
 
-  const netCashFlow =
-    cfSections.OPERATING.net + cfSections.INVESTING.net + cfSections.FINANCING.net;
+  for (const [currency, cfSections] of Object.entries(currencyGrouped)) {
+    const netCashFlow =
+      cfSections.OPERATING.net + cfSections.INVESTING.net + cfSections.FINANCING.net;
+
+    totals[currency] = {
+      operating: cfSections.OPERATING,
+      investing: cfSections.INVESTING,
+      financing: cfSections.FINANCING,
+      netCashFlow,
+    };
+  }
 
   return {
-    operating: cfSections.OPERATING,
-    investing: cfSections.INVESTING,
-    financing: cfSections.FINANCING,
-    netCashFlow,
+    totals,
   };
 }

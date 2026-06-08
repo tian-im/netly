@@ -238,7 +238,7 @@ export default function TransactionsPage() {
                         </td>
                         <td className={`text-right font-mono font-bold ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}>
                           {tx.amount >= 0 ? '+' : ''}
-                          ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {tx.account.currency}
                         </td>
                       </tr>
                     ))

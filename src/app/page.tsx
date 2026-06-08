@@ -13,6 +13,7 @@ export default async function DashboardPage() {
     name: a.name,
     type: a.type,
     startingBalance: a.startingBalance,
+    currency: a.currency,
     _count: a._count,
   }));
 
@@ -21,6 +22,7 @@ export default async function DashboardPage() {
     date: t.date,
     amount: t.amount,
     accountId: t.accountId,
+    currency: t.account.currency,
     category: t.category ? {
       name: t.category.name,
       type: t.category.type,

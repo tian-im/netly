@@ -15,6 +15,7 @@ export default function ReportsPage() {
   
   // Compiled report state
   const [reports, setReports] = useState<any | null>(null);
+  const [selectedReportCurrency, setSelectedReportCurrency] = useState('AUD');
   const [isPending, startTransition] = useTransition();
 
   const loadReports = () => {
@@ -32,6 +33,32 @@ export default function ReportsPage() {
     loadReports();
   }, []);
 
+  // Compute available currencies in reports
+  const reportCurrencies = reports ? Array.from(new Set([
+    ...Object.keys(reports.balanceSheet.totals),
+    ...Object.keys(reports.incomeStatement.totals),
+    ...Object.keys(reports.cashFlowStatement.totals)
+  ])) : ['AUD'];
+
+  // Update selected currency if needed when reports load
+  useEffect(() => {
+    if (reports && reportCurrencies.length > 0 && !reportCurrencies.includes(selectedReportCurrency)) {
+      setSelectedReportCurrency(reportCurrencies[0]);
+    }
+  }, [reports]);
+
+  // Extract selected currency totals
+  const bsTotals = reports?.balanceSheet?.totals?.[selectedReportCurrency] || { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
+  const bsAccounts = reports?.balanceSheet?.accounts?.filter((a: any) => (a.currency || 'AUD') === selectedReportCurrency) || [];
+
+  const isTotals = reports?.incomeStatement?.totals?.[selectedReportCurrency] || { income: [], expenses: [], totalIncome: 0, totalExpenses: 0, netIncome: 0 };
+  const cfTotals = reports?.cashFlowStatement?.totals?.[selectedReportCurrency] || {
+    operating: { inflow: 0, outflow: 0, net: 0 },
+    investing: { inflow: 0, outflow: 0, net: 0 },
+    financing: { inflow: 0, outflow: 0, net: 0 },
+    netCashFlow: 0
+  };
+
   const handleExportCSV = async () => {
     try {
       const txs = await getTransactions();
@@ -41,7 +68,7 @@ export default function ReportsPage() {
       }
 
       // Compile headers
-      const csvRows = ['Date,Account,Payee,Category,Type,Amount,Description'];
+      const csvRows = ['Date,Account,Currency,Payee,Category,Type,Amount,Description'];
       
       for (const tx of txs) {
         const dateStr = new Date(tx.date).toISOString().split('T')[0];
@@ -51,7 +78,7 @@ export default function ReportsPage() {
         const cleanPayee = tx.payee.replace(/"/g, '""');
 
         csvRows.push(
-          `"${dateStr}","${tx.account.name}","${cleanPayee}","${categoryName}","${categoryType}",${tx.amount},"${cleanDesc}"`
+          `"${dateStr}","${tx.account.name}","${tx.account.currency}","${cleanPayee}","${categoryName}","${categoryType}",${tx.amount},"${cleanDesc}"`
         );
       }
 
@@ -126,6 +153,24 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* Currency tab selector */}
+      {reports && reportCurrencies.length > 1 && (
+        <div className="flex items-center gap-2 bg-base-100 p-4 rounded-xl shadow border border-base-200 justify-center sm:justify-start">
+          <span className="font-bold text-sm text-base-content/70">View Statement Currency:</span>
+          <div className="join">
+            {reportCurrencies.map((cur) => (
+              <button
+                key={cur}
+                onClick={() => setSelectedReportCurrency(cur)}
+                className={`btn btn-sm join-item ${selectedReportCurrency === cur ? 'btn-primary' : 'btn-outline'}`}
+              >
+                {cur}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Statements Accordions */}
       {reports && (
         <div className="space-y-4">
@@ -134,9 +179,9 @@ export default function ReportsPage() {
           <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
             <input type="radio" name="reports-accordion" defaultChecked /> 
             <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
-              <span>⚖️ Balance Sheet</span>
+              <span>⚖️ Balance Sheet ({selectedReportCurrency})</span>
               <span className="text-sm font-semibold opacity-60">
-                Net Worth: ${reports.balanceSheet.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Net Worth: ${bsTotals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="collapse-content px-6 pb-6">
@@ -149,15 +194,19 @@ export default function ReportsPage() {
                     Assets (Checking, Savings, Cash)
                   </h3>
                   <div className="space-y-2">
-                    {reports.balanceSheet.accounts.filter((a: any) => a.type === 'ASSET').map((acc: any) => (
-                      <div key={acc.id} className="flex justify-between items-center text-sm">
-                        <span>{acc.name}</span>
-                        <span className="font-mono font-semibold text-success">${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    ))}
+                    {bsAccounts.filter((a: any) => a.type === 'ASSET').length === 0 ? (
+                      <div className="text-xs text-base-content/40 py-2">No assets in {selectedReportCurrency}.</div>
+                    ) : (
+                      bsAccounts.filter((a: any) => a.type === 'ASSET').map((acc: any) => (
+                        <div key={acc.id} className="flex justify-between items-center text-sm">
+                          <span>{acc.name}</span>
+                          <span className="font-mono font-semibold text-success">${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))
+                    )}
                     <div className="flex justify-between items-center font-bold text-sm border-t border-base-300 pt-2 mt-2">
                       <span>Total Assets</span>
-                      <span className="text-success">${reports.balanceSheet.totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-success">${bsTotals.totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -168,15 +217,19 @@ export default function ReportsPage() {
                     Liabilities (Debt, Cards, Loans)
                   </h3>
                   <div className="space-y-2">
-                    {reports.balanceSheet.accounts.filter((a: any) => a.type === 'LIABILITY').map((acc: any) => (
-                      <div key={acc.id} className="flex justify-between items-center text-sm">
-                        <span>{acc.name}</span>
-                        <span className="font-mono font-semibold text-error">${(-acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    ))}
+                    {bsAccounts.filter((a: any) => a.type === 'LIABILITY').length === 0 ? (
+                      <div className="text-xs text-base-content/40 py-2">No liabilities in {selectedReportCurrency}.</div>
+                    ) : (
+                      bsAccounts.filter((a: any) => a.type === 'LIABILITY').map((acc: any) => (
+                        <div key={acc.id} className="flex justify-between items-center text-sm">
+                          <span>{acc.name}</span>
+                          <span className="font-mono font-semibold text-error">${(-acc.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      ))
+                    )}
                     <div className="flex justify-between items-center font-bold text-sm border-t border-base-300 pt-2 mt-2">
                       <span>Total Liabilities</span>
-                      <span className="text-error">${reports.balanceSheet.totalLiabilities.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-error">${bsTotals.totalLiabilities.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -184,8 +237,8 @@ export default function ReportsPage() {
 
               <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
                 <span className="font-extrabold text-md">NET WORTH (Equity)</span>
-                <span className={`font-mono font-extrabold text-xl ${reports.balanceSheet.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
-                  ${reports.balanceSheet.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <span className={`font-mono font-extrabold text-xl ${bsTotals.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
+                  ${bsTotals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedReportCurrency}
                 </span>
               </div>
             </div>
@@ -195,9 +248,9 @@ export default function ReportsPage() {
           <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
             <input type="radio" name="reports-accordion" /> 
             <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
-              <span>🧾 Income & Expense Statement</span>
+              <span>🧾 Income & Expense Statement ({selectedReportCurrency})</span>
               <span className="text-sm font-semibold opacity-60">
-                Net Income: ${reports.incomeStatement.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Net Income: ${isTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="collapse-content px-6 pb-6">
@@ -210,10 +263,10 @@ export default function ReportsPage() {
                     Revenue & Inflows
                   </h3>
                   <div className="space-y-2">
-                    {reports.incomeStatement.income.length === 0 ? (
+                    {isTotals.income.length === 0 ? (
                       <div className="text-xs text-base-content/40 py-2">No income recorded in range.</div>
                     ) : (
-                      reports.incomeStatement.income.map((inc: any) => (
+                      isTotals.income.map((inc: any) => (
                         <div key={inc.name} className="flex justify-between items-center text-sm">
                           <span>{inc.name}</span>
                           <span className="font-mono font-semibold text-success">${inc.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -222,7 +275,7 @@ export default function ReportsPage() {
                     )}
                     <div className="flex justify-between items-center font-bold text-sm border-t border-base-300 pt-2 mt-2">
                       <span>Total Revenue</span>
-                      <span className="text-success">${reports.incomeStatement.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-success">${isTotals.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -233,10 +286,10 @@ export default function ReportsPage() {
                     Expenses & Outflows
                   </h3>
                   <div className="space-y-2">
-                    {reports.incomeStatement.expenses.length === 0 ? (
+                    {isTotals.expenses.length === 0 ? (
                       <div className="text-xs text-base-content/40 py-2">No expenses recorded in range.</div>
                     ) : (
-                      reports.incomeStatement.expenses.map((exp: any) => (
+                      isTotals.expenses.map((exp: any) => (
                         <div key={exp.name} className="flex justify-between items-center text-sm">
                           <span>{exp.name}</span>
                           <span className="font-mono font-semibold text-error">${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -245,7 +298,7 @@ export default function ReportsPage() {
                     )}
                     <div className="flex justify-between items-center font-bold text-sm border-t border-base-300 pt-2 mt-2">
                       <span>Total Expenses</span>
-                      <span className="text-error">${reports.incomeStatement.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-error">${isTotals.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -253,8 +306,8 @@ export default function ReportsPage() {
 
               <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
                 <span className="font-extrabold text-md">NET INCOME</span>
-                <span className={`font-mono font-extrabold text-xl ${reports.incomeStatement.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
-                  ${reports.incomeStatement.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <span className={`font-mono font-extrabold text-xl ${isTotals.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
+                  ${isTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedReportCurrency}
                 </span>
               </div>
             </div>
@@ -264,9 +317,9 @@ export default function ReportsPage() {
           <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
             <input type="radio" name="reports-accordion" /> 
             <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
-              <span>💸 Cash Flow Statement (Direct Method)</span>
+              <span>💸 Cash Flow Statement ({selectedReportCurrency})</span>
               <span className="text-sm font-semibold opacity-60">
-                Net Cash Flow: ${reports.cashFlowStatement.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Net Cash Flow: ${cfTotals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="collapse-content px-6 pb-6">
@@ -277,18 +330,18 @@ export default function ReportsPage() {
                 <div className="bg-base-200/40 p-4 rounded-xl border border-base-300/40">
                   <div className="flex justify-between items-center font-bold text-sm border-b border-base-300 pb-2 mb-2">
                     <span>1. Cash Flows from Operating Activities</span>
-                    <span className={reports.cashFlowStatement.operating.net >= 0 ? 'text-success' : 'text-error'}>
-                      ${reports.cashFlowStatement.operating.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <span className={cfTotals.operating.net >= 0 ? 'text-success' : 'text-error'}>
+                      ${cfTotals.operating.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="space-y-1 text-xs px-2 text-base-content/75">
                     <div className="flex justify-between">
                       <span>Operating Inflow (Salary, Revenue)</span>
-                      <span className="text-success font-semibold">${reports.cashFlowStatement.operating.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-success font-semibold">${cfTotals.operating.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Operating Outflow (Groceries, Rent, Utilities)</span>
-                      <span className="text-error font-semibold">-${reports.cashFlowStatement.operating.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-error font-semibold">-${cfTotals.operating.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -297,18 +350,18 @@ export default function ReportsPage() {
                 <div className="bg-base-200/40 p-4 rounded-xl border border-base-300/40">
                   <div className="flex justify-between items-center font-bold text-sm border-b border-base-300 pb-2 mb-2">
                     <span>2. Cash Flows from Investing Activities</span>
-                    <span className={reports.cashFlowStatement.investing.net >= 0 ? 'text-success' : 'text-error'}>
-                      ${reports.cashFlowStatement.investing.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <span className={cfTotals.investing.net >= 0 ? 'text-success' : 'text-error'}>
+                      ${cfTotals.investing.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="space-y-1 text-xs px-2 text-base-content/75">
                     <div className="flex justify-between">
                       <span>Investing Inflows (Capital Sales)</span>
-                      <span className="text-success font-semibold">${reports.cashFlowStatement.investing.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-success font-semibold">${cfTotals.investing.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Investing Outflows (Stock Buy, Assets Purchase)</span>
-                      <span className="text-error font-semibold">-${reports.cashFlowStatement.investing.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-error font-semibold">-${cfTotals.investing.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -317,18 +370,18 @@ export default function ReportsPage() {
                 <div className="bg-base-200/40 p-4 rounded-xl border border-base-300/40">
                   <div className="flex justify-between items-center font-bold text-sm border-b border-base-300 pb-2 mb-2">
                     <span>3. Cash Flows from Financing Activities</span>
-                    <span className={reports.cashFlowStatement.financing.net >= 0 ? 'text-success' : 'text-error'}>
-                      ${reports.cashFlowStatement.financing.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    <span className={cfTotals.financing.net >= 0 ? 'text-success' : 'text-error'}>
+                      ${cfTotals.financing.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="space-y-1 text-xs px-2 text-base-content/75">
                     <div className="flex justify-between">
                       <span>Financing Inflows (Debt Drawdowns)</span>
-                      <span className="text-success font-semibold">${reports.cashFlowStatement.financing.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-success font-semibold">${cfTotals.financing.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Financing Outflows (Debt Paydowns, Loan Principal)</span>
-                      <span className="text-error font-semibold">-${reports.cashFlowStatement.financing.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-error font-semibold">-${cfTotals.financing.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -336,8 +389,8 @@ export default function ReportsPage() {
 
               <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
                 <span className="font-extrabold text-md">NET CASH INCREASE / DECREASE</span>
-                <span className={`font-mono font-extrabold text-xl ${reports.cashFlowStatement.netCashFlow >= 0 ? 'text-success' : 'text-error'}`}>
-                  ${reports.cashFlowStatement.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <span className={`font-mono font-extrabold text-xl ${cfTotals.netCashFlow >= 0 ? 'text-success' : 'text-error'}`}>
+                  ${cfTotals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedReportCurrency}
                 </span>
               </div>
             </div>

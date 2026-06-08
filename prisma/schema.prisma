@@ -14,6 +14,7 @@ model Account {
   name            String
   type            String        // "ASSET" or "LIABILITY"
   startingBalance Float         @default(0) // SQLite Float is fine for personal scale, or standard Decimal which translates to Float in Prisma/SQLite
+  currency        String        @default("AUD")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   transactions    Transaction[]

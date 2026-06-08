@@ -9,6 +9,7 @@ interface Account {
   name: string;
   type: string;
   startingBalance: number;
+  currency: string;
   _count?: { transactions: number };
 }
 
@@ -17,6 +18,7 @@ interface Transaction {
   date: Date;
   amount: number;
   accountId: string;
+  currency: string;
   category: { name: string; type: string } | null;
 }
 
@@ -33,6 +35,7 @@ export default function DashboardClient({
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<'ASSET' | 'LIABILITY'>('ASSET');
   const [newAccBalance, setNewAccBalance] = useState('');
+  const [newAccCurrency, setNewAccCurrency] = useState('AUD');
   const [isPending, startTransition] = useTransition();
 
   // Financial report dates (Current Month defaults)
@@ -46,6 +49,7 @@ export default function DashboardClient({
     name: a.name,
     type: a.type,
     startingBalance: a.startingBalance,
+    currency: a.currency,
   }));
 
   const mappedTransactions = initialTransactions.map((t) => ({
@@ -53,6 +57,7 @@ export default function DashboardClient({
     date: new Date(t.date),
     amount: t.amount,
     accountId: t.accountId,
+    currency: t.currency,
     categoryId: null,
     category: t.category ? {
       id: '',
@@ -68,6 +73,21 @@ export default function DashboardClient({
   // Uncategorized transactions count
   const pendingCount = initialTransactions.filter((tx) => !tx.category).length;
 
+  // Visualizations State (Choose currency to render details for)
+  const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
+  const [selectedVisualCurrency, setSelectedVisualCurrency] = useState('AUD');
+  const currentVisualCurrency = activeCurrencies.includes(selectedVisualCurrency)
+    ? selectedVisualCurrency
+    : (activeCurrencies[0] || 'AUD');
+
+  const visualIS = is.totals[currentVisualCurrency] || {
+    income: [],
+    expenses: [],
+    totalIncome: 0,
+    totalExpenses: 0,
+    netIncome: 0,
+  };
+
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAccName.trim()) return;
@@ -78,11 +98,13 @@ export default function DashboardClient({
         const created = await createAccount(
           newAccName,
           newAccType,
-          newAccType === 'LIABILITY' ? -Math.abs(balance) : Math.abs(balance)
+          newAccType === 'LIABILITY' ? -Math.abs(balance) : Math.abs(balance),
+          newAccCurrency
         );
         setAccounts((prev) => [...prev, created]);
         setNewAccName('');
         setNewAccBalance('');
+        setNewAccCurrency('AUD');
       } catch (err: any) {
         alert(err.message || 'Failed to create account');
       }
@@ -112,29 +134,45 @@ export default function DashboardClient({
     <div className="space-y-6">
       {/* Overview Stat Cards */}
       <div className="stats stats-vertical md:stats-horizontal shadow bg-base-100 w-full overflow-hidden">
-        <div className="stat">
-          <div className="stat-title text-base-content/60">Net Worth</div>
-          <div className={`stat-value text-3xl font-extrabold ${bs.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
-            ${bs.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <div className="stat min-w-[280px]">
+          <div className="stat-title text-base-content/60 font-bold">Net Worth</div>
+          <div className="space-y-2 mt-2">
+            {Object.keys(bs.totals).length === 0 ? (
+              <div className="text-sm opacity-50 py-1">No accounts created</div>
+            ) : (
+              Object.entries(bs.totals).map(([currency, total]) => (
+                <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
+                  <span className="badge badge-outline badge-sm font-bold">{currency}</span>
+                  <span className={`text-xl font-extrabold ${total.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
+                    {total.netWorth >= 0 ? '' : '-'}${Math.abs(total.netWorth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
-          <div className="stat-desc mt-1">
-            Assets: ${bs.totalAssets.toLocaleString()} | Liabilities: ${bs.totalLiabilities.toLocaleString()}
+        </div>
+
+        <div className="stat min-w-[280px]">
+          <div className="stat-title text-base-content/60 font-bold">Month Net Income</div>
+          <div className="space-y-2 mt-2">
+            {Object.keys(is.totals).length === 0 ? (
+              <div className="text-sm opacity-50 py-1">No transactions this month</div>
+            ) : (
+              Object.entries(is.totals).map(([currency, total]) => (
+                <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
+                  <span className="badge badge-outline badge-sm font-bold">{currency}</span>
+                  <span className={`text-xl font-extrabold ${total.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
+                    {total.netIncome >= 0 ? '' : '-'}${Math.abs(total.netIncome).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className="stat">
-          <div className="stat-title text-base-content/60">Month Net Income</div>
-          <div className={`stat-value text-3xl font-extrabold ${is.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
-            ${is.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className="stat-desc mt-1">
-            Inflow: ${is.totalIncome.toLocaleString()} | Expenses: ${is.totalExpenses.toLocaleString()}
-          </div>
-        </div>
-
-        <div className="stat">
-          <div className="stat-title text-base-content/60">Review Queue</div>
-          <div className="stat-value text-3xl text-warning font-extrabold">{pendingCount}</div>
+          <div className="stat-title text-base-content/60 font-bold">Review Queue</div>
+          <div className="stat-value text-3xl text-warning font-extrabold mt-1">{pendingCount}</div>
           <div className="stat-desc mt-1">Uncategorized transactions</div>
         </div>
       </div>
@@ -169,7 +207,10 @@ export default function DashboardClient({
                         return (
                           <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
                             <td>
-                              <div className="font-bold">{acc.name}</div>
+                              <div className="font-bold flex items-center gap-2">
+                                {acc.name}
+                                <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
+                              </div>
                               <div className="text-xs text-base-content/50">
                                 {acc._count?.transactions || 0} transaction(s)
                               </div>
@@ -204,37 +245,56 @@ export default function DashboardClient({
           {/* SVG Visualizations: Income vs Expenses */}
           <div className="card bg-base-100 shadow-xl border border-base-200">
             <div className="card-body">
-              <h2 className="card-title text-xl font-bold text-primary">📊 Cash Flow (Current Month)</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-base-200 pb-3 mb-2">
+                <h2 className="card-title text-xl font-bold text-primary">📊 Cash Flow (Current Month)</h2>
+                {activeCurrencies.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold opacity-60">Currency:</span>
+                    <div className="join">
+                      {activeCurrencies.map((cur) => (
+                        <button
+                          key={cur}
+                          onClick={() => setSelectedVisualCurrency(cur)}
+                          className={`btn btn-xs join-item ${currentVisualCurrency === cur ? 'btn-primary' : 'btn-outline'}`}
+                        >
+                          {cur}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex flex-col md:flex-row items-center justify-around gap-6 mt-4">
                 {/* SVG comparison chart */}
                 <div className="relative w-full max-w-xs h-48 bg-base-200 rounded-xl p-4 flex flex-col justify-between">
-                  <div className="text-xs text-base-content/50 font-bold uppercase tracking-wider">Inflows vs Outflows</div>
+                  <div className="text-xs text-base-content/50 font-bold uppercase tracking-wider">Inflows vs Outflows ({currentVisualCurrency})</div>
                   
                   {/* Simple SVG Chart */}
                   <svg viewBox="0 0 200 100" className="w-full h-32">
                     {/* Income Bar */}
-                    <rect x="30" y={100 - Math.min(80, (is.totalIncome / Math.max(1, is.totalIncome + is.totalExpenses)) * 100)} width="35" height={Math.min(80, (is.totalIncome / Math.max(1, is.totalIncome + is.totalExpenses)) * 100)} fill="hsl(var(--p))" rx="4" />
+                    <rect x="30" y={100 - Math.min(80, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} width="35" height={Math.min(80, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} fill="hsl(var(--p))" rx="4" />
                     <text x="47" y="95" textAnchor="middle" fill="currentColor" className="text-[10px] font-bold">In</text>
                     
                     {/* Expense Bar */}
-                    <rect x="135" y={100 - Math.min(80, (is.totalExpenses / Math.max(1, is.totalIncome + is.totalExpenses)) * 100)} width="35" height={Math.min(80, (is.totalExpenses / Math.max(1, is.totalIncome + is.totalExpenses)) * 100)} fill="hsl(var(--s))" rx="4" />
+                    <rect x="135" y={100 - Math.min(80, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} width="35" height={Math.min(80, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} fill="hsl(var(--s))" rx="4" />
                     <text x="152" y="95" textAnchor="middle" fill="currentColor" className="text-[10px] font-bold">Out</text>
                   </svg>
 
                   <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-primary">Inflow: ${is.totalIncome.toFixed(0)}</span>
-                    <span className="text-secondary">Outflow: ${is.totalExpenses.toFixed(0)}</span>
+                    <span className="text-primary">Inflow: ${visualIS.totalIncome.toFixed(0)}</span>
+                    <span className="text-secondary">Outflow: ${visualIS.totalExpenses.toFixed(0)}</span>
                   </div>
                 </div>
 
                 {/* Categories progress bars */}
                 <div className="flex-1 w-full space-y-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-base-content/60">Top Expense Categories</h3>
-                  {is.expenses.length === 0 ? (
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-base-content/60">Top Expense Categories ({currentVisualCurrency})</h3>
+                  {visualIS.expenses.length === 0 ? (
                     <p className="text-xs text-base-content/50">No expenses recorded for this month.</p>
                   ) : (
-                    is.expenses.slice(0, 4).map((exp) => {
-                      const percentage = Math.round((exp.amount / Math.max(1, is.totalExpenses)) * 100);
+                    visualIS.expenses.slice(0, 4).map((exp) => {
+                      const percentage = Math.round((exp.amount / Math.max(1, visualIS.totalExpenses)) * 100);
                       return (
                         <div key={exp.name} className="space-y-1">
                           <div className="flex justify-between text-xs font-semibold">
@@ -284,6 +344,25 @@ export default function DashboardClient({
                   >
                     <option value="ASSET">ASSET (Cash, Savings, Checking)</option>
                     <option value="LIABILITY">LIABILITY (Credit Card, Loan, Debt)</option>
+                  </select>
+                </div>
+
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-bold">Currency</span>
+                  </label>
+                  <select
+                    value={newAccCurrency}
+                    onChange={(e) => setNewAccCurrency(e.target.value)}
+                    className="select select-bordered w-full"
+                  >
+                    <option value="AUD">AUD (Australian Dollar)</option>
+                    <option value="USD">USD (US Dollar)</option>
+                    <option value="EUR">EUR (Euro)</option>
+                    <option value="GBP">GBP (British Pound)</option>
+                    <option value="SGD">SGD (Singapore Dollar)</option>
+                    <option value="NZD">NZD (New Zealand Dollar)</option>
+                    <option value="CAD">CAD (Canadian Dollar)</option>
                   </select>
                 </div>
 

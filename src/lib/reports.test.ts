@@ -6,6 +6,7 @@ interface AccountMock {
   name: string;
   type: string; // "ASSET" | "LIABILITY"
   startingBalance: number;
+  currency: string;
 }
 
 interface CategoryMock {
@@ -22,13 +23,14 @@ interface TransactionMock {
   accountId: string;
   categoryId: string | null;
   category: CategoryMock | null;
+  currency?: string;
 }
 
-describe('Financial Reporting Calculations Engine', () => {
+describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
   const accounts: AccountMock[] = [
-    { id: 'acc_checking', name: 'Checking Account', type: 'ASSET', startingBalance: 2000 },
-    { id: 'acc_savings', name: 'Savings Account', type: 'ASSET', startingBalance: 5000 },
-    { id: 'acc_credit', name: 'Credit Card', type: 'LIABILITY', startingBalance: -500 }, // owe 500
+    { id: 'acc_checking', name: 'Checking Account', type: 'ASSET', startingBalance: 2000, currency: 'AUD' },
+    { id: 'acc_savings', name: 'Savings Account', type: 'ASSET', startingBalance: 5000, currency: 'USD' },
+    { id: 'acc_credit', name: 'Credit Card', type: 'LIABILITY', startingBalance: -500, currency: 'AUD' }, // owe 500 AUD
   ];
 
   const categories: Record<string, CategoryMock> = {
@@ -48,6 +50,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_salary',
       category: categories.cat_salary,
+      currency: 'AUD',
     },
     {
       id: 'tx_2',
@@ -56,6 +59,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_groceries',
       category: categories.cat_groceries,
+      currency: 'AUD',
     },
     {
       id: 'tx_3',
@@ -64,6 +68,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_rent',
       category: categories.cat_rent,
+      currency: 'AUD',
     },
     {
       id: 'tx_4',
@@ -72,6 +77,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_credit',
       categoryId: 'cat_groceries',
       category: categories.cat_groceries,
+      currency: 'AUD',
     },
     {
       id: 'tx_5',
@@ -80,6 +86,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_transfer',
       category: categories.cat_transfer,
+      currency: 'AUD',
     },
     {
       id: 'tx_6',
@@ -88,6 +95,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_credit',
       categoryId: 'cat_transfer',
       category: categories.cat_transfer,
+      currency: 'AUD',
     },
     {
       id: 'tx_7',
@@ -96,6 +104,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_invest',
       category: categories.cat_invest,
+      currency: 'AUD',
     },
     {
       id: 'tx_8',
@@ -104,6 +113,7 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_loan',
       category: categories.cat_loan,
+      currency: 'AUD',
     },
     {
       id: 'tx_9',
@@ -112,23 +122,45 @@ describe('Financial Reporting Calculations Engine', () => {
       accountId: 'acc_checking',
       categoryId: 'cat_groceries',
       category: categories.cat_groceries,
+      currency: 'AUD',
+    },
+    // USD transactions
+    {
+      id: 'tx_usd_1',
+      date: new Date('2026-06-18'),
+      amount: -50,
+      accountId: 'acc_savings',
+      categoryId: 'cat_groceries',
+      category: categories.cat_groceries,
+      currency: 'USD',
     },
   ];
 
   describe('generateBalanceSheet', () => {
-    it('should compute balances up to a specified end date', () => {
+    it('should compute balances up to a specified end date grouped by currency', () => {
       const endDate = new Date('2026-06-30');
       const sheet = generateBalanceSheet(accounts, transactions, endDate);
       
       const checkAcc = sheet.accounts.find((a) => a.id === 'acc_checking');
       expect(checkAcc?.balance).toBe(2450);
 
+      const savingsAcc = sheet.accounts.find((a) => a.id === 'acc_savings');
+      expect(savingsAcc?.balance).toBe(4950);
+
       const cardAcc = sheet.accounts.find((a) => a.id === 'acc_credit');
       expect(cardAcc?.balance).toBe(-600);
 
-      expect(sheet.totalAssets).toBe(7450);
-      expect(sheet.totalLiabilities).toBe(600);
-      expect(sheet.netWorth).toBe(6850);
+      // AUD totals
+      expect(sheet.totals.AUD).toBeDefined();
+      expect(sheet.totals.AUD.totalAssets).toBe(2450);
+      expect(sheet.totals.AUD.totalLiabilities).toBe(600);
+      expect(sheet.totals.AUD.netWorth).toBe(1850);
+
+      // USD totals
+      expect(sheet.totals.USD).toBeDefined();
+      expect(sheet.totals.USD.totalAssets).toBe(4950);
+      expect(sheet.totals.USD.totalLiabilities).toBe(0);
+      expect(sheet.totals.USD.netWorth).toBe(4950);
     });
 
     it('should ignore transactions past the end date', () => {
@@ -138,49 +170,71 @@ describe('Financial Reporting Calculations Engine', () => {
       const checkAcc = sheet.accounts.find((a) => a.id === 'acc_checking');
       expect(checkAcc?.balance).toBe(3850);
 
-      const cardAcc = sheet.accounts.find((a) => a.id === 'acc_credit');
-      expect(cardAcc?.balance).toBe(-800);
+      const savingsAcc = sheet.accounts.find((a) => a.id === 'acc_savings');
+      expect(savingsAcc?.balance).toBe(5000); // no USD transaction before or at 2026-06-10
       
-      expect(sheet.totalAssets).toBe(8850);
-      expect(sheet.totalLiabilities).toBe(800);
-      expect(sheet.netWorth).toBe(8050);
+      // AUD totals
+      expect(sheet.totals.AUD.totalAssets).toBe(3850);
+      expect(sheet.totals.AUD.totalLiabilities).toBe(800);
+      expect(sheet.totals.AUD.netWorth).toBe(3050);
+
+      // USD totals
+      expect(sheet.totals.USD.totalAssets).toBe(5000);
+      expect(sheet.totals.USD.totalLiabilities).toBe(0);
+      expect(sheet.totals.USD.netWorth).toBe(5000);
     });
   });
 
   describe('generateIncomeStatement', () => {
-    it('should compute income and expense grouped by category in a date range', () => {
+    it('should compute income and expense grouped by category and currency in a date range', () => {
       const startDate = new Date('2026-06-01');
       const endDate = new Date('2026-06-30');
 
       const statement = generateIncomeStatement(transactions, startDate, endDate);
 
-      expect(statement.totalIncome).toBe(3000);
-      
-      const salaryGroup = statement.income.find((c) => c.name === 'Salary');
-      expect(salaryGroup?.amount).toBe(3000);
+      // AUD
+      expect(statement.totals.AUD).toBeDefined();
+      expect(statement.totals.AUD.totalIncome).toBe(3000);
+      expect(statement.totals.AUD.totalExpenses).toBe(2650);
+      expect(statement.totals.AUD.netIncome).toBe(350);
 
-      const groceriesGroup = statement.expenses.find((c) => c.name === 'Groceries');
-      expect(groceriesGroup?.amount).toBe(450);
+      const audSalaryGroup = statement.totals.AUD.income.find((c: any) => c.name === 'Salary');
+      expect(audSalaryGroup?.amount).toBe(3000);
 
-      const rentGroup = statement.expenses.find((c) => c.name === 'Rent');
-      expect(rentGroup?.amount).toBe(1000);
+      const audRentGroup = statement.totals.AUD.expenses.find((c: any) => c.name === 'Rent');
+      expect(audRentGroup?.amount).toBe(1000);
 
-      expect(statement.totalExpenses).toBe(2650);
-      expect(statement.netIncome).toBe(350);
+      // USD
+      expect(statement.totals.USD).toBeDefined();
+      expect(statement.totals.USD.totalIncome).toBe(0);
+      expect(statement.totals.USD.totalExpenses).toBe(50);
+      expect(statement.totals.USD.netIncome).toBe(-50);
+
+      const usdGroceriesGroup = statement.totals.USD.expenses.find((c: any) => c.name === 'Groceries');
+      expect(usdGroceriesGroup?.amount).toBe(50);
     });
   });
 
   describe('generateCashFlowStatement', () => {
-    it('should compute cash flows grouped by cashFlowType (Direct Method)', () => {
+    it('should compute cash flows grouped by cashFlowType and currency (Direct Method)', () => {
       const startDate = new Date('2026-06-01');
       const endDate = new Date('2026-06-30');
 
       const statement = generateCashFlowStatement(transactions, startDate, endDate);
 
-      expect(statement.operating.net).toBe(1550);
-      expect(statement.investing.net).toBe(-800);
-      expect(statement.financing.net).toBe(-400);
-      expect(statement.netCashFlow).toBe(350);
+      // AUD
+      expect(statement.totals.AUD).toBeDefined();
+      expect(statement.totals.AUD.operating.net).toBe(1550);
+      expect(statement.totals.AUD.investing.net).toBe(-800);
+      expect(statement.totals.AUD.financing.net).toBe(-400);
+      expect(statement.totals.AUD.netCashFlow).toBe(350);
+
+      // USD
+      expect(statement.totals.USD).toBeDefined();
+      expect(statement.totals.USD.operating.net).toBe(-50);
+      expect(statement.totals.USD.investing.net).toBe(0);
+      expect(statement.totals.USD.financing.net).toBe(0);
+      expect(statement.totals.USD.netCashFlow).toBe(-50);
     });
 
     it('should skip categories with unknown cashFlowType section groupings', () => {
@@ -188,7 +242,7 @@ describe('Financial Reporting Calculations Engine', () => {
         id: 'cat_unknown',
         name: 'Unknown Section',
         type: 'EXPENSE',
-        cashFlowType: 'OTHER_CF_SECTION', // does not match OPERATING / INVESTING / FINANCING sections
+        cashFlowType: 'OTHER_CF_SECTION',
       };
 
       const customTxList: TransactionMock[] = [
@@ -199,6 +253,7 @@ describe('Financial Reporting Calculations Engine', () => {
           accountId: 'acc_checking',
           categoryId: 'cat_unknown',
           category: unknownCFCategory,
+          currency: 'AUD',
         },
       ];
 
@@ -206,10 +261,40 @@ describe('Financial Reporting Calculations Engine', () => {
       const endDate = new Date('2026-06-30');
 
       const statement = generateCashFlowStatement(customTxList, startDate, endDate);
-      expect(statement.operating.net).toBe(0);
-      expect(statement.investing.net).toBe(0);
-      expect(statement.financing.net).toBe(0);
-      expect(statement.netCashFlow).toBe(0);
+      expect(statement.totals.AUD.operating.net).toBe(0);
+      expect(statement.totals.AUD.investing.net).toBe(0);
+      expect(statement.totals.AUD.financing.net).toBe(0);
+      expect(statement.totals.AUD.netCashFlow).toBe(0);
+    });
+  });
+
+  describe('defaulting missing currency to AUD', () => {
+    it('should default missing currency fields to AUD in calculations', () => {
+      const legacyAccounts = [
+        { id: 'acc_legacy', name: 'Legacy Account', type: 'ASSET', startingBalance: 1000 },
+      ];
+      const legacyTransactions = [
+        {
+          id: 'tx_legacy',
+          date: new Date('2026-06-05'),
+          amount: 200,
+          accountId: 'acc_legacy',
+          categoryId: 'cat_salary',
+          category: categories.cat_salary,
+        }
+      ];
+
+      const sheet = generateBalanceSheet(legacyAccounts as any, legacyTransactions as any, new Date('2026-06-10'));
+      expect(sheet.totals.AUD).toBeDefined();
+      expect(sheet.totals.AUD.netWorth).toBe(1200);
+
+      const statement = generateIncomeStatement(legacyTransactions as any, new Date('2026-06-01'), new Date('2026-06-30'));
+      expect(statement.totals.AUD).toBeDefined();
+      expect(statement.totals.AUD.totalIncome).toBe(200);
+
+      const cashFlow = generateCashFlowStatement(legacyTransactions as any, new Date('2026-06-01'), new Date('2026-06-30'));
+      expect(cashFlow.totals.AUD).toBeDefined();
+      expect(cashFlow.totals.AUD.operating.net).toBe(200);
     });
   });
 });

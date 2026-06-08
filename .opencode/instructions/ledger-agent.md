@@ -27,7 +27,7 @@ Always ground your decisions and implementation steps in the following project d
 
 ### 1. Data Schema (Prisma)
 Follow the database model defined in [architect_review.md Section 3](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/architect_review.md#L84-L142):
-- **Account**: Tracks Assets & Liabilities with standard `startingBalance` settings.
+- **Account**: Tracks Assets & Liabilities with standard `startingBalance` and native `currency` settings.
 - **Transaction**: Stores dates, amounts, payees, and relations to Accounts and Categories.
 - **Category**: Tracks category types (`INCOME`, `EXPENSE`, `TRANSFER`) and cash flow statements grouping (`OPERATING`, `INVESTING`, `FINANCING`).
 - **CategoryRule**: Custom regex/keyword match patterns for merchant auto-categorization.
@@ -43,9 +43,10 @@ Follow the database model defined in [architect_review.md Section 3](file:///Use
 
 ### 4. Financial Calculations Ledger Engine (`src/lib/reports.ts`)
 Implement the formulas defined in [architect_review.md Section 4](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/architect_review.md#L146-L175):
-- **Income Statement**: Grouped category sums of income and expense within date range.
-- **Balance Sheet**: Cumulative sum of transaction values up to `endDate` added to accounts `startingBalance`. Group by Asset/Liability and report Net Worth.
-- **Cash Flow Statement**: Filter out `TRANSFER` transactions. Sum direct transaction values grouped by categories `cashFlowType` (Operating, Investing, Financing).
+- **Independent Currency Ledgers**: Calculate totals and groups strictly partitioned by account currency code, preventing incorrect mathematical additions between different currencies.
+- **Income Statement**: Grouped category sums of income and expense within date range, split by currency.
+- **Balance Sheet**: Cumulative sum of transaction values up to `endDate` added to accounts `startingBalance`. Group by Asset/Liability and report Net Worth, split by currency.
+- **Cash Flow Statement**: Filter out `TRANSFER` transactions. Sum direct transaction values grouped by categories `cashFlowType` (Operating, Investing, Financing), split by currency.
 
 ### 5. Frontend & UI System
 - Render client using Tailwind CSS v4 and DaisyUI v5 (beta).
