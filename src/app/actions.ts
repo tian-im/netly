@@ -341,3 +341,40 @@ export async function deleteCategory(id: string) {
   revalidatePath('/transactions');
   revalidatePath('/');
 }
+
+export async function updateCategory(id: string, name: string, type: string, cashFlowType: string) {
+  if (!name.trim()) throw new Error('Category name is required');
+
+  // Verify unique name
+  const existing = await db.category.findFirst({
+    where: {
+      name: name.trim(),
+      NOT: { id }
+    }
+  });
+  if (existing) throw new Error('Category with this name already exists');
+
+  // Protect Transfer category from being renamed
+  const category = await db.category.findUnique({
+    where: { id }
+  });
+  if (!category) throw new Error('Category not found');
+  if (category.name.toLowerCase() === 'transfer' && name.trim().toLowerCase() !== 'transfer') {
+    throw new Error('The default "Transfer" category is protected and cannot be renamed.');
+  }
+
+  const updated = await db.category.update({
+    where: { id },
+    data: {
+      name: name.trim(),
+      type,
+      cashFlowType,
+    }
+  });
+
+  revalidatePath('/categories');
+  revalidatePath('/transactions');
+  revalidatePath('/');
+  return updated;
+}
+

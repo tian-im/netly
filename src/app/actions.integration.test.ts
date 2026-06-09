@@ -35,6 +35,7 @@ import {
   getCategories,
   createCategory,
   deleteCategory,
+  updateCategory,
   createCategoryRule,
   deleteCategoryRule,
   getTransactions,
@@ -277,6 +278,44 @@ describe('Category actions', () => {
 
       const updatedTx = await db.transaction.findUnique({ where: { id: tx.id } });
       expect(updatedTx?.categoryId).toBeNull();
+    });
+  });
+
+  describe('updateCategory', () => {
+    it('updates an existing category details correctly', async () => {
+      const cat = await seedCategory({ name: 'Old Name', type: 'EXPENSE', cashFlowType: 'OPERATING' });
+      const updated = await updateCategory(cat.id, 'New Name', 'INCOME', 'INVESTING');
+
+      expect(updated.name).toBe('New Name');
+      expect(updated.type).toBe('INCOME');
+      expect(updated.cashFlowType).toBe('INVESTING');
+
+      const found = await db.category.findUnique({ where: { id: cat.id } });
+      expect(found?.name).toBe('New Name');
+      expect(found?.type).toBe('INCOME');
+      expect(found?.cashFlowType).toBe('INVESTING');
+    });
+
+    it('throws when name is blank', async () => {
+      const cat = await seedCategory();
+      await expect(updateCategory(cat.id, '  ', 'EXPENSE', 'OPERATING')).rejects.toThrow(
+        'Category name is required'
+      );
+    });
+
+    it('throws when duplicate name is used by another category', async () => {
+      await seedCategory({ name: 'Duplicate' });
+      const cat = await seedCategory({ name: 'Target' });
+      await expect(updateCategory(cat.id, 'Duplicate', 'EXPENSE', 'OPERATING')).rejects.toThrow(
+        'Category with this name already exists'
+      );
+    });
+
+    it('throws when trying to rename the protected Transfer category', async () => {
+      const cat = await seedCategory({ name: 'Transfer', type: 'TRANSFER' });
+      await expect(updateCategory(cat.id, 'Something Else', 'TRANSFER', 'OPERATING')).rejects.toThrow(
+        'protected'
+      );
     });
   });
 });
