@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations, useFormatter } from 'next-intl';
 import { X, Calendar, Landmark, Tag, DollarSign, Info } from 'lucide-react';
 import { Transaction, Category } from '../types';
 
@@ -18,6 +19,9 @@ export default function TransactionDetailDrawer({
   onClose,
   onCategoryChange,
 }: TransactionDetailDrawerProps) {
+  const t = useTranslations('transactions');
+  const format = useFormatter();
+
   if (!transaction) return null;
 
   const formattedAmount = new Intl.NumberFormat(undefined, {
@@ -25,7 +29,7 @@ export default function TransactionDetailDrawer({
     currency: transaction.account.currency || 'AUD',
   }).format(Math.abs(transaction.amount));
 
-  const formattedDate = new Date(transaction.date).toLocaleDateString(undefined, {
+  const formattedDate = format.dateTime(new Date(transaction.date), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -48,7 +52,7 @@ export default function TransactionDetailDrawer({
               <div>
                 <div className="flex items-start justify-between">
                   <h2 id="slide-over-title" className="text-xl font-bold text-base-content break-words pr-4">
-                    Transaction Details
+                    {t('detail.title')}
                   </h2>
                   <button
                     type="button"
@@ -76,14 +80,14 @@ export default function TransactionDetailDrawer({
                 <div className="mt-6 space-y-5">
                   {/* Payee */}
                   <div>
-                    <label className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Payee / Merchant</label>
+                    <label className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('detail.payee')}</label>
                     <div className="text-base font-bold text-base-content mt-1 break-words">{transaction.payee}</div>
                   </div>
 
                   {/* Memo */}
                   {transaction.description && (
                     <div>
-                      <label className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Memo / Description</label>
+                      <label className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('table.payee')}</label>
                       <div className="text-sm text-base-content/75 mt-1 bg-base-200/50 p-3 rounded-lg border border-base-200/60 break-words font-mono">
                         {transaction.description}
                       </div>
@@ -94,7 +98,7 @@ export default function TransactionDetailDrawer({
                   <div className="flex items-center gap-3">
                     <Calendar className="w-4.5 h-4.5 text-base-content/40 shrink-0" />
                     <div>
-                      <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider">Date</span>
+                      <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('detail.date')}</span>
                       <span className="text-sm font-medium text-base-content">{formattedDate}</span>
                     </div>
                   </div>
@@ -103,7 +107,7 @@ export default function TransactionDetailDrawer({
                   <div className="flex items-center gap-3">
                     <Landmark className="w-4.5 h-4.5 text-base-content/40 shrink-0" />
                     <div>
-                      <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider">Account</span>
+                      <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('detail.account')}</span>
                       <span className="text-sm font-medium text-base-content">
                         {transaction.account.name}{' '}
                         <span className="text-xs opacity-60">({transaction.account.type})</span>
@@ -115,7 +119,7 @@ export default function TransactionDetailDrawer({
                   <div className="flex items-start gap-3">
                     <Tag className="w-4.5 h-4.5 text-base-content/40 mt-1.5 shrink-0" />
                     <div className="flex-1">
-                      <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-1">Category</span>
+                      <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-1">{t('detail.category')}</span>
                       <select
                         value={transaction.categoryId || ''}
                         onChange={(e) => onCategoryChange(transaction, e.target.value)}
@@ -124,7 +128,7 @@ export default function TransactionDetailDrawer({
                         }`}
                         disabled={isPending}
                       >
-                        <option value="">Uncategorized</option>
+                        <option value="">{t('table.uncategorized')}</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name} ({c.type})
@@ -141,7 +145,7 @@ export default function TransactionDetailDrawer({
                         transaction.isReviewed ? 'badge-success text-success-content' : 'badge-warning text-warning-content'
                       }`}
                     >
-                      {transaction.isReviewed ? 'Reviewed' : 'Needs Review'}
+                      {transaction.isReviewed ? t('detail.reviewed') : t('detail.needsReview')}
                     </span>
                   </div>
                 </div>
@@ -151,9 +155,9 @@ export default function TransactionDetailDrawer({
               <div className="mt-8 bg-primary/5 border border-primary/10 rounded-xl p-4 flex gap-3 text-xs text-primary-content/80">
                 <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-bold text-primary">Need to categorize automatically?</h4>
+                  <h4 className="font-bold text-primary">{t('detail.needAutoCategorizeTitle')}</h4>
                   <p className="mt-0.5 opacity-90 leading-relaxed">
-                    Set a category mapping rule under the Categories tab to auto-match keywords in the Payee name on future statement imports.
+                    {t('detail.needAutoCategorizeDesc')}
                   </p>
                 </div>
               </div>

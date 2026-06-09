@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   createCategory,
   deleteCategory,
@@ -8,6 +9,7 @@ import {
   deleteCategoryRule,
   updateCategory,
 } from '../actions';
+import { translateError } from '@/lib/translateError';
 import { Tags, Settings, Plus, Pencil, AlertTriangle, ArrowUpDown, X } from 'lucide-react';
 
 interface Rule {
@@ -38,6 +40,9 @@ interface Toast {
 }
 
 export default function CategoriesClient({ initialCategories }: CategoriesClientProps) {
+  const t = useTranslations('categories');
+  const tCommon = useTranslations('common');
+  const tErr = useTranslations('errors');
   const [activeTab, setActiveTab] = useState<ActiveTab>('categories');
   const [categories, setCategories] = useState(initialCategories);
 
@@ -144,11 +149,11 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         setNewCatName('');
         setNewCatType('EXPENSE');
         setNewCatCFType('OPERATING');
-        showToast(`Category "${created.name}" created successfully`);
+        showToast(t('createdSuccess', { name: created.name }));
         // Make sure the new category is selectable in rule form if none selected
         if (!newRuleCatId) setNewRuleCatId(created.id);
       } catch (err: any) {
-        showToast(err.message || 'Failed to create category', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setIsCreating(false);
       }
@@ -187,10 +192,10 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
               : c
           )
         );
-        showToast(`Category "${updated.name}" updated successfully`);
+        showToast(t('updatedSuccess', { name: updated.name }));
         setEditingCategory(null);
       } catch (err: any) {
-        showToast(err.message || 'Failed to update category', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setIsUpdating(false);
       }
@@ -200,7 +205,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const handleDeleteClick = (cat: Category) => {
     const isProtected = cat.name.toLowerCase() === 'transfer';
     if (isProtected) {
-      showToast('The "Transfer" category is critical and cannot be deleted.', 'error');
+      showToast(t('transferProtected'), 'error');
       return;
     }
     setCategoryToDelete(cat);
@@ -216,10 +221,10 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       try {
         await deleteCategory(targetId);
         setCategories((prev) => prev.filter((c) => c.id !== targetId));
-        showToast(`Category "${targetName}" deleted successfully`);
+        showToast(t('deletedSuccess', { name: targetName }));
         setCategoryToDelete(null);
       } catch (err: any) {
-        showToast(err.message || 'Failed to delete category', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setDeletingCategoryId(null);
       }
@@ -248,9 +253,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           )
         );
         setNewRulePattern('');
-        showToast(`Match rule for "${rule.pattern}" created successfully`);
+        showToast(t('ruleCreatedSuccess', { pattern: rule.pattern }));
       } catch (err: any) {
-        showToast(err.message || 'Failed to create rule', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setIsCreating(false);
       }
@@ -280,10 +285,10 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
               : cat
           )
         );
-        showToast(`Rule for "${pattern}" deleted successfully`);
+        showToast(t('ruleDeletedSuccess', { pattern }));
         setRuleToDelete(null);
       } catch (err: any) {
-        showToast(err.message || 'Failed to delete rule', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setDeletingRuleId(null);
       }
@@ -305,6 +310,15 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
   return (
     <div className="space-y-6 relative">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
+          {t('title')}
+        </h1>
+        <p className="text-base-content/60 text-sm mt-1">
+          {t('subtitle')}
+        </p>
+      </div>
+
       {/* Sub-menu tabs */}
       <div className="tabs tabs-boxed bg-base-200 p-1 w-fit">
         <button
@@ -314,7 +328,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           onClick={() => setActiveTab('categories')}
           aria-label={`View Categories tab. Total categories: ${categories.length}`}
         >
-          <Tags className="h-5 w-5" /> Categories
+          <Tags className="h-5 w-5" /> {t('categories')}
           <span className="badge badge-sm badge-neutral">{categories.length}</span>
         </button>
         <button
@@ -324,7 +338,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           onClick={() => setActiveTab('rules')}
           aria-label={`View Match Rules tab. Total rules: ${totalRules}`}
         >
-          <Settings className="h-5 w-5" /> Match Rules
+          <Settings className="h-5 w-5" /> {t('matchRules')}
           <span className="badge badge-sm badge-neutral">{totalRules}</span>
         </button>
       </div>
@@ -337,16 +351,16 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
             <div className="card bg-base-100 shadow-xl border border-base-200">
               <div className="card-body">
                 <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-                  <Tags className="h-5 w-5" /> Stored Categories
+                  <Tags className="h-5 w-5" /> {t('storedCategories')}
                 </h2>
 
                 {categories.length === 0 ? (
                   <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-4">
                     <Tags className="h-12 w-12 text-base-content/30" />
                     <div>
-                      <h3 className="font-bold text-lg text-base-content/75">No categories found</h3>
+                      <h3 className="font-bold text-lg text-base-content/75">{t('noCategoriesFound')}</h3>
                       <p className="text-sm text-base-content/40 max-w-sm mt-1">
-                        Get started by adding a category using the form on the right.
+                        {t('getStarted')}
                       </p>
                     </div>
                   </div>
@@ -362,7 +376,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
                               aria-label="Sort by category name"
                             >
-                              <span className="truncate">Category Name</span> <SortIndicator field="name" />
+                              <span className="truncate">{t('categoryName')}</span> <SortIndicator field="name" />
                             </button>
                           </th>
                           <th className="w-[18%]">
@@ -371,7 +385,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
                               aria-label="Sort by category type"
                             >
-                              <span>Type</span> <SortIndicator field="type" />
+                              <span>{t('type')}</span> <SortIndicator field="type" />
                             </button>
                           </th>
                           <th className="w-[27%]">
@@ -380,7 +394,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
                               aria-label="Sort by cash flow section"
                             >
-                              <span className="truncate">Cash Flow</span> <SortIndicator field="cashFlowType" />
+                              <span className="truncate">{t('cashFlow')}</span> <SortIndicator field="cashFlowType" />
                             </button>
                           </th>
                           <th className="w-[12%] text-center">
@@ -389,10 +403,10 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
                               aria-label="Sort by transaction usage count"
                             >
-                              <span>Usage</span> <SortIndicator field="usage" />
+                              <span>{t('usage')}</span> <SortIndicator field="usage" />
                             </button>
                           </th>
-                          <th className="w-[13%] text-center">Actions</th>
+                          <th className="w-[13%] text-center">{t('actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -404,7 +418,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <td className="whitespace-normal break-words">
                                 <div className="font-bold">{cat.name}</div>
                                 <div className="text-xs text-base-content/50 truncate">
-                                  {cat.rulesCount || 0} match rule(s)
+                                  {t('rulesCount', { count: cat.rulesCount || 0 })}
                                 </div>
                               </td>
                               <td className="whitespace-normal">
@@ -426,7 +440,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                 </span>
                               </td>
                               <td className="text-center font-mono font-bold text-sm whitespace-normal">
-                                {cat.transactionsCount} tx
+                                {t('txCount', { count: cat.transactionsCount })}
                               </td>
                               <td className="text-center whitespace-normal">
                                 <div className="flex justify-center gap-1">
@@ -436,7 +450,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                     disabled={isPending || isCreating || isUpdating || deletingCategoryId !== null}
                                     aria-label={`Edit ${cat.name}`}
                                   >
-                                    Edit
+                                    {t('edit')}
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(cat)}
@@ -444,7 +458,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                     disabled={isPending || isCreating || isUpdating || deletingCategoryId !== null || isTransfer}
                                     aria-label={`Delete ${cat.name}`}
                                   >
-                                    {isDeleting ? 'Deleting...' : 'Delete'}
+                                    {isDeleting ? t('deleting') : t('delete')}
                                   </button>
                                 </div>
                               </td>
@@ -464,17 +478,17 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
             <div className="card bg-base-100 shadow-xl border border-base-200">
               <div className="card-body">
                 <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-                  <Plus className="h-5 w-5" /> Create Category
+                  <Plus className="h-5 w-5" /> {t('createCategory')}
                 </h2>
                 <form onSubmit={handleCreateCategory} className="space-y-4 mt-2">
                   <div className="form-control w-full">
                     <label className="label" htmlFor="new-category-name">
-                      <span className="label-text font-bold">Category Name</span>
+                      <span className="label-text font-bold">{t('newCategoryName')}</span>
                     </label>
                     <input
                       id="new-category-name"
                       type="text"
-                      placeholder="e.g. Dining Out, Freelance"
+                      placeholder={t('newCategoryNamePlaceholder')}
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
                       className="input input-bordered w-full"
@@ -485,7 +499,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
                   <div className="form-control w-full">
                     <label className="label" htmlFor="new-category-type">
-                      <span className="label-text font-bold">Category Type</span>
+                      <span className="label-text font-bold">{t('newCategoryType')}</span>
                     </label>
                     <select
                       id="new-category-type"
@@ -494,15 +508,15 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       className="select select-bordered w-full"
                       disabled={isCreating}
                     >
-                      <option value="EXPENSE">EXPENSE (Outflow / Spending)</option>
-                      <option value="INCOME">INCOME (Inflow / Earnings)</option>
-                      <option value="TRANSFER">TRANSFER (Account to Account)</option>
+                      <option value="EXPENSE">{t('expenseOption')}</option>
+                      <option value="INCOME">{t('incomeOption')}</option>
+                      <option value="TRANSFER">{t('transferOption')}</option>
                     </select>
                   </div>
 
                   <div className="form-control w-full">
                     <label className="label" htmlFor="new-category-cf-type">
-                      <span className="label-text font-bold">Cash Flow Section</span>
+                      <span className="label-text font-bold">{t('newCategoryCFType')}</span>
                     </label>
                     <select
                       id="new-category-cf-type"
@@ -511,18 +525,18 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       className="select select-bordered w-full"
                       disabled={isCreating}
                     >
-                      <option value="OPERATING">OPERATING (Daily business / living)</option>
-                      <option value="INVESTING">INVESTING (Buying / selling assets)</option>
-                      <option value="FINANCING">FINANCING (Loans / debt / capital)</option>
+                      <option value="OPERATING">{t('operatingOption')}</option>
+                      <option value="INVESTING">{t('investingOption')}</option>
+                      <option value="FINANCING">{t('financingOption')}</option>
                     </select>
                   </div>
 
                   <button
-                    type="submit"
-                    className="btn btn-primary w-full mt-2"
-                    disabled={isCreating || !newCatName.trim()}
+                     type="submit"
+                     className="btn btn-primary w-full mt-2"
+                     disabled={isCreating || !newCatName.trim()}
                   >
-                    {isCreating ? 'Creating...' : 'Create Category'}
+                    {isCreating ? t('creating') : t('addCategory')}
                   </button>
                 </form>
               </div>
@@ -540,10 +554,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
               <div className="card bg-base-100 shadow border border-base-200">
                 <div className="card-body items-center text-center py-16">
                   <Settings className="h-12 w-12 mb-4 text-base-content/30" />
-                  <h3 className="text-lg font-bold text-base-content/60">No match rules yet</h3>
+                  <h3 className="text-lg font-bold text-base-content/60">{t('noMatchRulesYet')}</h3>
                   <p className="text-sm text-base-content/40 max-w-xs">
-                    Create keyword rules to auto-categorize future statement uploads. Rules are matched against
-                    transaction payee names and descriptions.
+                    {t('matchRulesInstructions')}
                   </p>
                 </div>
               </div>
@@ -566,7 +579,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                         >
                           {cat.type}
                         </span>
-                        <span className="badge badge-ghost badge-sm ml-auto">{cat.rules.length} rule(s)</span>
+                        <span className="badge badge-ghost badge-sm ml-auto">{t('rulesCount', { count: cat.rules.length })}</span>
                       </div>
                       <div className="space-y-2">
                         {cat.rules.map((rule) => {
@@ -581,8 +594,8 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                 onClick={() => handleDeleteRuleClick(rule.id, cat.id, rule.pattern)}
                                 className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10 flex items-center justify-center"
                                 disabled={isPending || isCreating || deletingRuleId !== null}
-                                title="Delete rule"
-                                aria-label={`Delete rule matching ${rule.pattern}`}
+                                title={t('delete')}
+                                aria-label={t('ruleDeleteWarning', { pattern: rule.pattern })}
                               >
                                 {isDeletingRule ? '...' : <X className="h-3.5 w-3.5" />}
                               </button>
@@ -602,21 +615,21 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
             <div className="card bg-base-100 shadow-xl border border-base-200">
               <div className="card-body p-6">
                 <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <Settings className="h-4 w-4" /> Create Match Rule
+                  <Settings className="h-4 w-4" /> {t('createRule')}
                 </h2>
                 <p className="text-xs text-base-content/60">
-                  Define keyword rules to auto-categorize future statement uploads.
+                  {t('matchRulesInstructions')}
                 </p>
 
                 <form onSubmit={handleCreateRule} className="space-y-4 mt-4">
                   <div className="form-control">
                     <label className="label" htmlFor="new-rule-pattern">
-                      <span className="label-text font-semibold text-xs">Merchant Keyword</span>
+                      <span className="label-text font-semibold text-xs">{t('merchantKeyword')}</span>
                     </label>
                     <input
                       id="new-rule-pattern"
                       type="text"
-                      placeholder="e.g. Uber, Coles"
+                      placeholder={t('merchantKeywordPlaceholder')}
                       value={newRulePattern}
                       onChange={(e) => setNewRulePattern(e.target.value)}
                       className="input input-bordered input-sm"
@@ -627,7 +640,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
                   <div className="form-control">
                     <label className="label" htmlFor="new-rule-category">
-                      <span className="label-text font-semibold text-xs">Assign Category</span>
+                      <span className="label-text font-semibold text-xs">{t('assignCategory')}</span>
                     </label>
                     <select
                       id="new-rule-category"
@@ -650,7 +663,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                     className="btn btn-primary btn-sm w-full mt-2"
                     disabled={isCreating || !newRulePattern.trim() || categories.length === 0}
                   >
-                    {isCreating ? 'Creating...' : 'Create Rule'}
+                    {isCreating ? t('creating') : t('createRule')}
                   </button>
                 </form>
               </div>
@@ -660,21 +673,21 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
             <div className="card bg-base-100 shadow border border-base-200 mt-4">
               <div className="card-body p-4">
                 <h3 className="font-bold text-sm text-base-content/60 uppercase tracking-wider mb-3">
-                  Summary
+                  {t('summary')}
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-base-content/70">Total rules</span>
+                    <span className="text-base-content/70">{t('totalRules')}</span>
                     <span className="font-mono font-bold">{totalRules}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-base-content/70">Categories with rules</span>
+                    <span className="text-base-content/70">{t('categoriesWithRules')}</span>
                     <span className="font-mono font-bold">
                       {categories.filter((c) => c.rules && c.rules.length > 0).length}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-base-content/70">Categories without rules</span>
+                    <span className="text-base-content/70">{t('categoriesWithoutRules')}</span>
                     <span className="font-mono font-bold text-warning">
                       {categories.filter((c) => !c.rules || c.rules.length === 0).length}
                     </span>
@@ -691,13 +704,13 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="edit-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              <Pencil className="h-4 w-4" /> Edit Category
+              <Pencil className="h-4 w-4" /> {t('editCategory')}
             </h3>
 
             <form onSubmit={handleUpdateCategory} className="space-y-4 mt-4">
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-category-name">
-                  <span className="label-text font-bold">Category Name</span>
+                  <span className="label-text font-bold">{t('categoryName')}</span>
                 </label>
                 <input
                   id="edit-category-name"
@@ -712,7 +725,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-category-type">
-                  <span className="label-text font-bold">Category Type</span>
+                  <span className="label-text font-bold">{t('newCategoryType')}</span>
                 </label>
                 <select
                   id="edit-category-type"
@@ -721,15 +734,15 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   className="select select-bordered w-full"
                   disabled={isUpdating}
                 >
-                  <option value="EXPENSE">EXPENSE (Outflow / Spending)</option>
-                  <option value="INCOME">INCOME (Inflow / Earnings)</option>
-                  <option value="TRANSFER">TRANSFER (Account to Account)</option>
+                  <option value="EXPENSE">{t('expenseOption')}</option>
+                  <option value="INCOME">{t('incomeOption')}</option>
+                  <option value="TRANSFER">{t('transferOption')}</option>
                 </select>
               </div>
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-category-cf-type">
-                  <span className="label-text font-bold">Cash Flow Section</span>
+                  <span className="label-text font-bold">{t('newCategoryCFType')}</span>
                 </label>
                 <select
                   id="edit-category-cf-type"
@@ -738,9 +751,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   className="select select-bordered w-full"
                   disabled={isUpdating}
                 >
-                  <option value="OPERATING">OPERATING (Daily business / living)</option>
-                  <option value="INVESTING">INVESTING (Buying / selling assets)</option>
-                  <option value="FINANCING">FINANCING (Loans / debt / capital)</option>
+                  <option value="OPERATING">{t('operatingOption')}</option>
+                  <option value="INVESTING">{t('investingOption')}</option>
+                  <option value="FINANCING">{t('financingOption')}</option>
                 </select>
               </div>
 
@@ -751,14 +764,14 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   className="btn btn-ghost"
                   disabled={isUpdating}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={isUpdating || !editName.trim()}
                 >
-                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                  {isUpdating ? t('saving') : t('saveChanges')}
                 </button>
               </div>
             </form>
@@ -771,16 +784,16 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="delete-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" /> Confirm Delete
+              <AlertTriangle className="h-5 w-5" /> {t('confirmDelete')}
             </h3>
             <p className="py-4 text-base-content/80 text-sm">
               {categoryToDelete.transactionsCount > 0 ? (
                 <span>
-                  WARNING: Category <strong className="text-base-content font-extrabold">"{categoryToDelete.name}"</strong> is currently assigned to {categoryToDelete.transactionsCount} transaction(s). Deleting it will mark those transactions as "Uncategorized". Do you want to proceed?
+                  {t('deleteWarningUsage', { name: categoryToDelete.name, count: categoryToDelete.transactionsCount })}
                 </span>
               ) : (
                 <span>
-                  Are you sure you want to delete the category <strong className="text-base-content font-extrabold">"{categoryToDelete.name}"</strong>? This action cannot be undone.
+                  {t('deleteWarningSimple', { name: categoryToDelete.name })}
                 </span>
               )}
             </p>
@@ -791,7 +804,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                 className="btn btn-ghost btn-sm"
                 disabled={deletingCategoryId !== null}
               >
-                Cancel
+                {tCommon('cancel')}
               </button>
               <button
                 type="button"
@@ -799,7 +812,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                 className="btn btn-error btn-sm"
                 disabled={deletingCategoryId !== null}
               >
-                {deletingCategoryId !== null ? 'Deleting...' : 'Delete Category'}
+                {deletingCategoryId !== null ? t('deleting') : t('deleteCategoryBtn')}
               </button>
             </div>
           </div>
@@ -811,10 +824,10 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-rule-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="delete-rule-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" /> Confirm Delete Rule
+              <AlertTriangle className="h-5 w-5" /> {t('ruleDeleteConfirm')}
             </h3>
             <p className="py-4 text-base-content/80 text-sm">
-              Are you sure you want to delete the match rule for <strong className="text-base-content font-extrabold">"{ruleToDelete.pattern}"</strong>?
+              {t('ruleDeleteWarning', { pattern: ruleToDelete.pattern })}
             </p>
             <div className="modal-action">
               <button
@@ -823,7 +836,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                 className="btn btn-ghost btn-sm"
                 disabled={deletingRuleId !== null}
               >
-                Cancel
+                {tCommon('cancel')}
               </button>
               <button
                 type="button"
@@ -831,7 +844,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                 className="btn btn-error btn-sm"
                 disabled={deletingRuleId !== null}
               >
-                {deletingRuleId !== null ? 'Deleting...' : 'Delete Rule'}
+                {deletingRuleId !== null ? t('deleting') : t('delete')}
               </button>
             </div>
           </div>

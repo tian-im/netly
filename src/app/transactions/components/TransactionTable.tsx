@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { Transaction, Category, SortConfig } from '../types';
 
@@ -29,6 +30,9 @@ export default function TransactionTable({
   onCategoryChange,
   onRowClick,
 }: TransactionTableProps) {
+  const t = useTranslations('transactions');
+  const format = useFormatter();
+
   const isAllSelected =
     transactions.length > 0 &&
     transactions.every((tx) => selectedIds.includes(tx.id));
@@ -90,11 +94,11 @@ export default function TransactionTable({
                   aria-label="Select all transactions on this page"
                 />
               </th>
-              <SortHeader field="date" label="Date" className="w-28" />
-              <SortHeader field="account" label="Account" className="w-36" />
-              <SortHeader field="payee" label="Payee / Memo" />
-              <SortHeader field="category" label="Category" className="w-48" />
-              <SortHeader field="amount" label="Amount" className="text-right w-40" />
+              <SortHeader field="date" label={t('table.date')} className="w-28" />
+              <SortHeader field="account" label={t('table.account')} className="w-36" />
+              <SortHeader field="payee" label={t('table.payee')} />
+              <SortHeader field="category" label={t('table.category')} className="w-48" />
+              <SortHeader field="amount" label={t('table.amount')} className="text-right w-40" />
             </tr>
           </thead>
           <tbody>
@@ -133,13 +137,10 @@ export default function TransactionTable({
                       <Upload className="w-8 h-8 text-base-content/50" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg text-base-content/75">No transactions found</h3>
-                      <p className="text-sm text-base-content/40 max-w-sm mt-1 mx-auto">
-                        Either upload a new bank statement or change your current filter choices.
-                      </p>
+                      <h3 className="font-bold text-lg text-base-content/75">{t('noTransactions')}</h3>
                     </div>
                     <Link href="/import" className="btn btn-primary btn-sm mt-2">
-                      Upload Bank Statement
+                      {t('uploadStatement')}
                     </Link>
                   </div>
                 </td>
@@ -148,7 +149,7 @@ export default function TransactionTable({
               transactions.map((tx) => {
                 const isSelected = selectedIds.includes(tx.id);
                 const isUncategorized = !tx.categoryId;
-                const formattedDate = new Date(tx.date).toLocaleDateString(undefined, {
+                const formattedDate = format.dateTime(new Date(tx.date), {
                   year: 'numeric',
                   month: '2-digit',
                   day: '2-digit',
@@ -211,7 +212,7 @@ export default function TransactionTable({
                         disabled={isLoading}
                         aria-label={`Change category for transaction with payee ${tx.payee}`}
                       >
-                        <option value="">Uncategorized</option>
+                        <option value="">{t('table.uncategorized')}</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name} ({c.type})

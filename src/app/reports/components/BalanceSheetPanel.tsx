@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { BalanceSheet, BalanceSheetAccount, BalanceSheetTotal } from '../types';
 import { Scale, Search } from 'lucide-react';
 
@@ -17,6 +18,7 @@ export default function BalanceSheetPanel({
   currency,
   onDrillDown,
 }: BalanceSheetPanelProps) {
+  const t = useTranslations('reports');
   const totals = report.totals[currency] || { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
   const priorTotals = comparisonReport?.totals[currency] || null;
 
@@ -71,13 +73,13 @@ export default function BalanceSheetPanel({
       <input type="radio" name="reports-accordion" defaultChecked /> 
       <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
         <span className="flex items-center gap-2">
-          <Scale className="h-5 w-5" /> Balance Sheet ({currency})
+          <Scale className="h-5 w-5" /> {t('balanceSheet.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          Net Worth: ${totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('balanceSheet.netWorth')}: ${totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              Prior: ${priorTotals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('balanceSheet.prior')}${priorTotals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -89,15 +91,17 @@ export default function BalanceSheetPanel({
         {(totals.totalAssets > 0 || totals.totalLiabilities > 0) && (
           <div className="mt-4 mb-6">
             <div className="flex justify-between text-xs font-bold mb-1 opacity-70">
-              <span>Assets ({assetRatio.toFixed(0)}%)</span>
-              <span>Liabilities ({liabilityRatio.toFixed(0)}%)</span>
+              <span>{t('balanceSheet.assets')} ({assetRatio.toFixed(0)}%)</span>
+              <span>{t('balanceSheet.liabilities')} ({liabilityRatio.toFixed(0)}%)</span>
             </div>
             <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden flex">
               <div className="bg-success h-full transition-all" style={{ width: `${assetRatio}%` }}></div>
               <div className="bg-error h-full transition-all" style={{ width: `${liabilityRatio}%` }}></div>
             </div>
             <div className="text-[10px] text-base-content/40 mt-1 text-center">
-              Debt-to-Asset Ratio: {((totals.totalLiabilities / Math.max(1, totals.totalAssets)) * 100).toFixed(1)}%
+              {t('balanceSheet.debtToAssetRatio', {
+                ratio: ((totals.totalLiabilities / Math.max(1, totals.totalAssets)) * 100).toFixed(1)
+              })}
             </div>
           </div>
         )}
@@ -106,11 +110,11 @@ export default function BalanceSheetPanel({
           {/* Assets Column */}
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-primary border-b border-primary/20 pb-2 mb-3">
-              Assets (Checking, Savings, Cash)
+              {t('balanceSheet.assetsDesc')}
             </h3>
             <div className="space-y-3">
               {assetAccounts.length === 0 ? (
-                <div className="text-xs text-base-content/40 py-2">No assets in {currency}.</div>
+                <div className="text-xs text-base-content/40 py-2">{t('balanceSheet.noAssets', { currency })}</div>
               ) : (
                 assetAccounts.map((acc) => {
                   const priorVal = getPriorBalance(acc.id);
@@ -133,7 +137,7 @@ export default function BalanceSheetPanel({
                 })
               )}
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
-                <span>Total Assets</span>
+                <span>{t('balanceSheet.totalAssets')}</span>
                 <div className="flex flex-col items-end">
                   <span className="text-success">${totals.totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   {priorTotals && renderDelta(totals.totalAssets, priorTotals.totalAssets)}
@@ -145,11 +149,11 @@ export default function BalanceSheetPanel({
           {/* Liabilities Column */}
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-secondary border-b border-secondary/20 pb-2 mb-3">
-              Liabilities (Debt, Cards, Loans)
+              {t('balanceSheet.liabilitiesDesc')}
             </h3>
             <div className="space-y-3">
               {liabilityAccounts.length === 0 ? (
-                <div className="text-xs text-base-content/40 py-2">No liabilities in {currency}.</div>
+                <div className="text-xs text-base-content/40 py-2">{t('balanceSheet.noLiabilities', { currency })}</div>
               ) : (
                 liabilityAccounts.map((acc) => {
                   const priorVal = getPriorBalance(acc.id);
@@ -172,7 +176,7 @@ export default function BalanceSheetPanel({
                 })
               )}
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
-                <span>Total Liabilities</span>
+                <span>{t('balanceSheet.totalLiabilities')}</span>
                 <div className="flex flex-col items-end">
                   <span className="text-error">${totals.totalLiabilities.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   {priorTotals && renderDelta(totals.totalLiabilities, priorTotals.totalLiabilities, true)}
@@ -183,7 +187,7 @@ export default function BalanceSheetPanel({
         </div>
 
         <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
-          <span className="font-extrabold text-md">NET WORTH (Equity)</span>
+          <span className="font-extrabold text-md">{t('balanceSheet.netWorthTotal')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
               ${totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}

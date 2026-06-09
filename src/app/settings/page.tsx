@@ -11,23 +11,12 @@ export default async function SettingsPage() {
   const dbInfo = await getDatabaseInfo();
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
-          System Settings
-        </h1>
-        <p className="text-base-content/60 text-sm mt-1">
-          Manage local database configurations and monitor stored transaction metadata.
-        </p>
-      </div>
-
-      <SettingsClient
-        accountsCount={accountsCount}
-        transactionsCount={transactionsCount}
-        rulesCount={rulesCount}
-        dbInfo={dbInfo}
-      />
-    </div>
+    <SettingsClient
+      accountsCount={accountsCount}
+      transactionsCount={transactionsCount}
+      rulesCount={rulesCount}
+      dbInfo={dbInfo}
+    />
   );
 }
 

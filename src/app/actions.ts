@@ -16,7 +16,7 @@ export async function getAccounts() {
 }
 
 export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = 'AUD') {
-  if (!name.trim()) throw new Error('Account name is required');
+  if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
   
   const account = await db.account.create({
     data: {
@@ -53,7 +53,7 @@ export async function updateAccount(
   startingBalance: number,
   currency: string = 'AUD'
 ) {
-  if (!name.trim()) throw new Error('Account name is required');
+  if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
 
   const account = await db.account.update({
     where: { id },
@@ -83,7 +83,7 @@ export async function getCategories() {
 }
 
 export async function createCategoryRule(pattern: string, categoryId: string) {
-  if (!pattern.trim()) throw new Error('Pattern is required');
+  if (!pattern.trim()) throw new Error('ERR_PATTERN_REQUIRED');
 
   const rule = await db.categoryRule.create({
     data: {
@@ -222,7 +222,7 @@ export async function updateTransactionCategory(
     where: { id: transactionId }
   });
 
-  if (!transaction) throw new Error('Transaction not found');
+  if (!transaction) throw new Error('ERR_TRANSACTION_NOT_FOUND');
 
   const updated = await db.transaction.update({
     where: { id: transactionId },
@@ -318,13 +318,13 @@ export async function resetDatabase() {
 }
 
 export async function createCategory(name: string, type: string, cashFlowType: string) {
-  if (!name.trim()) throw new Error('Category name is required');
+  if (!name.trim()) throw new Error('ERR_CATEGORY_NAME_REQUIRED');
   
   // Verify unique name
   const existing = await db.category.findUnique({
     where: { name: name.trim() }
   });
-  if (existing) throw new Error('Category with this name already exists');
+  if (existing) throw new Error('ERR_CATEGORY_NAME_EXISTS');
 
   const category = await db.category.create({
     data: {
@@ -344,10 +344,10 @@ export async function deleteCategory(id: string) {
   const category = await db.category.findUnique({
     where: { id }
   });
-  if (!category) throw new Error('Category not found');
+  if (!category) throw new Error('ERR_CATEGORY_NOT_FOUND');
   
   if (category.name.toLowerCase() === 'transfer') {
-    throw new Error('The default "Transfer" category is protected and cannot be deleted.');
+    throw new Error('ERR_TRANSFER_CATEGORY_PROTECTED');
   }
 
   await db.category.delete({
@@ -360,7 +360,7 @@ export async function deleteCategory(id: string) {
 }
 
 export async function updateCategory(id: string, name: string, type: string, cashFlowType: string) {
-  if (!name.trim()) throw new Error('Category name is required');
+  if (!name.trim()) throw new Error('ERR_CATEGORY_NAME_REQUIRED');
 
   // Verify unique name
   const existing = await db.category.findFirst({
@@ -369,15 +369,15 @@ export async function updateCategory(id: string, name: string, type: string, cas
       NOT: { id }
     }
   });
-  if (existing) throw new Error('Category with this name already exists');
+  if (existing) throw new Error('ERR_CATEGORY_NAME_EXISTS');
 
   // Protect Transfer category from being renamed
   const category = await db.category.findUnique({
     where: { id }
   });
-  if (!category) throw new Error('Category not found');
+  if (!category) throw new Error('ERR_CATEGORY_NOT_FOUND');
   if (category.name.toLowerCase() === 'transfer' && name.trim().toLowerCase() !== 'transfer') {
-    throw new Error('The default "Transfer" category is protected and cannot be renamed.');
+    throw new Error('ERR_TRANSFER_CATEGORY_PROTECTED');
   }
 
   const updated = await db.category.update({

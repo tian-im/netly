@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { getTransactions } from '../../actions';
 import { Search, X } from 'lucide-react';
 
@@ -39,6 +40,8 @@ export default function TransactionDrillDownModal({
   cashFlowSection,
   cashFlowType,
 }: TransactionDrillDownModalProps) {
+  const t = useTranslations('reports');
+  const tCommon = useTranslations('common');
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [isPending, startTransition] = useTransition();
 
@@ -105,7 +108,7 @@ export default function TransactionDrillDownModal({
           payee: tx.payee,
           description: tx.description,
           accountName: tx.account.name,
-          categoryName: tx.category ? tx.category.name : 'Uncategorized',
+          categoryName: tx.category ? tx.category.name : t('drillDown.uncategorized'),
           amount: tx.amount,
         }));
 
@@ -117,7 +120,7 @@ export default function TransactionDrillDownModal({
         console.error('Failed to load drill-down transactions:', err);
       }
     });
-  }, [isOpen, accountId, categoryName, cashFlowSection, cashFlowType, startDateStr, endDateStr, currency]);
+  }, [isOpen, accountId, categoryName, cashFlowSection, cashFlowType, startDateStr, endDateStr, currency, t]);
 
   if (!isOpen) return null;
 
@@ -128,38 +131,38 @@ export default function TransactionDrillDownModal({
       <div className="modal-box max-w-4xl border border-base-200 shadow-2xl bg-base-100">
         <div className="flex justify-between items-center border-b border-base-200 pb-3">
           <h3 id="drilldown-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-            <Search className="h-5 w-5" /> Transactions: {title}
+            <Search className="h-5 w-5" /> {t('drillDown.title', { category: title })}
           </h3>
-          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost flex items-center justify-center" aria-label="Close modal">
+          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost flex items-center justify-center" aria-label={tCommon('close')}>
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="py-4">
           <div className="text-xs text-base-content/60 mb-4 flex flex-wrap gap-x-4 gap-y-1 bg-base-200 p-2.5 rounded-lg border border-base-300">
-            <span><strong>Period:</strong> {startDateStr} to {endDateStr}</span>
-            <span><strong>Currency:</strong> {currency}</span>
+            <span>{t('drillDown.periodRange', { start: startDateStr, end: endDateStr })}</span>
+            <span>{t('drillDown.currencyLabel', { currency })}</span>
           </div>
 
           {isPending ? (
             <div className="flex flex-col justify-center items-center py-12 gap-3">
               <span className="loading loading-spinner loading-md text-primary"></span>
-              <span className="text-sm font-semibold text-base-content/60">Retrieving ledger entries...</span>
+              <span className="text-sm font-semibold text-base-content/60">{t('drillDown.loading')}</span>
             </div>
           ) : transactions.length === 0 ? (
             <div className="text-center py-12 text-base-content/50 text-sm">
-              No transactions found matching this criteria in the selected period.
+              {t('drillDown.noTransactions')}
             </div>
           ) : (
             <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
               <table className="table table-sm table-pin-rows w-full">
                 <thead>
                   <tr className="border-b border-base-200 bg-base-100">
-                    <th>Date</th>
-                    <th>Payee</th>
-                    <th>Account</th>
-                    <th>Category</th>
-                    <th className="text-right">Amount</th>
+                    <th>{t('drillDown.date')}</th>
+                    <th>{t('drillDown.payee')}</th>
+                    <th>{t('drillDown.account')}</th>
+                    <th>{t('drillDown.category')}</th>
+                    <th className="text-right">{t('drillDown.amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -186,7 +189,7 @@ export default function TransactionDrillDownModal({
         </div>
 
         <div className="modal-action border-t border-base-200 pt-3">
-          <button onClick={onClose} className="btn btn-primary btn-sm">Close</button>
+          <button onClick={onClose} className="btn btn-primary btn-sm">{tCommon('close')}</button>
         </div>
       </div>
     </div>

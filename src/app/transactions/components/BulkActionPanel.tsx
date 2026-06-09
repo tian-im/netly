@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { X, Tag } from 'lucide-react';
 import { Category } from '../types';
 
@@ -18,6 +19,8 @@ export default function BulkActionPanel({
   onClearSelection,
   onBulkCategorize,
 }: BulkActionPanelProps) {
+  const t = useTranslations('transactions');
+
   if (selectedCount === 0) return null;
 
   return (
@@ -29,7 +32,7 @@ export default function BulkActionPanel({
             {selectedCount}
           </span>
           <span className="text-sm font-semibold text-base-content whitespace-nowrap">
-            transaction{selectedCount !== 1 ? 's' : ''} selected
+            {t('bulkSelectedCount', { count: selectedCount })}
           </span>
         </div>
 
@@ -50,9 +53,9 @@ export default function BulkActionPanel({
             defaultValue=""
           >
             <option value="" disabled>
-              Categorize selected...
+              {t('bulkSelectCategory')}
             </option>
-            <option value="UNCATEGORIZED">Uncategorized</option>
+            <option value="UNCATEGORIZED">{t('table.uncategorized')}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} ({c.type})
@@ -65,8 +68,8 @@ export default function BulkActionPanel({
             type="button"
             onClick={onClearSelection}
             className="btn btn-ghost btn-sm btn-circle text-base-content/60"
-            title="Deselect all"
-            aria-label="Deselect all transactions"
+            title={t('bulkDeselectAll')}
+            aria-label={t('bulkDeselectAllAria')}
             disabled={isPending}
           >
             <X className="w-4 h-4" />

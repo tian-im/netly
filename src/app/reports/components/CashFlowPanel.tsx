@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { CashFlowStatement, CashFlowSection } from '../types';
 import { ArrowDownRight, Search } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export default function CashFlowPanel({
   currency,
   onDrillDown,
 }: CashFlowPanelProps) {
+  const t = useTranslations('reports');
   const totals = report.totals[currency] || {
     operating: { inflow: 0, outflow: 0, net: 0 },
     investing: { inflow: 0, outflow: 0, net: 0 },
@@ -68,10 +70,10 @@ export default function CashFlowPanel({
           {/* Inflow row */}
           <div className="flex justify-between items-start">
             <button
-              onClick={() => onDrillDown(`${title} (Inflows)`, { cashFlowSection: sectionName, cashFlowType: 'inflow' })}
+              onClick={() => onDrillDown(`${title} (${t('cashFlow.inflow')})`, { cashFlowSection: sectionName, cashFlowType: 'inflow' })}
               className="hover:underline hover:text-primary text-left focus:outline-none flex items-center gap-1"
             >
-              Inflows (Cash Received) <Search className="h-3 w-3 opacity-60" />
+              {t('cashFlow.inflowsLabel')} <Search className="h-3 w-3 opacity-60" />
             </button>
             <div className="flex flex-col items-end">
               <span className="text-success font-semibold">
@@ -84,10 +86,10 @@ export default function CashFlowPanel({
           {/* Outflow row */}
           <div className="flex justify-between items-start">
             <button
-              onClick={() => onDrillDown(`${title} (Outflows)`, { cashFlowSection: sectionName, cashFlowType: 'outflow' })}
+              onClick={() => onDrillDown(`${title} (${t('cashFlow.outflow')})`, { cashFlowSection: sectionName, cashFlowType: 'outflow' })}
               className="hover:underline hover:text-primary text-left focus:outline-none flex items-center gap-1"
             >
-              Outflows (Cash Spent) <Search className="h-3 w-3 opacity-60" />
+              {t('cashFlow.outflowsLabel')} <Search className="h-3 w-3 opacity-60" />
             </button>
             <div className="flex flex-col items-end">
               <span className="text-error font-semibold">
@@ -106,13 +108,13 @@ export default function CashFlowPanel({
       <input type="radio" name="reports-accordion" /> 
       <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
         <span className="flex items-center gap-2">
-          <ArrowDownRight className="h-5 w-5" /> Cash Flow Statement ({currency})
+          <ArrowDownRight className="h-5 w-5" /> {t('cashFlow.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          Net Cash Flow: ${totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('cashFlow.netCashFlowLabel')}: ${totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              Prior: ${priorTotals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('cashFlow.priorLabel')}: ${priorTotals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -122,19 +124,19 @@ export default function CashFlowPanel({
 
         <div className="space-y-6 mt-4">
           {renderSection(
-            '1. Cash Flows from Operating Activities',
+            t('cashFlow.operatingActivitiesTitle'),
             'operating',
             totals.operating,
             priorTotals?.operating || null
           )}
           {renderSection(
-            '2. Cash Flows from Investing Activities',
+            t('cashFlow.investingActivitiesTitle'),
             'investing',
             totals.investing,
             priorTotals?.investing || null
           )}
           {renderSection(
-            '3. Cash Flows from Financing Activities',
+            t('cashFlow.financingActivitiesTitle'),
             'financing',
             totals.financing,
             priorTotals?.financing || null
@@ -142,7 +144,7 @@ export default function CashFlowPanel({
         </div>
 
         <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
-          <span className="font-extrabold text-md">NET CASH INCREASE / DECREASE</span>
+          <span className="font-extrabold text-md">{t('cashFlow.netIncreaseDecrease')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netCashFlow >= 0 ? 'text-success' : 'text-error'}`}>
               ${totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}

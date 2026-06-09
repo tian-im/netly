@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { IncomeStatement, CategoryTotal } from '../types';
 import { Receipt, Search } from 'lucide-react';
 
@@ -17,6 +18,7 @@ export default function IncomeStatementPanel({
   currency,
   onDrillDown,
 }: IncomeStatementPanelProps) {
+  const t = useTranslations('reports');
   const totals = report.totals[currency] || {
     income: [],
     expenses: [],
@@ -76,13 +78,13 @@ export default function IncomeStatementPanel({
       <input type="radio" name="reports-accordion" /> 
       <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
         <span className="flex items-center gap-2">
-          <Receipt className="h-5 w-5" /> Income & Expense Statement ({currency})
+          <Receipt className="h-5 w-5" /> {t('incomeStatement.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          Net Income: ${totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('incomeStatement.netIncomeShort')}: ${totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              Prior: ${priorTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('balanceSheet.prior')}${priorTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -94,15 +96,17 @@ export default function IncomeStatementPanel({
         {(totals.totalIncome > 0 || totals.totalExpenses > 0) && (
           <div className="mt-4 mb-6">
             <div className="flex justify-between text-xs font-bold mb-1 opacity-70">
-              <span>Income ({incomeRatio.toFixed(0)}%)</span>
-              <span>Expenses ({expenseRatio.toFixed(0)}%)</span>
+              <span>{t('incomeStatement.incomeShort')} ({incomeRatio.toFixed(0)}%)</span>
+              <span>{t('incomeStatement.expensesShort')} ({expenseRatio.toFixed(0)}%)</span>
             </div>
             <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden flex">
               <div className="bg-success h-full transition-all" style={{ width: `${incomeRatio}%` }}></div>
               <div className="bg-error h-full transition-all" style={{ width: `${expenseRatio}%` }}></div>
             </div>
             <div className="text-[10px] text-base-content/40 mt-1 text-center">
-              Savings Rate: {totals.totalIncome > 0 ? ((totals.netIncome / totals.totalIncome) * 100).toFixed(1) : '0.0'}%
+              {t('incomeStatement.savingsRate', {
+                rate: totals.totalIncome > 0 ? ((totals.netIncome / totals.totalIncome) * 100).toFixed(1) : '0.0'
+              })}
             </div>
           </div>
         )}
@@ -111,11 +115,11 @@ export default function IncomeStatementPanel({
           {/* Income Section */}
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-success border-b border-success/20 pb-2 mb-3">
-              Revenue & Inflows
+              {t('incomeStatement.revenueInflow')}
             </h3>
             <div className="space-y-3">
               {sortedIncome.length === 0 ? (
-                <div className="text-xs text-base-content/40 py-2">No income recorded in range.</div>
+                <div className="text-xs text-base-content/40 py-2">{t('incomeStatement.noIncome')}</div>
               ) : (
                 sortedIncome.map((inc) => {
                   const percentage = totals.totalIncome > 0 ? Math.round((inc.amount / totals.totalIncome) * 100) : 0;
@@ -139,7 +143,7 @@ export default function IncomeStatementPanel({
                 })
               )}
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
-                <span>Total Revenue</span>
+                <span>{t('incomeStatement.totalIncome')}</span>
                 <div className="flex flex-col items-end">
                   <span className="text-success">${totals.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   {priorTotals && renderDelta(totals.totalIncome, priorTotals.totalIncome)}
@@ -151,11 +155,11 @@ export default function IncomeStatementPanel({
           {/* Expenses Section */}
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-error border-b border-error/20 pb-2 mb-3">
-              Expenses & Outflows
+              {t('incomeStatement.expensesOutflow')}
             </h3>
             <div className="space-y-3">
               {sortedExpenses.length === 0 ? (
-                <div className="text-xs text-base-content/40 py-2">No expenses recorded in range.</div>
+                <div className="text-xs text-base-content/40 py-2">{t('incomeStatement.noExpenses')}</div>
               ) : (
                 sortedExpenses.map((exp) => {
                   const percentage = totals.totalExpenses > 0 ? Math.round((exp.amount / totals.totalExpenses) * 100) : 0;
@@ -179,7 +183,7 @@ export default function IncomeStatementPanel({
                 })
               )}
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
-                <span>Total Expenses</span>
+                <span>{t('incomeStatement.totalExpenses')}</span>
                 <div className="flex flex-col items-end">
                   <span className="text-error">${totals.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   {priorTotals && renderDelta(totals.totalExpenses, priorTotals.totalExpenses, true)}
@@ -190,7 +194,7 @@ export default function IncomeStatementPanel({
         </div>
 
         <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
-          <span className="font-extrabold text-md">NET INCOME</span>
+          <span className="font-extrabold text-md">{t('incomeStatement.netIncomeShort')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
               ${totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}

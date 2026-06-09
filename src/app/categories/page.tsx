@@ -28,17 +28,6 @@ export default async function CategoriesPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
-          Categories Manager
-        </h1>
-        <p className="text-base-content/60 text-sm mt-1">
-          Create and manage financial categories, and define match rules to auto-categorize future imports.
-        </p>
-      </div>
-
-      <CategoriesClient initialCategories={categories} />
-    </div>
+    <CategoriesClient initialCategories={categories} />
   );
 }

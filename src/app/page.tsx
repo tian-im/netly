@@ -23,21 +23,10 @@ export default async function DashboardPage() {
   const mappedTransactions = transactionsList.map(mapTransactionForClient);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
-          Dashboard Overview
-        </h1>
-        <p className="text-base-content/60 text-sm mt-1">
-          Review your current balances, monthly metrics, and managed accounts.
-        </p>
-      </div>
-
-      <DashboardClient
-        initialAccounts={mappedAccounts}
-        initialTransactions={mappedTransactions}
-        uncategorizedCount={uncategorizedCount}
-      />
-    </div>
+    <DashboardClient
+      initialAccounts={mappedAccounts}
+      initialTransactions={mappedTransactions}
+      uncategorizedCount={uncategorizedCount}
+    />
   );
 }

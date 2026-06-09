@@ -1,10 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 interface DateRangePresetsProps {
   onSelectRange: (start: string, end: string) => void;
 }
 
 export default function DateRangePresets({ onSelectRange }: DateRangePresetsProps) {
+  const t = useTranslations('reports');
+
   const handlePreset = (preset: 'this-month' | 'last-quarter' | 'this-year' | 'all-time') => {
     const now = new Date();
     let startStr = '';
@@ -44,30 +48,30 @@ export default function DateRangePresets({ onSelectRange }: DateRangePresetsProp
 
   return (
     <div className="flex flex-wrap gap-2 items-center justify-start mt-2">
-      <span className="text-xs font-bold text-base-content/60">Presets:</span>
+      <span className="text-xs font-bold text-base-content/60">{t('datePresets.presetsLabel')}</span>
       <button
         onClick={() => handlePreset('this-month')}
         className="btn btn-xs btn-outline hover:btn-primary"
       >
-        This Month
+        {t('datePresets.thisMonth')}
       </button>
       <button
         onClick={() => handlePreset('last-quarter')}
         className="btn btn-xs btn-outline hover:btn-primary"
       >
-        Last Quarter
+        {t('datePresets.lastQuarter')}
       </button>
       <button
         onClick={() => handlePreset('this-year')}
         className="btn btn-xs btn-outline hover:btn-primary"
       >
-        This Year
+        {t('datePresets.thisYear')}
       </button>
       <button
         onClick={() => handlePreset('all-time')}
         className="btn btn-xs btn-outline hover:btn-primary"
       >
-        All Time
+        {t('datePresets.allTime')}
       </button>
     </div>
   );

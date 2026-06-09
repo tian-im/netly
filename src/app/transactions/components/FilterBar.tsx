@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search, Settings, Check, AlertTriangle } from 'lucide-react';
 import { Account, Category } from '../types';
 
@@ -34,6 +35,7 @@ export default function FilterBar({
   onFilterChange,
   onRuleModeChange,
 }: FilterBarProps) {
+  const t = useTranslations('transactions');
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -74,7 +76,7 @@ export default function FilterBar({
             className="select select-bordered select-sm w-full"
             aria-label="Filter transactions by account"
           >
-            <option value="">All Accounts</option>
+            <option value="">{t('filter.allAccounts')}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -91,8 +93,8 @@ export default function FilterBar({
             className="select select-bordered select-sm w-full"
             aria-label="Filter transactions by category"
           >
-            <option value="">All Categories</option>
-            <option value="UNCATEGORIZED">⚠ Uncategorized only</option>
+            <option value="">{t('filter.allCategories')}</option>
+            <option value="UNCATEGORIZED">⚠ {t('filter.uncategorizedOnly')}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} ({c.type})
@@ -108,7 +110,7 @@ export default function FilterBar({
           </span>
           <input
             type="text"
-            placeholder="Search payee or memo..."
+            placeholder={t('filter.searchPlaceholder')}
             value={localSearch}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="input input-bordered input-sm w-full pl-9"
@@ -119,7 +121,7 @@ export default function FilterBar({
         {/* Page size selector */}
         <div className="flex items-center gap-2 shrink-0 w-full lg:w-auto justify-between lg:justify-start border-t lg:border-t-0 pt-3 lg:pt-0 mt-2 lg:mt-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-base-content/50 whitespace-nowrap">Show</span>
+            <span className="text-xs text-base-content/50 whitespace-nowrap">{t('filterBar.show')}</span>
             <select
               value={pageSize}
               onChange={(e) => onFilterChange({ pageSize: Number(e.target.value) })}
@@ -150,10 +152,10 @@ export default function FilterBar({
             >
               <div className="card-body">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-primary mb-1">
-                  Rule Prompt Preferences
+                  {t('rulePrompt.rulePromptPrefs')}
                 </h3>
                 <p className="text-[11px] text-base-content/60 mb-2">
-                  Choose default action when manually categorizing transactions:
+                  {t('rulePrompt.rulePromptPrefsDesc')}
                 </p>
                 <div className="space-y-1">
                   <button
@@ -163,7 +165,7 @@ export default function FilterBar({
                       ruleMode === 'ask' ? 'font-semibold text-primary' : ''
                     }`}
                   >
-                    <span>Ask to create rules</span>
+                    <span>{t('rulePrompt.rulePromptAsk')}</span>
                     {ruleMode === 'ask' && <Check className="w-3.5 h-3.5" />}
                   </button>
                   <button
@@ -173,7 +175,7 @@ export default function FilterBar({
                       ruleMode === 'always' ? 'font-semibold text-primary' : ''
                     }`}
                   >
-                    <span>Automatically create rules</span>
+                    <span>{t('rulePrompt.rulePromptAlways')}</span>
                     {ruleMode === 'always' && <Check className="w-3.5 h-3.5" />}
                   </button>
                   <button
@@ -183,7 +185,7 @@ export default function FilterBar({
                       ruleMode === 'never' ? 'font-semibold text-primary' : ''
                     }`}
                   >
-                    <span>Never create rules</span>
+                    <span>{t('rulePrompt.rulePromptNever')}</span>
                     {ruleMode === 'never' && <Check className="w-3.5 h-3.5" />}
                   </button>
                 </div>

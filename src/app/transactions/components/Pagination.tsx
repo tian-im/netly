@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,6 +21,7 @@ export default function Pagination({
   currentPage,
   onPageChange,
 }: PaginationProps) {
+  const t = useTranslations('transactions');
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = totalCount === 0 ? 0 : (safePage - 1) * pageSize;
@@ -44,15 +46,11 @@ export default function Pagination({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-base-200 bg-base-100">
       {/* Result range info */}
       <p className="text-xs text-base-content/50">
-        Showing{' '}
-        <span className="font-semibold text-base-content">
-          {(startIdx + 1).toLocaleString()}–{endIdx.toLocaleString()}
-        </span>{' '}
-        of{' '}
-        <span className="font-semibold text-base-content">
-          {totalCount.toLocaleString()}
-        </span>{' '}
-        transaction{totalCount !== 1 ? 's' : ''}
+        {t('pagination.showing', {
+          start: (startIdx + 1).toLocaleString(),
+          end: endIdx.toLocaleString(),
+          total: totalCount.toLocaleString(),
+        })}
       </p>
 
       {/* Page controls */}
@@ -62,8 +60,8 @@ export default function Pagination({
           className="join-item btn btn-xs btn-ghost"
           onClick={() => onPageChange(1)}
           disabled={safePage === 1}
-          title="First page"
-          aria-label="First page"
+          title={t('pagination.firstPage')}
+          aria-label={t('pagination.firstPage')}
         >
           <ChevronsLeft className="w-3.5 h-3.5" />
         </button>
@@ -73,8 +71,8 @@ export default function Pagination({
           className="join-item btn btn-xs btn-ghost"
           onClick={() => onPageChange(Math.max(1, safePage - 1))}
           disabled={safePage === 1}
-          title="Previous page"
-          aria-label="Previous page"
+          title={t('pagination.prevPage')}
+          aria-label={t('pagination.prevPage')}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
@@ -96,7 +94,7 @@ export default function Pagination({
                 safePage === p ? 'btn-primary' : 'btn-ghost'
               }`}
               onClick={() => onPageChange(p as number)}
-              aria-label={`Go to page ${p}`}
+              aria-label={t('pagination.goToPage', { page: p })}
               aria-current={safePage === p ? 'page' : undefined}
             >
               {p}
@@ -109,8 +107,8 @@ export default function Pagination({
           className="join-item btn btn-xs btn-ghost"
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
           disabled={safePage === totalPages}
-          title="Next page"
-          aria-label="Next page"
+          title={t('pagination.nextPage')}
+          aria-label={t('pagination.nextPage')}
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
@@ -120,8 +118,8 @@ export default function Pagination({
           className="join-item btn btn-xs btn-ghost"
           onClick={() => onPageChange(totalPages)}
           disabled={safePage === totalPages}
-          title="Last page"
-          aria-label="Last page"
+          title={t('pagination.lastPage')}
+          aria-label={t('pagination.lastPage')}
         >
           <ChevronsRight className="w-3.5 h-3.5" />
         </button>

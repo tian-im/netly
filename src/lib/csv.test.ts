@@ -146,6 +146,13 @@ Date,Merchant,Amount
       };
 
       expect(() => parseCSV(csvContent, headerMap)).toThrow('Required header "MissingDate" not found in CSV');
+
+      const headerMapMissingAmount = {
+        date: 'Date',
+        payee: 'Merchant',
+        amount: 'MissingAmount',
+      };
+      expect(() => parseCSV(csvContent, headerMapMissingAmount)).toThrow('Required header "MissingAmount" not found in CSV');
     });
 
     it('should skip rows with invalid amount or date and keep working ones', () => {
@@ -234,6 +241,8 @@ Date,Merchant,Debit,Credit,Details
 2026-06-02,Salary,,2500.00,
 2026-06-03,Transfer,10.00,10.00,
 2026-06-04,Refund,,15.253,
+2026-06-05,DebitOnly,12.50,0.00,
+2026-06-06,CreditOnly,0.00,45.00,
       `.trim();
 
       const headerMap = {
@@ -245,7 +254,7 @@ Date,Merchant,Debit,Credit,Details
       };
 
       const result = parseCSV(csvSplitContent, headerMap);
-      expect(result).toHaveLength(4);
+      expect(result).toHaveLength(6);
       
       // Debit only (negative amount)
       expect(result[0]).toEqual({
@@ -266,6 +275,58 @@ Date,Merchant,Debit,Credit,Details
       // Cent rounding on separate credit column
       expect(result[3].payee).toBe('Refund');
       expect(result[3].amount).toBe(15.25);
+
+      // Both present, but credit is 0, debit is non-zero
+      expect(result[4].payee).toBe('DebitOnly');
+      expect(result[4].amount).toBe(-12.5);
+
+      // Both present, but debit is 0, credit is non-zero
+      expect(result[5].payee).toBe('CreditOnly');
+      expect(result[5].amount).toBe(45);
+    });
+
+    it('should parse CSV with only Debit column mapped', () => {
+      const csvDebitOnly = `Date,Merchant,Debit\n2026-06-01,Uber,15.50`;
+      const headerMap = {
+        date: 'Date',
+        payee: 'Merchant',
+        debit: 'Debit',
+      };
+      const result = parseCSV(csvDebitOnly, headerMap);
+      expect(result).toHaveLength(1);
+      expect(result[0].amount).toBe(-15.5);
+    });
+
+    it('should parse CSV with only Credit column mapped', () => {
+      const csvCreditOnly = `Date,Merchant,Credit\n2026-06-01,Uber,15.50`;
+      const headerMap = {
+        date: 'Date',
+        payee: 'Merchant',
+        credit: 'Credit',
+      };
+      const result = parseCSV(csvCreditOnly, headerMap);
+      expect(result).toHaveLength(1);
+      expect(result[0].amount).toBe(15.5);
+    });
+
+    it('should throw an error if mapped debit or credit header is missing', () => {
+      const badDebitMap = {
+        date: 'Date',
+        payee: 'Merchant',
+        debit: 'MissingDebit',
+        credit: 'Credit',
+      };
+      expect(() => parseCSV(csvContent, badDebitMap)).toThrow('Debit header "MissingDebit" not found in CSV');
+
+      const badCreditMap = {
+        date: 'Date',
+        payee: 'Merchant',
+        debit: 'Debit',
+        credit: 'MissingCredit',
+      };
+      // We need a CSV with Debit column so it doesn't throw on Debit first
+      const csvWithDebit = `Date,Merchant,Debit\n2026-06-01,Uber,10.00`;
+      expect(() => parseCSV(csvWithDebit, badCreditMap)).toThrow('Credit header "MissingCredit" not found in CSV');
     });
 
     it('should throw an error if neither amount nor debit/credit are mapped', () => {

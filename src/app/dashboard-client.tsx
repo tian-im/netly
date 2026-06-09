@@ -21,6 +21,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations, useFormatter } from 'next-intl';
 
 interface Account {
   id: string;
@@ -60,6 +61,8 @@ export default function DashboardClient({
   uncategorizedCount,
 }: DashboardClientProps) {
   const router = useRouter();
+  const t = useTranslations('dashboard');
+  const format = useFormatter();
   const [accounts] = useState(initialAccounts);
   const [period, setPeriod] = useState<PeriodType>('current');
 
@@ -146,7 +149,7 @@ export default function DashboardClient({
     const d = new Date(now.getFullYear(), now.getMonth() - (trendLength - 1 - i), 1);
     const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
     return {
-      label: d.toLocaleDateString('default', { month: 'short' }),
+      label: format.dateTime(d, { month: 'short' }),
       end: monthEnd,
     };
   });
@@ -203,15 +206,24 @@ export default function DashboardClient({
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
+          {t('title')}
+        </h1>
+        <p className="text-base-content/60 text-sm mt-1">
+          {t('subtitle')}
+        </p>
+      </div>
+
       {/* Review Queue Alert banner */}
       {uncategorizedCount > 0 && (
         <div className="alert alert-warning shadow-md border-l-4 border-warning flex justify-between items-center bg-warning/10 text-warning-content">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
             <div>
-              <span className="font-bold">Uncategorized transactions pending!</span>
+              <span className="font-bold">{t('uncategorizedPending')}</span>
               <p className="text-xs opacity-90 mt-0.5">
-                You have {uncategorizedCount} transaction{uncategorizedCount === 1 ? '' : 's'} without a category. Financial reports and metrics will be incomplete.
+                {t('uncategorizedDesc', { count: uncategorizedCount })}
               </p>
             </div>
           </div>
@@ -219,7 +231,7 @@ export default function DashboardClient({
             href="/transactions?filter=uncategorized"
             className="btn btn-warning btn-sm gap-1 hover:scale-105 transition-transform"
           >
-            Categorize Now <ArrowRight className="h-4 w-4" />
+            {t('categorizeNow')} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       )}
@@ -229,15 +241,15 @@ export default function DashboardClient({
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            <span className="font-bold text-sm text-base-content/70">Analyze Period:</span>
+            <span className="font-bold text-sm text-base-content/70">{t('analyzePeriod')}</span>
             <div className="join bg-base-200 p-0.5 rounded-lg">
               {(
                 [
-                  { id: 'current', label: 'Month' },
-                  { id: '3m', label: '3M' },
-                  { id: '6m', label: '6M' },
-                  { id: 'ytd', label: 'YTD' },
-                  { id: '12m', label: '12M' },
+                  { id: 'current', label: t('periodLabelMonth') },
+                  { id: '3m', label: t('periodLabel3m') },
+                  { id: '6m', label: t('periodLabel6m') },
+                  { id: 'ytd', label: t('periodLabelYtd') },
+                  { id: '12m', label: t('periodLabel12m') },
                 ] as const
               ).map((p) => (
                 <button
@@ -259,13 +271,13 @@ export default function DashboardClient({
             href="/reports"
             className="btn btn-outline btn-xs gap-1 text-primary border-primary/20 hover:border-primary/50 hover:bg-primary/5"
           >
-            Detailed Statements <ArrowRight className="h-3 w-3" />
+            {t('detailedStatements')} <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
         {activeCurrencies.length > 1 && (
           <div className="flex items-center gap-2 justify-end">
-            <span className="text-xs font-bold opacity-60">Currency:</span>
+            <span className="text-xs font-bold opacity-60">{t('currencyLabel')}</span>
             <div className="join bg-base-200 p-0.5 rounded-lg">
               {activeCurrencies.map((cur) => (
                 <button
@@ -291,12 +303,12 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-md border border-base-200">
           <div className="card-body p-5">
             <div className="flex justify-between items-start">
-              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">Net Worth</span>
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">{t('netWorth')}</span>
               <DollarSign className="h-5 w-5 text-primary" />
             </div>
             <div className="mt-2">
               {accounts.length === 0 ? (
-                <span className="text-sm opacity-50">No accounts</span>
+                <span className="text-sm opacity-50">{t('noAccounts')}</span>
               ) : (
                 (() => {
                   const currentNW = bs.totals[currentVisualCurrency]?.netWorth ?? 0;
@@ -324,7 +336,7 @@ export default function DashboardClient({
                           })}{' '}
                           ({nwPct.toFixed(1)}%)
                         </span>
-                        <span className="opacity-50">vs prior period</span>
+                        <span className="opacity-50">{t('vsPrior')}</span>
                       </div>
                     </div>
                   );
@@ -339,13 +351,13 @@ export default function DashboardClient({
           <div className="card-body p-5">
             <div className="flex justify-between items-start">
               <span className="text-sm font-bold opacity-60 uppercase tracking-wider">
-                {period === 'current' ? 'Month' : period.toUpperCase()} Net Income
+                {t('netIncome', { period: period === 'current' ? t('periodLabelMonth') : period.toUpperCase() })}
               </span>
               <Activity className="h-5 w-5 text-primary" />
             </div>
             <div className="mt-2">
               {accounts.length === 0 ? (
-                <span className="text-sm opacity-50">No accounts</span>
+                <span className="text-sm opacity-50">{t('noAccounts')}</span>
               ) : (
                 (() => {
                   const periodIncome = visualIS.netIncome;
@@ -373,7 +385,7 @@ export default function DashboardClient({
                           })}{' '}
                           ({incomePct.toFixed(1)}%)
                         </span>
-                        <span className="opacity-50">vs prior period</span>
+                        <span className="opacity-50">{t('vsPrior')}</span>
                       </div>
                     </div>
                   );
@@ -387,7 +399,7 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-md border border-base-200">
           <div className="card-body p-5">
             <div className="flex justify-between items-start">
-              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">Savings Rate</span>
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">{t('savingsRate')}</span>
               <PiggyBank className="h-5 w-5 text-primary" />
             </div>
             <div className="mt-2">
@@ -400,7 +412,7 @@ export default function DashboardClient({
                   style={{ width: `${Math.max(0, Math.min(100, savingsRate))}%` }}
                 ></div>
               </div>
-              <span className="text-xs opacity-50 mt-1 block">Target: 20%+</span>
+              <span className="text-xs opacity-50 mt-1 block">{t('targetSavings')}</span>
             </div>
           </div>
         </div>
@@ -409,24 +421,24 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-md border border-base-200">
           <div className="card-body p-5">
             <div className="flex justify-between items-start">
-              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">Cash Runway</span>
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">{t('cashRunway')}</span>
               <AlertTriangle className={`h-5 w-5 ${isBurn ? 'text-error animate-pulse' : 'text-success'}`} />
             </div>
             <div className="mt-2">
               {isBurn && runwayMonths !== null ? (
                 <div>
                   <div className="text-2xl font-extrabold text-error">
-                    {runwayMonths < 1 ? 'Under 1 Month' : `${runwayMonths.toFixed(1)} Mos`}
+                    {runwayMonths < 1 ? t('runwayUnderMonth') : t('runwayMonths', { months: runwayMonths.toFixed(1) })}
                   </div>
                   <span className="text-xs text-error font-semibold block mt-1">
-                    Burn rate: ${Math.abs(averageMonthlyCashFlow).toFixed(0)}/mo
+                    {t('burnRate', { amount: Math.abs(averageMonthlyCashFlow).toFixed(0) })}
                   </span>
                 </div>
               ) : (
                 <div>
-                  <div className="text-2xl font-extrabold text-success">Infinite</div>
+                  <div className="text-2xl font-extrabold text-success">{t('infiniteRunway')}</div>
                   <span className="text-xs text-success font-semibold block mt-1">
-                    Net cash flow: +${averageMonthlyCashFlow.toFixed(0)}/mo
+                    {t('netCashFlow', { amount: averageMonthlyCashFlow.toFixed(0) })}
                   </span>
                 </div>
               )}
@@ -443,13 +455,13 @@ export default function DashboardClient({
             <h3 className="card-title text-base font-bold text-primary flex justify-between items-center">
               <span className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Net Worth Trend ({period.toUpperCase()} - {currentVisualCurrency})
+                {t('netWorthTrend', { period: period.toUpperCase(), currency: currentVisualCurrency })}
               </span>
             </h3>
             
             {accounts.length === 0 ? (
               <div className="flex items-center justify-center h-52 text-base-content/50">
-                No data to display. Please create an account.
+                {t('noDataAccounts')}
               </div>
             ) : (
               <div className="relative w-full h-56 mt-4">
@@ -497,12 +509,12 @@ export default function DashboardClient({
                         {/* Stroke Path */}
                         {pathD && (
                           <path
-                            d={pathD}
-                            fill="none"
-                            stroke="hsl(var(--p))"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                              d={pathD}
+                              fill="none"
+                              stroke="hsl(var(--p))"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
                           />
                         )}
 
@@ -539,9 +551,9 @@ export default function DashboardClient({
             <div>
               <h3 className="card-title text-base font-bold text-primary mb-1 flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
-                Income vs Expenses ({currentVisualCurrency})
+                {t('incomeVsExpenses', { currency: currentVisualCurrency })}
               </h3>
-              <p className="text-xs opacity-50 mb-4">Revenue vs spending comparison</p>
+              <p className="text-xs opacity-50 mb-4">{t('revenueVsSpending')}</p>
             </div>
 
             <div className="flex flex-col items-center justify-center gap-6">
@@ -556,7 +568,7 @@ export default function DashboardClient({
                   rx="4"
                   className="transition-all duration-500"
                 />
-                <text x="55" y="95" textAnchor="middle" fill="hsl(var(--pc))" className="text-[10px] font-extrabold">INC</text>
+                <text x="55" y="95" textAnchor="middle" fill="hsl(var(--pc))" className="text-[10px] font-extrabold">{t('chartIncomeLabel')}</text>
                 
                 {/* Expense Bar */}
                 <rect
@@ -568,18 +580,18 @@ export default function DashboardClient({
                   rx="4"
                   className="transition-all duration-500"
                 />
-                <text x="145" y="95" textAnchor="middle" fill="hsl(var(--sc))" className="text-[10px] font-extrabold">EXP</text>
+                <text x="145" y="95" textAnchor="middle" fill="hsl(var(--sc))" className="text-[10px] font-extrabold">{t('chartExpenseLabel')}</text>
               </svg>
 
               <div className="w-full grid grid-cols-2 gap-4 text-xs font-bold border-t border-base-200 pt-3">
                 <div className="flex flex-col">
-                  <span className="text-primary text-[10px] uppercase opacity-60">Total Income</span>
+                  <span className="text-primary text-[10px] uppercase opacity-60">{t('totalIncome')}</span>
                   <span className="text-sm font-extrabold text-success">
                     +${visualIS.totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
                 <div className="flex flex-col border-l border-base-200 pl-3">
-                  <span className="text-secondary text-[10px] uppercase opacity-60">Total Expenses</span>
+                  <span className="text-secondary text-[10px] uppercase opacity-60">{t('totalExpenses')}</span>
                   <span className="text-sm font-extrabold text-error">
                     -${visualIS.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
@@ -598,30 +610,30 @@ export default function DashboardClient({
             <div>
               <h3 className="card-title text-base font-bold text-primary mb-4 flex items-center gap-2">
                 <ArrowDownRight className="h-5 w-5" />
-                Cash Flow Metrics ({currentVisualCurrency})
+                {t('cashFlowMetrics', { currency: currentVisualCurrency })}
               </h3>
               
               <div className="space-y-4">
                 <div className="flex justify-between items-center border-b border-base-200 pb-2">
-                  <span className="text-xs font-semibold opacity-70">Operating Cash Flow (OCF)</span>
+                  <span className="text-xs font-semibold opacity-70">{t('ocf')}</span>
                   <span className={`font-bold font-mono text-sm ${ocf >= 0 ? 'text-success' : 'text-error'}`}>
                     {ocf >= 0 ? '+' : '-'}${Math.abs(ocf).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center border-b border-base-200 pb-2">
-                  <span className="text-xs font-semibold opacity-70">Free Cash Flow (FCF)</span>
+                  <span className="text-xs font-semibold opacity-70">{t('fcf')}</span>
                   <span className={`font-bold font-mono text-sm ${fcf >= 0 ? 'text-success' : 'text-error'}`}>
                     {fcf >= 0 ? '+' : '-'}${Math.abs(fcf).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center border-b border-base-200 pb-2">
-                  <span className="text-xs font-semibold opacity-70">Investing Cash Flow Net</span>
+                  <span className="text-xs font-semibold opacity-70">{t('investingCashFlow')}</span>
                   <span className={`font-bold font-mono text-sm ${visualCF.investing.net >= 0 ? 'text-success' : 'text-error'}`}>
                     {visualCF.investing.net >= 0 ? '+' : '-'}${Math.abs(visualCF.investing.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold opacity-70">Financing Cash Flow Net</span>
+                  <span className="text-xs font-semibold opacity-70">{t('financingCashFlow')}</span>
                   <span className={`font-bold font-mono text-sm ${visualCF.financing.net >= 0 ? 'text-success' : 'text-error'}`}>
                     {visualCF.financing.net >= 0 ? '+' : '-'}${Math.abs(visualCF.financing.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
@@ -634,7 +646,7 @@ export default function DashboardClient({
                 href="/reports"
                 className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
               >
-                Detailed Statements <ArrowRight className="h-3 w-3" />
+                {t('detailedStatements')} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </div>
@@ -644,11 +656,11 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-lg border border-base-200">
           <div className="card-body p-6">
             <h3 className="card-title text-base font-bold text-success mb-2">
-              🏷️ Income Breakdown ({currentVisualCurrency})
+              🏷️ {t('incomeBreakdown', { currency: currentVisualCurrency })}
             </h3>
             <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
               {sortedIncome.length === 0 ? (
-                <p className="text-xs text-base-content/50 py-4 text-center">No income recorded for this period.</p>
+                <p className="text-xs text-base-content/50 py-4 text-center">{t('noIncome')}</p>
               ) : (
                 sortedIncome.map((inc) => {
                   const percentage = Math.round((inc.amount / Math.max(1, visualIS.totalIncome)) * 100);
@@ -673,11 +685,11 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-lg border border-base-200">
           <div className="card-body p-6">
             <h3 className="card-title text-base font-bold text-error mb-2">
-              🏷️ Expense Breakdown ({currentVisualCurrency})
+              🏷️ {t('expenseBreakdown', { currency: currentVisualCurrency })}
             </h3>
             <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
               {sortedExpenses.length === 0 ? (
-                <p className="text-xs text-base-content/50 py-4 text-center">No expenses recorded for this period.</p>
+                <p className="text-xs text-base-content/50 py-4 text-center">{t('noExpense')}</p>
               ) : (
                 sortedExpenses.map((exp) => {
                   const percentage = Math.round((exp.amount / Math.max(1, visualIS.totalExpenses)) * 100);
@@ -705,22 +717,22 @@ export default function DashboardClient({
           <h2 className="card-title text-lg font-bold flex justify-between items-center text-primary">
             <span className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              Account Balances
+              {t('accountBalances')}
             </span>
           </h2>
           
           {accounts.length === 0 ? (
             <div className="text-center py-8 text-base-content/50">
-              No accounts created yet. Please create an account in Accounts manager to start importing statement CSV files.
+              {t('noAccountsCreated')}
             </div>
           ) : (
             <div className="overflow-x-auto mt-2">
               <table className="table w-full">
                 <thead>
                   <tr className="border-b border-base-200">
-                    <th>Account Name</th>
-                    <th>Type</th>
-                    <th className="text-right">Balance</th>
+                    <th>{t('accountName')}</th>
+                    <th>{t('accountType')}</th>
+                    <th className="text-right">{t('accountBalance')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -737,7 +749,7 @@ export default function DashboardClient({
                             <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
                           </div>
                           <div className="text-xs text-base-content/50">
-                            {acc._count?.transactions || 0} transaction(s)
+                            {t('transactionsCount', { count: acc._count?.transactions || 0 })}
                           </div>
                         </td>
                         <td>

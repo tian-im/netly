@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { NextIntlClientProvider } from 'next-intl';
 import DashboardClient from './dashboard-client';
+import messages from '../../messages/en.json';
 
 // Configure React act environment for tests
 // @ts-ignore
@@ -74,11 +76,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <DashboardClient
-          initialAccounts={mockAccounts}
-          initialTransactions={mockTransactions}
-          uncategorizedCount={0}
-        />
+        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+          <DashboardClient
+            initialAccounts={mockAccounts}
+            initialTransactions={mockTransactions}
+            uncategorizedCount={0}
+          />
+        </NextIntlClientProvider>
       );
     });
 
@@ -97,11 +101,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <DashboardClient
-          initialAccounts={mockAccounts}
-          initialTransactions={mockTransactions}
-          uncategorizedCount={3}
-        />
+        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+          <DashboardClient
+            initialAccounts={mockAccounts}
+            initialTransactions={mockTransactions}
+            uncategorizedCount={3}
+          />
+        </NextIntlClientProvider>
       );
     });
 

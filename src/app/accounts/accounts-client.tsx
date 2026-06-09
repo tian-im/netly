@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
 import { generateBalanceSheet } from '@/lib/reports';
+import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
 
 interface Account {
@@ -45,6 +47,9 @@ export default function AccountsClient({
   initialTransactions,
 }: AccountsClientProps) {
   const [accounts, setAccounts] = useState(initialAccounts);
+  const t = useTranslations('accounts');
+  const tCommon = useTranslations('common');
+  const tErr = useTranslations('errors');
   
   // Create Form State
   const [newAccName, setNewAccName] = useState('');
@@ -168,9 +173,9 @@ export default function AccountsClient({
         setNewAccBalance('');
         setNewAccCurrency('AUD');
         setNewAccType('ASSET');
-        showToast(`Account "${created.name}" created successfully`);
+        showToast(t('createdSuccess', { name: created.name }));
       } catch (err: any) {
-        showToast(err.message || 'Failed to create account', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setIsCreating(false);
       }
@@ -203,10 +208,10 @@ export default function AccountsClient({
         setAccounts((prev) =>
           prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a))
         );
-        showToast(`Account "${updated.name}" updated successfully`);
+        showToast(t('updatedSuccess', { name: updated.name }));
         setEditingAccount(null);
       } catch (err: any) {
-        showToast(err.message || 'Failed to update account', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setIsUpdating(false);
       }
@@ -227,10 +232,10 @@ export default function AccountsClient({
       try {
         await deleteAccount(targetId);
         setAccounts((prev) => prev.filter((a) => a.id !== targetId));
-        showToast(`Account "${targetName}" deleted successfully`);
+        showToast(t('deletedSuccess', { name: targetName }));
         setAccountToDelete(null);
       } catch (err: any) {
-        showToast(err.message || 'Failed to delete account', 'error');
+        showToast(tErr(translateError(err)), 'error');
       } finally {
         setDeletingAccountId(null);
       }
@@ -243,7 +248,17 @@ export default function AccountsClient({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
+          {t('title')}
+        </h1>
+        <p className="text-base-content/60 text-sm mt-1">
+          {t('subtitle')}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
       {/* Left column: Accounts Manager */}
       <div className="lg:col-span-2">
         <div className="card bg-base-100 shadow-xl border border-base-200">
@@ -251,13 +266,13 @@ export default function AccountsClient({
             <h2 className="card-title text-xl font-bold flex justify-between items-center text-primary">
               <span className="flex items-center gap-2">
                 <Wallet className="h-5 w-5" />
-                Managed Accounts
+                {t('managedAccounts')}
               </span>
             </h2>
             
             {accounts.length === 0 ? (
               <div className="text-center py-8 text-base-content/50">
-                No accounts created yet. Please create an account using the form to start importing statement CSV files.
+                {t('noAccountsCreatedYet')}
               </div>
             ) : (
               <div className="overflow-x-auto mt-4">
@@ -271,7 +286,7 @@ export default function AccountsClient({
                           className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none"
                           aria-label="Sort by account name"
                         >
-                          Account Name <SortIndicator field="name" />
+                          {t('accountName')} <SortIndicator field="name" />
                         </button>
                       </th>
                       <th>
@@ -280,7 +295,7 @@ export default function AccountsClient({
                           className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none"
                           aria-label="Sort by account type"
                         >
-                          Type <SortIndicator field="type" />
+                          {t('type')} <SortIndicator field="type" />
                         </button>
                       </th>
                       <th className="text-right">
@@ -289,10 +304,10 @@ export default function AccountsClient({
                           className="font-bold flex items-center justify-end w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
                           aria-label="Sort by account balance"
                         >
-                          Balance <SortIndicator field="balance" />
+                          {t('balance')} <SortIndicator field="balance" />
                         </button>
                       </th>
-                      <th className="text-center">Actions</th>
+                      <th className="text-center">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -317,7 +332,7 @@ export default function AccountsClient({
                                 className="hover:text-primary focus:outline-none cursor-pointer"
                                 aria-label={`${acc._count?.transactions || 0} transactions. Click to sort.`}
                               >
-                                {acc._count?.transactions || 0} transaction(s)
+                                {t('transactionsCount', { count: acc._count?.transactions || 0 })}
                               </button>
                             </div>
                           </td>
@@ -337,7 +352,7 @@ export default function AccountsClient({
                                 disabled={isPending}
                                 aria-label={`Edit ${acc.name}`}
                               >
-                                Edit
+                                {tCommon('edit')}
                               </button>
                               <button
                                 onClick={() => handleDeleteClick(acc)}
@@ -345,7 +360,7 @@ export default function AccountsClient({
                                 disabled={isPending}
                                 aria-label={`Delete ${acc.name}`}
                               >
-                                {isDeleting ? 'Deleting...' : 'Delete'}
+                                {isDeleting ? t('deleting') : tCommon('delete')}
                               </button>
                             </div>
                           </td>
@@ -361,7 +376,7 @@ export default function AccountsClient({
             {accounts.length > 0 && Object.keys(bs.totals).length > 0 && (
               <div className="mt-6 border-t border-base-200 pt-6">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-base-content/50 mb-3">
-                  Currency Summaries
+                  {t('currencySummaries')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(bs.totals).map(([curr, total]) => {
@@ -370,24 +385,24 @@ export default function AccountsClient({
                       <div key={curr} className="stats shadow bg-base-200 border border-base-300">
                         <div className="stat">
                           <div className="stat-title font-semibold text-xs flex justify-between items-center">
-                            <span>Summary ({curr})</span>
+                            <span>{t('summary', { currency: curr })}</span>
                             <span className="badge badge-sm badge-outline font-bold text-[10px]">{curr}</span>
                           </div>
                           <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
                             <div>
-                              <span className="text-base-content/50 block text-[10px] uppercase font-bold">Assets</span>
+                              <span className="text-base-content/50 block text-[10px] uppercase font-bold">{t('assets')}</span>
                               <span className="font-bold text-success">
                                 {symbol}{total.totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                             <div>
-                              <span className="text-base-content/50 block text-[10px] uppercase font-bold">Liabilities</span>
+                              <span className="text-base-content/50 block text-[10px] uppercase font-bold">{t('liabilities')}</span>
                               <span className="font-bold text-error">
                                 {symbol}{total.totalLiabilities.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                             <div>
-                              <span className="text-base-content/50 block text-[10px] uppercase font-bold">Net Worth</span>
+                              <span className="text-base-content/50 block text-[10px] uppercase font-bold">{t('netWorth')}</span>
                               <span className={`font-bold ${total.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
                                 {symbol}{total.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
@@ -410,17 +425,17 @@ export default function AccountsClient({
           <div className="card-body">
             <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              Create Account
+              {t('createAccount')}
             </h2>
             <form onSubmit={handleAddAccount} className="space-y-4 mt-2">
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-name">
-                  <span className="label-text font-bold">Account Name</span>
+                  <span className="label-text font-bold">{t('newAccountName')}</span>
                 </label>
                 <input
                   id="new-account-name"
                   type="text"
-                  placeholder="e.g. Commonwealth Checking"
+                  placeholder={t('newAccountNamePlaceholder')}
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
                   className="input input-bordered w-full"
@@ -431,7 +446,7 @@ export default function AccountsClient({
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-type">
-                  <span className="label-text font-bold">Account Type</span>
+                  <span className="label-text font-bold">{t('newAccountType')}</span>
                 </label>
                 <select
                   id="new-account-type"
@@ -440,14 +455,13 @@ export default function AccountsClient({
                   className="select select-bordered w-full"
                   disabled={isCreating}
                 >
-                  <option value="ASSET">ASSET (Cash, Savings, Checking)</option>
-                  <option value="LIABILITY">LIABILITY (Credit Card, Loan, Debt)</option>
+                  <option value="ASSET">{t('assetOption')}</option>
+                  <option value="LIABILITY">{t('liabilityOption')}</option>
                 </select>
               </div>
-
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-currency">
-                  <span className="label-text font-bold">Currency</span>
+                  <span className="label-text font-bold">{t('newAccountCurrency')}</span>
                 </label>
                 <select
                   id="new-account-currency"
@@ -456,19 +470,19 @@ export default function AccountsClient({
                   className="select select-bordered w-full"
                   disabled={isCreating}
                 >
-                  <option value="AUD">AUD (Australian Dollar)</option>
-                  <option value="USD">USD (US Dollar)</option>
-                  <option value="EUR">EUR (Euro)</option>
-                  <option value="GBP">GBP (British Pound)</option>
-                  <option value="SGD">SGD (Singapore Dollar)</option>
-                  <option value="NZD">NZD (New Zealand Dollar)</option>
-                  <option value="CAD">CAD (Canadian Dollar)</option>
+                  <option value="AUD">{tCommon('currencyAud')}</option>
+                  <option value="USD">{tCommon('currencyUsd')}</option>
+                  <option value="EUR">{tCommon('currencyEur')}</option>
+                  <option value="GBP">{tCommon('currencyGbp')}</option>
+                  <option value="SGD">{tCommon('currencySgd')}</option>
+                  <option value="NZD">{tCommon('currencyNzd')}</option>
+                  <option value="CAD">{tCommon('currencyCad')}</option>
                 </select>
               </div>
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-balance">
-                  <span className="label-text font-bold">Starting Balance</span>
+                  <span className="label-text font-bold">{t('newAccountBalance')}</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-3.5 text-base-content/50" aria-hidden="true">
@@ -487,7 +501,7 @@ export default function AccountsClient({
                 </div>
                 <label className="label">
                   <span className="label-text-alt text-base-content/40 whitespace-normal">
-                    Use positive numbers. Liabilities will be stored as negative balances automatically.
+                    {t('balanceHelp')}
                   </span>
                 </label>
               </div>
@@ -497,7 +511,7 @@ export default function AccountsClient({
                 className="btn btn-primary w-full mt-2"
                 disabled={isCreating || !newAccName}
               >
-                {isCreating ? 'Creating...' : 'Add Account'}
+                {isCreating ? t('addingAccount') : t('addAccount')}
               </button>
             </form>
           </div>
@@ -510,13 +524,13 @@ export default function AccountsClient({
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="edit-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
               <Pencil className="h-4 w-4" />
-              Edit Account
+              {t('editAccount')}
             </h3>
             
             <form onSubmit={handleUpdateAccount} className="space-y-4 mt-4">
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-account-name">
-                  <span className="label-text font-bold">Account Name</span>
+                  <span className="label-text font-bold">{t('newAccountName')}</span>
                 </label>
                 <input
                   id="edit-account-name"
@@ -531,7 +545,7 @@ export default function AccountsClient({
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-account-type">
-                  <span className="label-text font-bold">Account Type</span>
+                  <span className="label-text font-bold">{t('newAccountType')}</span>
                 </label>
                 <select
                   id="edit-account-type"
@@ -540,14 +554,14 @@ export default function AccountsClient({
                   className="select select-bordered w-full"
                   disabled={isUpdating}
                 >
-                  <option value="ASSET">ASSET (Cash, Savings, Checking)</option>
-                  <option value="LIABILITY">LIABILITY (Credit Card, Loan, Debt)</option>
+                  <option value="ASSET">{t('assetOption')}</option>
+                  <option value="LIABILITY">{t('liabilityOption')}</option>
                 </select>
               </div>
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-account-currency">
-                  <span className="label-text font-bold">Currency</span>
+                  <span className="label-text font-bold">{t('newAccountCurrency')}</span>
                 </label>
                 <select
                   id="edit-account-currency"
@@ -556,19 +570,19 @@ export default function AccountsClient({
                   className="select select-bordered w-full"
                   disabled={isUpdating}
                 >
-                  <option value="AUD">AUD (Australian Dollar)</option>
-                  <option value="USD">USD (US Dollar)</option>
-                  <option value="EUR">EUR (Euro)</option>
-                  <option value="GBP">GBP (British Pound)</option>
-                  <option value="SGD">SGD (Singapore Dollar)</option>
-                  <option value="NZD">NZD (New Zealand Dollar)</option>
-                  <option value="CAD">CAD (Canadian Dollar)</option>
+                  <option value="AUD">{tCommon('currencyAud')}</option>
+                  <option value="USD">{tCommon('currencyUsd')}</option>
+                  <option value="EUR">{tCommon('currencyEur')}</option>
+                  <option value="GBP">{tCommon('currencyGbp')}</option>
+                  <option value="SGD">{tCommon('currencySgd')}</option>
+                  <option value="NZD">{tCommon('currencyNzd')}</option>
+                  <option value="CAD">{tCommon('currencyCad')}</option>
                 </select>
               </div>
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-account-balance">
-                  <span className="label-text font-bold">Starting Balance</span>
+                  <span className="label-text font-bold">{t('newAccountBalance')}</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-3.5 text-base-content/50" aria-hidden="true">
@@ -587,7 +601,7 @@ export default function AccountsClient({
                 </div>
                 <label className="label">
                   <span className="label-text-alt text-base-content/40 whitespace-normal">
-                    Use positive numbers. Liabilities will be stored as negative balances automatically.
+                    {t('balanceHelp')}
                   </span>
                 </label>
               </div>
@@ -599,20 +613,21 @@ export default function AccountsClient({
                   className="btn btn-ghost"
                   disabled={isUpdating}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={isUpdating || !editName.trim()}
                 >
-                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                  {isUpdating ? t('saving') : t('saveChanges')}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       {accountToDelete && (
@@ -620,11 +635,10 @@ export default function AccountsClient({
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="delete-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              Confirm Delete
+              {t('confirmDelete')}
             </h3>
             <p className="py-4 text-base-content/80 text-sm">
-              Are you sure you want to delete the account <strong className="text-base-content font-extrabold">"{accountToDelete.name}"</strong>?
-              All of its associated transactions will be permanently deleted from the local database. This action cannot be undone.
+              {t('deleteWarning', { name: accountToDelete.name })}
             </p>
             <div className="modal-action">
               <button
@@ -633,7 +647,7 @@ export default function AccountsClient({
                 className="btn btn-ghost btn-sm"
                 disabled={deletingAccountId !== null}
               >
-                Cancel
+                {tCommon('cancel')}
               </button>
               <button
                 type="button"
@@ -641,7 +655,7 @@ export default function AccountsClient({
                 className="btn btn-error btn-sm"
                 disabled={deletingAccountId !== null}
               >
-                {deletingAccountId !== null ? 'Deleting...' : 'Delete Account'}
+                {deletingAccountId !== null ? t('deleting') : t('deleteAccountBtn')}
               </button>
             </div>
           </div>

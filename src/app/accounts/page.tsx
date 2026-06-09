@@ -21,20 +21,9 @@ export default async function AccountsPage() {
   const mappedTransactions = transactionsList.map(mapTransactionForClient);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
-          Accounts Manager
-        </h1>
-        <p className="text-base-content/60 text-sm mt-1">
-          Create, view, and delete your local asset and liability ledger accounts.
-        </p>
-      </div>
-
-      <AccountsClient
-        initialAccounts={mappedAccounts}
-        initialTransactions={mappedTransactions}
-      />
-    </div>
+    <AccountsClient
+      initialAccounts={mappedAccounts}
+      initialTransactions={mappedTransactions}
+    />
   );
 }
