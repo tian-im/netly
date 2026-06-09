@@ -8,6 +8,7 @@ import {
   deleteCategoryRule,
   updateCategory,
 } from '../actions';
+import { Tags, Settings, Plus, Pencil, AlertTriangle, ArrowUpDown, X } from 'lucide-react';
 
 interface Rule {
   id: string;
@@ -292,7 +293,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const totalRules = categories.reduce((acc, c) => acc + (c.rules?.length ?? 0), 0);
 
   const SortIndicator = ({ field }: { field: typeof sortField }) => {
-    if (sortField !== field) return <span className="text-base-content/20 ml-1">↕</span>;
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
     return sortDirection === 'asc' ? (
       <span className="text-primary ml-1">↑</span>
     ) : (
@@ -313,7 +314,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           onClick={() => setActiveTab('categories')}
           aria-label={`View Categories tab. Total categories: ${categories.length}`}
         >
-          🏷️ Categories
+          <Tags className="h-5 w-5" /> Categories
           <span className="badge badge-sm badge-neutral">{categories.length}</span>
         </button>
         <button
@@ -323,7 +324,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           onClick={() => setActiveTab('rules')}
           aria-label={`View Match Rules tab. Total rules: ${totalRules}`}
         >
-          ⚙️ Match Rules
+          <Settings className="h-5 w-5" /> Match Rules
           <span className="badge badge-sm badge-neutral">{totalRules}</span>
         </button>
       </div>
@@ -335,13 +336,13 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           <div className="lg:col-span-2">
             <div className="card bg-base-100 shadow-xl border border-base-200">
               <div className="card-body">
-                <h2 className="card-title text-xl font-bold text-primary">
-                  🏷️ Stored Categories
+                <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
+                  <Tags className="h-5 w-5" /> Stored Categories
                 </h2>
 
                 {categories.length === 0 ? (
                   <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-4">
-                    <span className="text-5xl">🏷️</span>
+                    <Tags className="h-12 w-12 text-base-content/30" />
                     <div>
                       <h3 className="font-bold text-lg text-base-content/75">No categories found</h3>
                       <p className="text-sm text-base-content/40 max-w-sm mt-1">
@@ -462,7 +463,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           <div>
             <div className="card bg-base-100 shadow-xl border border-base-200">
               <div className="card-body">
-                <h2 className="card-title text-xl font-bold text-primary">➕ Create Category</h2>
+                <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
+                  <Plus className="h-5 w-5" /> Create Category
+                </h2>
                 <form onSubmit={handleCreateCategory} className="space-y-4 mt-2">
                   <div className="form-control w-full">
                     <label className="label" htmlFor="new-category-name">
@@ -536,7 +539,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
             {categories.every((cat) => !cat.rules || cat.rules.length === 0) ? (
               <div className="card bg-base-100 shadow border border-base-200">
                 <div className="card-body items-center text-center py-16">
-                  <span className="text-5xl mb-4">⚙️</span>
+                  <Settings className="h-12 w-12 mb-4 text-base-content/30" />
                   <h3 className="text-lg font-bold text-base-content/60">No match rules yet</h3>
                   <p className="text-sm text-base-content/40 max-w-xs">
                     Create keyword rules to auto-categorize future statement uploads. Rules are matched against
@@ -576,12 +579,12 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <span className="font-mono font-semibold text-primary">"{rule.pattern}"</span>
                               <button
                                 onClick={() => handleDeleteRuleClick(rule.id, cat.id, rule.pattern)}
-                                className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10"
+                                className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10 flex items-center justify-center"
                                 disabled={isPending || isCreating || deletingRuleId !== null}
                                 title="Delete rule"
                                 aria-label={`Delete rule matching ${rule.pattern}`}
                               >
-                                {isDeletingRule ? '...' : '✕'}
+                                {isDeletingRule ? '...' : <X className="h-3.5 w-3.5" />}
                               </button>
                             </div>
                           );
@@ -598,8 +601,8 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           <div>
             <div className="card bg-base-100 shadow-xl border border-base-200">
               <div className="card-body p-6">
-                <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary">
-                  ⚙️ Create Match Rule
+                <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                  <Settings className="h-4 w-4" /> Create Match Rule
                 </h2>
                 <p className="text-xs text-base-content/60">
                   Define keyword rules to auto-categorize future statement uploads.
@@ -688,7 +691,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="edit-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              ✏️ Edit Category
+              <Pencil className="h-4 w-4" /> Edit Category
             </h3>
 
             <form onSubmit={handleUpdateCategory} className="space-y-4 mt-4">
@@ -768,7 +771,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="delete-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              ⚠️ Confirm Delete
+              <AlertTriangle className="h-5 w-5" /> Confirm Delete
             </h3>
             <p className="py-4 text-base-content/80 text-sm">
               {categoryToDelete.transactionsCount > 0 ? (
@@ -808,7 +811,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-rule-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="delete-rule-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              ⚠️ Confirm Delete Rule
+              <AlertTriangle className="h-5 w-5" /> Confirm Delete Rule
             </h3>
             <p className="py-4 text-base-content/80 text-sm">
               Are you sure you want to delete the match rule for <strong className="text-base-content font-extrabold">"{ruleToDelete.pattern}"</strong>?

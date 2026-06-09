@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { BalanceSheet, BalanceSheetAccount, BalanceSheetTotal } from '../types';
+import { Scale, Search } from 'lucide-react';
 
 interface BalanceSheetPanelProps {
   report: BalanceSheet;
@@ -69,7 +70,9 @@ export default function BalanceSheetPanel({
     <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
       <input type="radio" name="reports-accordion" defaultChecked /> 
       <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
-        <span>⚖️ Balance Sheet ({currency})</span>
+        <span className="flex items-center gap-2">
+          <Scale className="h-5 w-5" /> Balance Sheet ({currency})
+        </span>
         <span className="text-sm font-semibold opacity-60">
           Net Worth: ${totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
@@ -115,9 +118,9 @@ export default function BalanceSheetPanel({
                     <div key={acc.id} className="flex justify-between items-center text-sm">
                       <button
                         onClick={() => onDrillDown(acc.name, { accountId: acc.id })}
-                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none"
+                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none flex items-center gap-1"
                       >
-                        {acc.name} 🔍
+                        {acc.name} <Search className="h-3 w-3 opacity-60" />
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
@@ -154,9 +157,9 @@ export default function BalanceSheetPanel({
                     <div key={acc.id} className="flex justify-between items-center text-sm">
                       <button
                         onClick={() => onDrillDown(acc.name, { accountId: acc.id })}
-                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none"
+                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none flex items-center gap-1"
                       >
-                        {acc.name} 🔍
+                        {acc.name} <Search className="h-3 w-3 opacity-60" />
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">

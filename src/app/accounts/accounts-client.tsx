@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
 import { generateBalanceSheet } from '@/lib/reports';
+import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
 
 interface Account {
   id: string;
@@ -237,7 +238,7 @@ export default function AccountsClient({
   };
 
   const SortIndicator = ({ field }: { field: typeof sortField }) => {
-    if (sortField !== field) return <span className="text-base-content/20 ml-1">↕</span>;
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
     return sortDirection === 'asc' ? <span className="text-primary ml-1">↑</span> : <span className="text-primary ml-1">↓</span>;
   };
 
@@ -248,7 +249,10 @@ export default function AccountsClient({
         <div className="card bg-base-100 shadow-xl border border-base-200">
           <div className="card-body">
             <h2 className="card-title text-xl font-bold flex justify-between items-center text-primary">
-              💰 Managed Accounts
+              <span className="flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                Managed Accounts
+              </span>
             </h2>
             
             {accounts.length === 0 ? (
@@ -404,7 +408,10 @@ export default function AccountsClient({
       <div>
         <div className="card bg-base-100 shadow-xl border border-base-200">
           <div className="card-body">
-            <h2 className="card-title text-xl font-bold text-primary">➕ Create Account</h2>
+            <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Create Account
+            </h2>
             <form onSubmit={handleAddAccount} className="space-y-4 mt-2">
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-name">
@@ -502,7 +509,8 @@ export default function AccountsClient({
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="edit-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              ✏️ Edit Account
+              <Pencil className="h-4 w-4" />
+              Edit Account
             </h3>
             
             <form onSubmit={handleUpdateAccount} className="space-y-4 mt-4">
@@ -611,7 +619,8 @@ export default function AccountsClient({
         <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
             <h3 id="delete-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              ⚠️ Confirm Delete
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Delete
             </h3>
             <p className="py-4 text-base-content/80 text-sm">
               Are you sure you want to delete the account <strong className="text-base-content font-extrabold">"{accountToDelete.name}"</strong>?

@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { getAccounts } from '../actions';
 import Papa from 'papaparse';
 import { cleanAmount, parseBankDate } from '@/lib/csv';
+import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 
 interface Account {
   id: string;
@@ -406,9 +407,9 @@ export default function ImportPage() {
                     <div className="space-y-2">
                       <div className="flex justify-center">
                         {file ? (
-                          <span className="text-3xl">📄</span>
+                          <FileText className="h-8 w-8 text-success" />
                         ) : (
-                          <span className="text-3xl text-base-content/30">📥</span>
+                          <Inbox className="h-8 w-8 text-base-content/30" />
                         )}
                       </div>
                       <div className="text-sm font-medium">
@@ -427,14 +428,22 @@ export default function ImportPage() {
               {/* Status and Results */}
               {errorMessage && (
                 <div className="alert alert-error text-sm py-3 shadow">
-                  <span>❌ {errorMessage}</span>
+                  <span className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4" /> {errorMessage}
+                  </span>
                 </div>
               )}
 
               {importResult && (
                 <div className={`alert ${importResult.success ? 'alert-success' : 'alert-error'} text-sm py-3 shadow flex justify-between items-center`}>
                   <div className="flex items-center gap-2">
-                    <span>{importResult.success ? '✅' : '❌'}</span>
+                    <span>
+                      {importResult.success ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        <XCircle className="h-4 w-4" />
+                      )}
+                    </span>
                     <span>{importResult.message}</span>
                   </div>
                   {importResult.success && (
@@ -458,8 +467,8 @@ export default function ImportPage() {
                       </p>
                     </div>
                     
-                    <div className="text-xs text-base-content/75 font-semibold bg-base-300/60 px-3 py-1.5 rounded-lg border border-base-300">
-                      📊 Detected {totalRowsCount} rows in CSV
+                    <div className="text-xs text-base-content/75 font-semibold bg-base-300/60 px-3 py-1.5 rounded-lg border border-base-300 flex items-center gap-1.5">
+                      <BarChart3 className="h-3.5 w-3.5 text-primary" /> Detected {totalRowsCount} rows in CSV
                     </div>
                   </div>
 
@@ -641,8 +650,8 @@ export default function ImportPage() {
                                       {t.parsedDate.toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' })}
                                     </span>
                                   ) : (
-                                    <span className="text-error italic" title="Date parsing failed - check layout format">
-                                      ⚠️ {t.rawDate || 'Empty'}
+                                    <span className="text-error italic flex items-center gap-1" title="Date parsing failed - check layout format">
+                                      <AlertTriangle className="h-3 w-3" /> {t.rawDate || 'Empty'}
                                     </span>
                                   )}
                                 </td>

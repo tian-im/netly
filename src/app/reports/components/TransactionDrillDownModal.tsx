@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { getTransactions } from '../../actions';
+import { Search, X } from 'lucide-react';
 
 interface TransactionDrillDownModalProps {
   isOpen: boolean;
@@ -127,9 +128,11 @@ export default function TransactionDrillDownModal({
       <div className="modal-box max-w-4xl border border-base-200 shadow-2xl bg-base-100">
         <div className="flex justify-between items-center border-b border-base-200 pb-3">
           <h3 id="drilldown-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-            🔍 Transactions: {title}
+            <Search className="h-5 w-5" /> Transactions: {title}
           </h3>
-          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost">✕</button>
+          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost flex items-center justify-center" aria-label="Close modal">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="py-4">

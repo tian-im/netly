@@ -17,6 +17,8 @@ import {
   Calendar,
   ArrowRight,
   TrendingUp,
+  BarChart3,
+  Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -439,7 +441,10 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-lg border border-base-200 lg:col-span-2">
           <div className="card-body p-6">
             <h3 className="card-title text-base font-bold text-primary flex justify-between items-center">
-              📈 Net Worth Trend ({period.toUpperCase()} - {currentVisualCurrency})
+              <span className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Net Worth Trend ({period.toUpperCase()} - {currentVisualCurrency})
+              </span>
             </h3>
             
             {accounts.length === 0 ? (
@@ -532,8 +537,9 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-lg border border-base-200">
           <div className="card-body p-6 flex flex-col justify-between">
             <div>
-              <h3 className="card-title text-base font-bold text-primary mb-1">
-                📊 Income vs Expenses ({currentVisualCurrency})
+              <h3 className="card-title text-base font-bold text-primary mb-1 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Income vs Expenses ({currentVisualCurrency})
               </h3>
               <p className="text-xs opacity-50 mb-4">Revenue vs spending comparison</p>
             </div>
@@ -590,8 +596,9 @@ export default function DashboardClient({
         <div className="card bg-base-100 shadow-lg border border-base-200">
           <div className="card-body p-6 flex flex-col justify-between">
             <div>
-              <h3 className="card-title text-base font-bold text-primary mb-4">
-                💸 Cash Flow Metrics ({currentVisualCurrency})
+              <h3 className="card-title text-base font-bold text-primary mb-4 flex items-center gap-2">
+                <ArrowDownRight className="h-5 w-5" />
+                Cash Flow Metrics ({currentVisualCurrency})
               </h3>
               
               <div className="space-y-4">
@@ -696,7 +703,10 @@ export default function DashboardClient({
       <div className="card bg-base-100 shadow-lg border border-base-200">
         <div className="card-body p-6">
           <h2 className="card-title text-lg font-bold flex justify-between items-center text-primary">
-            💰 Account Balances
+            <span className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              Account Balances
+            </span>
           </h2>
           
           {accounts.length === 0 ? (

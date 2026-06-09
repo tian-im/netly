@@ -1,6 +1,7 @@
 'use client';
 
 import { CashFlowStatement, CashFlowSection } from '../types';
+import { ArrowDownRight, Search } from 'lucide-react';
 
 interface CashFlowPanelProps {
   report: CashFlowStatement;
@@ -68,9 +69,9 @@ export default function CashFlowPanel({
           <div className="flex justify-between items-start">
             <button
               onClick={() => onDrillDown(`${title} (Inflows)`, { cashFlowSection: sectionName, cashFlowType: 'inflow' })}
-              className="hover:underline hover:text-primary text-left focus:outline-none"
+              className="hover:underline hover:text-primary text-left focus:outline-none flex items-center gap-1"
             >
-              Inflows (Cash Received) 🔍
+              Inflows (Cash Received) <Search className="h-3 w-3 opacity-60" />
             </button>
             <div className="flex flex-col items-end">
               <span className="text-success font-semibold">
@@ -84,9 +85,9 @@ export default function CashFlowPanel({
           <div className="flex justify-between items-start">
             <button
               onClick={() => onDrillDown(`${title} (Outflows)`, { cashFlowSection: sectionName, cashFlowType: 'outflow' })}
-              className="hover:underline hover:text-primary text-left focus:outline-none"
+              className="hover:underline hover:text-primary text-left focus:outline-none flex items-center gap-1"
             >
-              Outflows (Cash Spent) 🔍
+              Outflows (Cash Spent) <Search className="h-3 w-3 opacity-60" />
             </button>
             <div className="flex flex-col items-end">
               <span className="text-error font-semibold">
@@ -104,7 +105,9 @@ export default function CashFlowPanel({
     <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
       <input type="radio" name="reports-accordion" /> 
       <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
-        <span>💸 Cash Flow Statement ({currency})</span>
+        <span className="flex items-center gap-2">
+          <ArrowDownRight className="h-5 w-5" /> Cash Flow Statement ({currency})
+        </span>
         <span className="text-sm font-semibold opacity-60">
           Net Cash Flow: ${totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (

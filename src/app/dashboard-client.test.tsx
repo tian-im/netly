@@ -27,6 +27,8 @@ vi.mock('lucide-react', () => ({
   Calendar: () => <div data-testid="calendar" />,
   ArrowRight: () => <div data-testid="arrow-right" />,
   TrendingUp: () => <div data-testid="trending-up" />,
+  BarChart3: () => <div data-testid="bar-chart-3" />,
+  Wallet: () => <div data-testid="wallet" />,
 }));
 
 // Mock Link since it's Next.js Link

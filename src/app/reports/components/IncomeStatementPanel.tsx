@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { IncomeStatement, CategoryTotal } from '../types';
+import { Receipt, Search } from 'lucide-react';
 
 interface IncomeStatementPanelProps {
   report: IncomeStatement;
@@ -74,7 +75,9 @@ export default function IncomeStatementPanel({
     <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
       <input type="radio" name="reports-accordion" /> 
       <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
-        <span>🧾 Income & Expense Statement ({currency})</span>
+        <span className="flex items-center gap-2">
+          <Receipt className="h-5 w-5" /> Income & Expense Statement ({currency})
+        </span>
         <span className="text-sm font-semibold opacity-60">
           Net Income: ${totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
@@ -121,9 +124,9 @@ export default function IncomeStatementPanel({
                     <div key={inc.name} className="flex justify-between items-center text-sm">
                       <button
                         onClick={() => onDrillDown(inc.name, { categoryName: inc.name })}
-                        className="hover:underline hover:text-success text-left font-medium focus:outline-none"
+                        className="hover:underline hover:text-success text-left font-medium focus:outline-none flex items-center gap-1"
                       >
-                        {inc.name} <span className="text-xs text-base-content/40 font-normal">({percentage}%)</span> 🔍
+                        {inc.name} <span className="text-xs text-base-content/40 font-normal">({percentage}%)</span> <Search className="h-3 w-3 opacity-60" />
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
@@ -161,9 +164,9 @@ export default function IncomeStatementPanel({
                     <div key={exp.name} className="flex justify-between items-center text-sm">
                       <button
                         onClick={() => onDrillDown(exp.name, { categoryName: exp.name })}
-                        className="hover:underline hover:text-error text-left font-medium focus:outline-none"
+                        className="hover:underline hover:text-error text-left font-medium focus:outline-none flex items-center gap-1"
                       >
-                        {exp.name} <span className="text-xs text-base-content/40 font-normal">({percentage}%)</span> 🔍
+                        {exp.name} <span className="text-xs text-base-content/40 font-normal">({percentage}%)</span> <Search className="h-3 w-3 opacity-60" />
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">

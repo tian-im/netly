@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Link from 'next/link';
+import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Netly Ledger - Financial Statements & Bank CSV Analyzer',
@@ -69,37 +70,37 @@ export default function RootLayout({
                 <ul className="space-y-1 mt-4">
                   <li>
                     <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>📊</span> Dashboard
+                      <BarChart3 className="w-5 h-5 text-primary" /> Dashboard
                     </Link>
                   </li>
                   <li>
                     <Link href="/accounts" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>💰</span> Accounts
+                      <Wallet className="w-5 h-5 text-primary" /> Accounts
                     </Link>
                   </li>
                   <li>
                     <Link href="/transactions" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>🗂️</span> Transaction Ledger
+                      <FolderTree className="w-5 h-5 text-primary" /> Transaction Ledger
                     </Link>
                   </li>
                   <li>
                     <Link href="/categories" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>🏷️</span> Categories
+                      <Tags className="w-5 h-5 text-primary" /> Categories
                     </Link>
                   </li>
                   <li>
                     <Link href="/reports" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>📈</span> Financial Statements
+                      <TrendingUp className="w-5 h-5 text-primary" /> Financial Statements
                     </Link>
                   </li>
                   <li>
                     <Link href="/import" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>📥</span> Bank CSV Import
+                      <Inbox className="w-5 h-5 text-primary" /> Bank CSV Import
                     </Link>
                   </li>
                   <li>
                     <Link href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-                      <span>⚙️</span> Settings
+                      <Settings className="w-5 h-5 text-primary" /> Settings
                     </Link>
                   </li>
                 </ul>

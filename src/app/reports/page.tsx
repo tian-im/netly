@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
+import { Upload, RefreshCw } from 'lucide-react';
 
 // Custom components
 import DateRangePresets from './components/DateRangePresets';
@@ -186,7 +187,7 @@ export default function ReportsPage() {
           className="btn btn-outline btn-primary btn-sm gap-2"
           disabled={isPending}
         >
-          📤 Export Full Ledger CSV
+          <Upload className="h-4 w-4" /> Export Full Ledger CSV
         </button>
       </div>
 
@@ -230,10 +231,16 @@ export default function ReportsPage() {
               </label>
               <button
                 onClick={() => loadReports()}
-                className="btn btn-primary btn-sm w-full md:w-auto"
+                className="btn btn-primary btn-sm w-full md:w-auto gap-2"
                 disabled={isPending}
               >
-                {isPending ? 'Compiling...' : '🔄 Compile Statements'}
+                {isPending ? (
+                  'Compiling...'
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" /> Compile Statements
+                  </>
+                )}
               </button>
             </div>
           </div>
