@@ -183,6 +183,23 @@ describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
       expect(sheet.totals.USD.totalLiabilities).toBe(0);
       expect(sheet.totals.USD.netWorth).toBe(5000);
     });
+
+    it('should parse string dates correctly', () => {
+      const stringDateTransactions = [
+        {
+          id: 'tx_string_date',
+          date: '2026-06-05' as any,
+          amount: 200,
+          accountId: 'acc_checking',
+          categoryId: 'cat_salary',
+          category: categories.cat_salary,
+          currency: 'AUD',
+        },
+      ];
+      const sheet = generateBalanceSheet(accounts, stringDateTransactions, new Date('2026-06-10'));
+      const checkAcc = sheet.accounts.find((a) => a.id === 'acc_checking');
+      expect(checkAcc?.balance).toBe(2200);
+    });
   });
 
   describe('generateIncomeStatement', () => {
