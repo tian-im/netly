@@ -293,7 +293,10 @@ export default function AccountsClient({
                   </thead>
                   <tbody>
                     {sortedAccounts.map((acc) => {
-                      const accBalance = bs.accounts.find((a) => a.id === acc.id)?.balance ?? acc.startingBalance;
+                      const calculatedBalance = bs.accounts.find((a) => a.id === acc.id)?.balance;
+                      const displayBalance = calculatedBalance !== undefined
+                        ? (acc.type === 'LIABILITY' ? -calculatedBalance : calculatedBalance)
+                        : acc.startingBalance;
                       const symbol = getCurrencySymbol(acc.currency);
                       const isDeleting = deletingAccountId === acc.id;
                       
@@ -301,7 +304,7 @@ export default function AccountsClient({
                         <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
                           <td>
                             <div className="font-bold flex items-center gap-2">
-                              {acc.name}
+                               {acc.name}
                               <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
                             </div>
                             <div className="text-xs text-base-content/50">
@@ -319,8 +322,8 @@ export default function AccountsClient({
                               {acc.type}
                             </span>
                           </td>
-                          <td className={`text-right font-mono font-bold ${accBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                            {accBalance < 0 ? '-' : ''}{symbol}{Math.abs(accBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
+                            {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="text-center">
                             <div className="flex justify-center gap-1">

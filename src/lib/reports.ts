@@ -55,7 +55,8 @@ export function generateBalanceSheet(
       }
     }
     
-    const balance = account.startingBalance + netChange;
+    const rawBalance = account.startingBalance + netChange;
+    const balance = account.type === 'LIABILITY' ? -rawBalance : rawBalance;
 
     return {
       ...account,
@@ -74,7 +75,7 @@ export function generateBalanceSheet(
     if (account.type === 'ASSET') {
       totals[currency].totalAssets += account.balance;
     } else if (account.type === 'LIABILITY') {
-      totals[currency].totalLiabilities += -account.balance;
+      totals[currency].totalLiabilities += account.balance;
     }
   }
 

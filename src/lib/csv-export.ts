@@ -1,0 +1,37 @@
+import { Transaction } from '@/app/transactions/types';
+
+/**
+ * Converts a list of transactions to a CSV string.
+ */
+export function generateLedgerCSV(transactions: Transaction[]): string {
+  const csvRows = ['Date,Account,Currency,Payee,Category,Type,Amount,Description'];
+  
+  for (const tx of transactions) {
+    const dateStr = new Date(tx.date).toISOString().split('T')[0];
+    const categoryName = tx.category ? tx.category.name : 'Uncategorized';
+    const categoryType = tx.category ? tx.category.type : 'N/A';
+    const cleanDesc = tx.description ? tx.description.replace(/"/g, '""') : '';
+    const cleanPayee = tx.payee.replace(/"/g, '""');
+
+    csvRows.push(
+      `"${dateStr}","${tx.account.name}","${tx.account.currency}","${cleanPayee}","${categoryName}","${categoryType}",${tx.amount},"${cleanDesc}"`
+    );
+  }
+
+  return csvRows.join('\n');
+}
+
+/**
+ * Triggers a browser download of the CSV content.
+ */
+export function downloadCSV(csvContent: string, fileName: string) {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

@@ -1,0 +1,191 @@
+'use client';
+
+import { useState, useEffect, useTransition } from 'react';
+import { getTransactions } from '../../actions';
+
+interface TransactionDrillDownModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  startDateStr: string;
+  endDateStr: string;
+  currency: string;
+  accountId?: string;
+  categoryName?: string;
+  cashFlowSection?: 'operating' | 'investing' | 'financing';
+  cashFlowType?: 'inflow' | 'outflow';
+}
+
+interface DisplayTransaction {
+  id: string;
+  date: string;
+  payee: string;
+  description: string | null;
+  accountName: string;
+  categoryName: string;
+  amount: number;
+}
+
+export default function TransactionDrillDownModal({
+  isOpen,
+  onClose,
+  title,
+  startDateStr,
+  endDateStr,
+  currency,
+  accountId,
+  categoryName,
+  cashFlowSection,
+  cashFlowType,
+}: TransactionDrillDownModalProps) {
+  const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
+  const [isPending, startTransition] = useTransition();
+
+  const getCurrencySymbol = (cur: string) => {
+    switch (cur?.toUpperCase()) {
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      default: return '$';
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    startTransition(async () => {
+      try {
+        // Fetch matching transactions
+        const response = await getTransactions(accountId ? { accountId } : undefined);
+        const allTxs = response.transactions;
+
+        const start = new Date(startDateStr);
+        const end = new Date(endDateStr);
+        end.setHours(23, 59, 59, 999); // Safe boundary for end of day
+
+        // Filter client-side by date, currency, category, and cash flow criteria
+        const filtered = allTxs.filter((tx: any) => {
+          const txDate = new Date(tx.date);
+          const txCurrency = tx.account?.currency || 'AUD';
+
+          // 1. Check Date Range
+          if (txDate < start || txDate > end) return false;
+
+          // 2. Check Currency
+          if (txCurrency !== currency) return false;
+
+          // 3. Check Account ID (already filtered if fetched with accountId, but double check)
+          if (accountId && tx.accountId !== accountId) return false;
+
+          // 4. Check Category Name
+          if (categoryName) {
+            const txCatName = tx.category ? tx.category.name : 'Uncategorized';
+            if (txCatName !== categoryName) return false;
+          }
+
+          // 5. Check Cash Flow Section & Type
+          if (cashFlowSection) {
+            if (!tx.category || tx.category.type === 'TRANSFER') return false;
+            
+            const txCFSection = tx.category.cashFlowType;
+            if (txCFSection !== cashFlowSection.toUpperCase()) return false;
+
+            if (cashFlowType === 'inflow' && tx.amount <= 0) return false;
+            if (cashFlowType === 'outflow' && tx.amount >= 0) return false;
+          }
+
+          return true;
+        });
+
+        // Map to display shape
+        const mapped = filtered.map((tx: any) => ({
+          id: tx.id,
+          date: new Date(tx.date).toISOString().split('T')[0],
+          payee: tx.payee,
+          description: tx.description,
+          accountName: tx.account.name,
+          categoryName: tx.category ? tx.category.name : 'Uncategorized',
+          amount: tx.amount,
+        }));
+
+        // Sort by date descending
+        mapped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        setTransactions(mapped);
+      } catch (err) {
+        console.error('Failed to load drill-down transactions:', err);
+      }
+    });
+  }, [isOpen, accountId, categoryName, cashFlowSection, cashFlowType, startDateStr, endDateStr, currency]);
+
+  if (!isOpen) return null;
+
+  const symbol = getCurrencySymbol(currency);
+
+  return (
+    <div className="modal modal-open z-[100]" role="dialog" aria-modal="true" aria-labelledby="drilldown-modal-title">
+      <div className="modal-box max-w-4xl border border-base-200 shadow-2xl bg-base-100">
+        <div className="flex justify-between items-center border-b border-base-200 pb-3">
+          <h3 id="drilldown-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
+            🔍 Transactions: {title}
+          </h3>
+          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost">✕</button>
+        </div>
+
+        <div className="py-4">
+          <div className="text-xs text-base-content/60 mb-4 flex flex-wrap gap-x-4 gap-y-1 bg-base-200 p-2.5 rounded-lg border border-base-300">
+            <span><strong>Period:</strong> {startDateStr} to {endDateStr}</span>
+            <span><strong>Currency:</strong> {currency}</span>
+          </div>
+
+          {isPending ? (
+            <div className="flex flex-col justify-center items-center py-12 gap-3">
+              <span className="loading loading-spinner loading-md text-primary"></span>
+              <span className="text-sm font-semibold text-base-content/60">Retrieving ledger entries...</span>
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12 text-base-content/50 text-sm">
+              No transactions found matching this criteria in the selected period.
+            </div>
+          ) : (
+            <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
+              <table className="table table-sm table-pin-rows w-full">
+                <thead>
+                  <tr className="border-b border-base-200 bg-base-100">
+                    <th>Date</th>
+                    <th>Payee</th>
+                    <th>Account</th>
+                    <th>Category</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-base-200/50 border-b border-base-200/50">
+                      <td className="font-semibold whitespace-nowrap">{tx.date}</td>
+                      <td>
+                        <div className="font-bold">{tx.payee}</div>
+                        {tx.description && <div className="text-[10px] text-base-content/50">{tx.description}</div>}
+                      </td>
+                      <td className="whitespace-nowrap">{tx.accountName}</td>
+                      <td className="whitespace-nowrap">
+                        <span className="badge badge-ghost badge-sm">{tx.categoryName}</span>
+                      </td>
+                      <td className={`text-right font-mono font-bold whitespace-nowrap ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}>
+                        {tx.amount < 0 ? '-' : ''}{symbol}{Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-action border-t border-base-200 pt-3">
+          <button onClick={onClose} className="btn btn-primary btn-sm">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}

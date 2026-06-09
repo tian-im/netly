@@ -148,7 +148,7 @@ describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
       expect(savingsAcc?.balance).toBe(4950);
 
       const cardAcc = sheet.accounts.find((a) => a.id === 'acc_credit');
-      expect(cardAcc?.balance).toBe(-600);
+      expect(cardAcc?.balance).toBe(600);
 
       // AUD totals
       expect(sheet.totals.AUD).toBeDefined();

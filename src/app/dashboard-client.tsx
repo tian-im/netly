@@ -715,7 +715,10 @@ export default function DashboardClient({
                 </thead>
                 <tbody>
                   {accounts.map((acc) => {
-                    const accBalance = bs.accounts.find((a) => a.id === acc.id)?.balance ?? acc.startingBalance;
+                    const calculatedBalance = bs.accounts.find((a) => a.id === acc.id)?.balance;
+                    const displayBalance = calculatedBalance !== undefined
+                      ? (acc.type === 'LIABILITY' ? -calculatedBalance : calculatedBalance)
+                      : acc.startingBalance;
                     return (
                       <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
                         <td>
@@ -732,8 +735,8 @@ export default function DashboardClient({
                             {acc.type}
                           </span>
                         </td>
-                        <td className={`text-right font-mono font-bold ${accBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                          ${accBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
+                          ${displayBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     );

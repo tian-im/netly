@@ -1,0 +1,194 @@
+'use client';
+
+import { useMemo } from 'react';
+import { BalanceSheet, BalanceSheetAccount, BalanceSheetTotal } from '../types';
+
+interface BalanceSheetPanelProps {
+  report: BalanceSheet;
+  comparisonReport: BalanceSheet | null;
+  currency: string;
+  onDrillDown: (title: string, options: { accountId: string }) => void;
+}
+
+export default function BalanceSheetPanel({
+  report,
+  comparisonReport,
+  currency,
+  onDrillDown,
+}: BalanceSheetPanelProps) {
+  const totals = report.totals[currency] || { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
+  const priorTotals = comparisonReport?.totals[currency] || null;
+
+  // Filter accounts by type and currency (Optimized with useMemo)
+  const bsAccounts = useMemo(() => {
+    return report.accounts.filter((a) => (a.currency || 'AUD') === currency);
+  }, [report.accounts, currency]);
+
+  const assetAccounts = useMemo(() => {
+    return bsAccounts.filter((a) => a.type === 'ASSET');
+  }, [bsAccounts]);
+
+  const liabilityAccounts = useMemo(() => {
+    return bsAccounts.filter((a) => a.type === 'LIABILITY');
+  }, [bsAccounts]);
+
+  // Find corresponding account balance in prior report
+  const getPriorBalance = (accountId: string): number => {
+    if (!comparisonReport) return 0;
+    const priorAcc = comparisonReport.accounts.find((a) => a.id === accountId);
+    return priorAcc ? priorAcc.balance : 0;
+  };
+
+  // Visual proportions split
+  const assetRatio = useMemo(() => {
+    const total = totals.totalAssets + totals.totalLiabilities;
+    if (total === 0) return 50;
+    return (totals.totalAssets / total) * 100;
+  }, [totals]);
+
+  const liabilityRatio = 100 - assetRatio;
+
+  const renderDelta = (current: number, prior: number, isLiability = false) => {
+    if (!comparisonReport) return null;
+    const delta = current - prior;
+    if (delta === 0) return <span className="text-xs text-base-content/40 font-mono">0.00 (0%)</span>;
+
+    const pctChange = prior !== 0 ? (delta / Math.abs(prior)) * 100 : 100;
+    const isPositiveImpact = isLiability ? delta < 0 : delta > 0;
+
+    return (
+      <span className={`text-xs font-semibold font-mono ${isPositiveImpact ? 'text-success' : 'text-error'}`}>
+        {delta > 0 ? '+' : ''}
+        {delta.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {' '}({delta > 0 ? '+' : ''}{pctChange.toFixed(0)}%)
+      </span>
+    );
+  };
+
+  return (
+    <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
+      <input type="radio" name="reports-accordion" defaultChecked /> 
+      <div className="collapse-title text-lg font-bold flex justify-between items-center pr-12 text-primary">
+        <span>⚖️ Balance Sheet ({currency})</span>
+        <span className="text-sm font-semibold opacity-60">
+          Net Worth: ${totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {priorTotals && (
+            <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
+              Prior: ${priorTotals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="collapse-content px-6 pb-6">
+        <div className="divider my-0"></div>
+
+        {/* Visual CSS Proportions Split Bar */}
+        {(totals.totalAssets > 0 || totals.totalLiabilities > 0) && (
+          <div className="mt-4 mb-6">
+            <div className="flex justify-between text-xs font-bold mb-1 opacity-70">
+              <span>Assets ({assetRatio.toFixed(0)}%)</span>
+              <span>Liabilities ({liabilityRatio.toFixed(0)}%)</span>
+            </div>
+            <div className="w-full bg-base-200 h-3 rounded-full overflow-hidden flex">
+              <div className="bg-success h-full transition-all" style={{ width: `${assetRatio}%` }}></div>
+              <div className="bg-error h-full transition-all" style={{ width: `${liabilityRatio}%` }}></div>
+            </div>
+            <div className="text-[10px] text-base-content/40 mt-1 text-center">
+              Debt-to-Asset Ratio: {((totals.totalLiabilities / Math.max(1, totals.totalAssets)) * 100).toFixed(1)}%
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+          {/* Assets Column */}
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-primary border-b border-primary/20 pb-2 mb-3">
+              Assets (Checking, Savings, Cash)
+            </h3>
+            <div className="space-y-3">
+              {assetAccounts.length === 0 ? (
+                <div className="text-xs text-base-content/40 py-2">No assets in {currency}.</div>
+              ) : (
+                assetAccounts.map((acc) => {
+                  const priorVal = getPriorBalance(acc.id);
+                  return (
+                    <div key={acc.id} className="flex justify-between items-center text-sm">
+                      <button
+                        onClick={() => onDrillDown(acc.name, { accountId: acc.id })}
+                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none"
+                      >
+                        {acc.name} 🔍
+                      </button>
+                      <div className="flex flex-col items-end">
+                        <span className="font-mono font-semibold text-success">
+                          ${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                        {renderDelta(acc.balance, priorVal)}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
+                <span>Total Assets</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-success">${totals.totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  {priorTotals && renderDelta(totals.totalAssets, priorTotals.totalAssets)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Liabilities Column */}
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-secondary border-b border-secondary/20 pb-2 mb-3">
+              Liabilities (Debt, Cards, Loans)
+            </h3>
+            <div className="space-y-3">
+              {liabilityAccounts.length === 0 ? (
+                <div className="text-xs text-base-content/40 py-2">No liabilities in {currency}.</div>
+              ) : (
+                liabilityAccounts.map((acc) => {
+                  const priorVal = getPriorBalance(acc.id);
+                  return (
+                    <div key={acc.id} className="flex justify-between items-center text-sm">
+                      <button
+                        onClick={() => onDrillDown(acc.name, { accountId: acc.id })}
+                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none"
+                      >
+                        {acc.name} 🔍
+                      </button>
+                      <div className="flex flex-col items-end">
+                        <span className="font-mono font-semibold text-error">
+                          ${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                        {renderDelta(acc.balance, priorVal, true)}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
+                <span>Total Liabilities</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-error">${totals.totalLiabilities.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  {priorTotals && renderDelta(totals.totalLiabilities, priorTotals.totalLiabilities, true)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-base-200/50 p-4 rounded-xl flex justify-between items-center mt-6 border border-base-300">
+          <span className="font-extrabold text-md">NET WORTH (Equity)</span>
+          <div className="flex flex-col items-end">
+            <span className={`font-mono font-extrabold text-xl ${totals.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
+              ${totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
+            </span>
+            {priorTotals && renderDelta(totals.netWorth, priorTotals.netWorth)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
