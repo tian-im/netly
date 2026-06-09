@@ -155,8 +155,8 @@ export default function ImportPage() {
         <div className="card-body">
           {accounts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-base-content/60">No accounts exist yet. Please create an account on the Dashboard first.</p>
-              <a href="/" className="btn btn-primary mt-4 btn-sm">Go to Dashboard</a>
+              <p className="text-base-content/60">No accounts exist yet. Please create an account on the Accounts page first.</p>
+              <a href="/accounts" className="btn btn-primary mt-4 btn-sm">Go to Accounts</a>
             </div>
           ) : (
             <form onSubmit={handleImport} className="space-y-6">
