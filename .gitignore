@@ -145,3 +145,5 @@ vite.config.ts.timestamp-*
 # Local database files
 prisma/*.db
 prisma/*.db-journal
+prisma/prisma/
+
