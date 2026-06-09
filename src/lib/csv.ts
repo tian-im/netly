@@ -31,7 +31,9 @@ export function cleanAmount(value: string): number {
     amount = -amount;
   }
 
-  return amount;
+  if (isNaN(amount)) return NaN;
+  const sign = amount < 0 ? -1 : 1;
+  return (Math.round(Math.abs(amount) * 100) / 100) * sign;
 }
 
 /**
@@ -102,7 +104,7 @@ export function parseBankDate(value: string, formatHint?: string): Date {
  */
 export function parseCSV(
   csvText: string,
-  headerMap: { date: string; payee: string; amount: string; description?: string },
+  headerMap: { date: string; payee: string; amount?: string; debit?: string; credit?: string; description?: string },
   dateFormatHint?: string
 ): ParsedTransaction[] {
   if (!csvText || csvText.trim() === '') {
@@ -125,12 +127,28 @@ export function parseCSV(
 
   const headers = Object.keys(firstRow);
   
-  const requiredFields = ['date', 'payee', 'amount'] as const;
+  const requiredFields = ['date', 'payee'] as const;
   for (const field of requiredFields) {
     const headerName = headerMap[field];
     if (!headers.includes(headerName)) {
       throw new Error(`Required header "${headerName}" not found in CSV`);
     }
+  }
+
+  // Verify amount-related headers
+  if (headerMap.amount) {
+    if (!headers.includes(headerMap.amount)) {
+      throw new Error(`Required header "${headerMap.amount}" not found in CSV`);
+    }
+  } else if (headerMap.debit || headerMap.credit) {
+    if (headerMap.debit && !headers.includes(headerMap.debit)) {
+      throw new Error(`Debit header "${headerMap.debit}" not found in CSV`);
+    }
+    if (headerMap.credit && !headers.includes(headerMap.credit)) {
+      throw new Error(`Credit header "${headerMap.credit}" not found in CSV`);
+    }
+  } else {
+    throw new Error('Either Amount column or Debit/Credit columns must be mapped');
   }
 
   const parsedTransactions: ParsedTransaction[] = [];
@@ -139,21 +157,52 @@ export function parseCSV(
     try {
       const dateVal = row[headerMap.date];
       const payeeVal = row[headerMap.payee];
-      const amountVal = row[headerMap.amount];
       
       const descHeader = headerMap.description;
       const descVal = descHeader ? row[descHeader] : null;
 
-      if (!dateVal || !payeeVal || !amountVal) {
+      if (!dateVal || !payeeVal) {
         continue; // Skip incomplete rows
       }
 
-      const date = parseBankDate(dateVal, dateFormatHint);
-      const amount = cleanAmount(amountVal);
+      // Calculate amount based on single or double column setup
+      let amount = NaN;
+      if (headerMap.amount) {
+        const amountVal = row[headerMap.amount];
+        if (amountVal) {
+          amount = cleanAmount(amountVal);
+        }
+      } else {
+        const debitVal = headerMap.debit ? row[headerMap.debit] : '';
+        const creditVal = headerMap.credit ? row[headerMap.credit] : '';
+
+        const debitAmt = debitVal ? cleanAmount(debitVal) : NaN;
+        const creditAmt = creditVal ? cleanAmount(creditVal) : NaN;
+
+        const hasDebit = !isNaN(debitAmt) && debitVal.trim() !== '';
+        const hasCredit = !isNaN(creditAmt) && creditVal.trim() !== '';
+
+        if (hasDebit && hasCredit) {
+          if (debitAmt !== 0 && creditAmt === 0) {
+            amount = -Math.abs(debitAmt);
+          } else if (creditAmt !== 0 && debitAmt === 0) {
+            amount = Math.abs(creditAmt);
+          } else {
+            // Subtract debit from credit
+            amount = Math.round((creditAmt - debitAmt) * 100) / 100;
+          }
+        } else if (hasDebit) {
+          amount = -Math.abs(debitAmt);
+        } else if (hasCredit) {
+          amount = Math.abs(creditAmt);
+        }
+      }
 
       if (isNaN(amount)) {
         continue; // Skip rows with invalid amounts
       }
+
+      const date = parseBankDate(dateVal, dateFormatHint);
 
       parsedTransactions.push({
         date,

@@ -100,7 +100,8 @@ export async function POST(req: Request) {
     // SQLite stores dates as ISO strings/integers, let's normalize check key
     const makeHash = (date: Date, payee: string, amount: number) => {
       const dateStr = date.toISOString().split('T')[0]; // compare purely by calendar day
-      return `${dateStr}_${payee.toLowerCase().trim()}_${amount.toFixed(2)}`;
+      const roundedAmount = Math.round(amount * 100) / 100;
+      return `${dateStr}_${payee.toLowerCase().trim()}_${roundedAmount.toFixed(2)}`;
     };
 
     const existingSet = new Set(
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
         date: tx.date,
         payee: tx.payee,
         description: tx.description,
-        amount: tx.amount,
+        amount: Math.round(tx.amount * 100) / 100,
         accountId,
         categoryId: matchedCategoryId,
         isReviewed: matchedCategoryId !== null, // auto-mark reviewed if rule matched

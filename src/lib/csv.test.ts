@@ -219,5 +219,61 @@ Date,Merchant,Amount
     it('should parse date via standard fallback parser', () => {
       expect(parseBankDate('June 8, 2026').getFullYear()).toBe(2026);
     });
+
+    it('should round amounts to the nearest cent consistently', () => {
+      expect(cleanAmount('12.344')).toBe(12.34);
+      expect(cleanAmount('12.345')).toBe(12.35);
+      expect(cleanAmount('12.346')).toBe(12.35);
+      expect(cleanAmount('-12.345')).toBe(-12.35);
+    });
+
+    it('should parse CSV with separate Debit and Credit columns', () => {
+      const csvSplitContent = `
+Date,Merchant,Debit,Credit,Details
+2026-06-01,Uber,15.50,,Ride to work
+2026-06-02,Salary,,2500.00,
+2026-06-03,Transfer,10.00,10.00,
+2026-06-04,Refund,,15.253,
+      `.trim();
+
+      const headerMap = {
+        date: 'Date',
+        payee: 'Merchant',
+        debit: 'Debit',
+        credit: 'Credit',
+        description: 'Details',
+      };
+
+      const result = parseCSV(csvSplitContent, headerMap);
+      expect(result).toHaveLength(4);
+      
+      // Debit only (negative amount)
+      expect(result[0]).toEqual({
+        date: expect.any(Date),
+        payee: 'Uber',
+        amount: -15.5,
+        description: 'Ride to work',
+      });
+      
+      // Credit only (positive amount)
+      expect(result[1].payee).toBe('Salary');
+      expect(result[1].amount).toBe(2500);
+
+      // Both present: 10.00 credit - 10.00 debit = 0 amount
+      expect(result[2].payee).toBe('Transfer');
+      expect(result[2].amount).toBe(0);
+
+      // Cent rounding on separate credit column
+      expect(result[3].payee).toBe('Refund');
+      expect(result[3].amount).toBe(15.25);
+    });
+
+    it('should throw an error if neither amount nor debit/credit are mapped', () => {
+      const headerMap = {
+        date: 'Date',
+        payee: 'Merchant',
+      };
+      expect(() => parseCSV(csvContent, headerMap)).toThrow('Either Amount column or Debit/Credit columns must be mapped');
+    });
   });
 });
