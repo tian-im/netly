@@ -27,6 +27,10 @@ export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', s
     }
   });
 
+  revalidatePath('/accounts');
+  revalidatePath('/import');
+  revalidatePath('/reports');
+  revalidatePath('/transactions');
   revalidatePath('/');
   return account;
 }
@@ -35,6 +39,10 @@ export async function deleteAccount(id: string) {
   await db.account.delete({
     where: { id }
   });
+  revalidatePath('/accounts');
+  revalidatePath('/import');
+  revalidatePath('/reports');
+  revalidatePath('/transactions');
   revalidatePath('/');
 }
 
@@ -81,6 +89,8 @@ export async function createCategoryRule(pattern: string, categoryId: string) {
     });
   }
 
+  revalidatePath('/categories');
+  revalidatePath('/transactions');
   revalidatePath('/');
   return rule;
 }
@@ -89,18 +99,74 @@ export async function deleteCategoryRule(id: string) {
   await db.categoryRule.delete({
     where: { id }
   });
+  revalidatePath('/categories');
+  revalidatePath('/transactions');
   revalidatePath('/');
 }
 
-export async function getTransactions(accountId?: string) {
-  return db.transaction.findMany({
-    where: accountId ? { accountId } : {},
+export async function getTransactions(
+  paramsOrAccountId?: string | {
+    accountId?: string;
+    categoryId?: string;
+    searchTerm?: string;
+    page?: number;
+    pageSize?: number;
+  }
+) {
+  let accountId: string | undefined;
+  let categoryId: string | undefined;
+  let searchTerm: string | undefined;
+  let page: number | undefined;
+  let pageSize: number | undefined;
+
+  if (typeof paramsOrAccountId === 'string') {
+    accountId = paramsOrAccountId;
+  } else if (paramsOrAccountId) {
+    accountId = paramsOrAccountId.accountId;
+    categoryId = paramsOrAccountId.categoryId;
+    searchTerm = paramsOrAccountId.searchTerm;
+    page = paramsOrAccountId.page;
+    pageSize = paramsOrAccountId.pageSize;
+  }
+
+  const where: any = {};
+  if (accountId) {
+    where.accountId = accountId;
+  }
+  if (categoryId) {
+    if (categoryId === 'UNCATEGORIZED') {
+      where.categoryId = null;
+    } else {
+      where.categoryId = categoryId;
+    }
+  }
+  if (searchTerm) {
+    const cleanSearch = searchTerm.trim().toLowerCase();
+    where.OR = [
+      { payee: { contains: cleanSearch } },
+      { description: { contains: cleanSearch } }
+    ];
+  }
+
+  const totalCount = await db.transaction.count({ where });
+
+  const transactions = await db.transaction.findMany({
+    where,
     include: {
       account: true,
       category: true,
     },
-    orderBy: { date: 'desc' }
+    orderBy: { date: 'desc' },
+    ...(page && pageSize ? {
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    } : {})
   });
+
+  return {
+    transactions,
+    totalCount
+  };
 }
 
 export async function updateTransactionCategory(
@@ -137,6 +203,8 @@ export async function updateTransactionCategory(
     }
   }
 
+  revalidatePath('/transactions');
+  revalidatePath('/reports');
   revalidatePath('/');
   return updated;
 }
@@ -198,6 +266,11 @@ export async function resetDatabase() {
   ]);
   
   revalidatePath('/');
+  revalidatePath('/accounts');
+  revalidatePath('/categories');
+  revalidatePath('/transactions');
+  revalidatePath('/reports');
+  revalidatePath('/import');
 }
 
 export async function createCategory(name: string, type: string, cashFlowType: string) {
@@ -217,6 +290,8 @@ export async function createCategory(name: string, type: string, cashFlowType: s
     }
   });
 
+  revalidatePath('/categories');
+  revalidatePath('/transactions');
   revalidatePath('/');
   return category;
 }
@@ -235,5 +310,7 @@ export async function deleteCategory(id: string) {
     where: { id }
   });
 
+  revalidatePath('/categories');
+  revalidatePath('/transactions');
   revalidatePath('/');
 }

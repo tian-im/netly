@@ -18,6 +18,7 @@ export default function TransactionsPage() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Prompt states for creating global rules on manual categorization
   const [showRulePrompt, setShowRulePrompt] = useState(false);
@@ -27,17 +28,35 @@ export default function TransactionsPage() {
   const [isPending, startTransition] = useTransition();
 
   const loadData = async () => {
-    const txs = await getTransactions();
     const accs = await getAccounts();
     const cats = await getCategories();
-    setTransactions(txs);
     setAccounts(accs);
     setCategories(cats);
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      const result = await getTransactions({
+        accountId: selectedAccountId || undefined,
+        categoryId: selectedCategoryFilter || undefined,
+        searchTerm: searchTerm || undefined,
+        page: currentPage,
+        pageSize,
+      });
+      setTransactions(result.transactions);
+      setTotalCount(result.totalCount);
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [selectedAccountId, selectedCategoryFilter, searchTerm, currentPage, pageSize]);
 
   // Reset to page 1 whenever filters or page size change
   useEffect(() => {
@@ -48,7 +67,7 @@ export default function TransactionsPage() {
     if (!catId) {
       startTransition(async () => {
         await updateTransactionCategory(tx.id, null);
-        await loadData();
+        await fetchTransactions();
       });
       return;
     }
@@ -64,40 +83,19 @@ export default function TransactionsPage() {
         await updateTransactionCategory(promptTx.id, promptCatId, createRule);
         setShowRulePrompt(false);
         setPromptTx(null);
-        await loadData();
+        await fetchTransactions();
       } catch (err: any) {
         alert(err.message || 'Failed to update transaction');
       }
     });
   };
 
-  // Filter computation
-  const filteredTransactions = transactions.filter((tx) => {
-    const matchesAccount = !selectedAccountId || tx.accountId === selectedAccountId;
-
-    let matchesCategory = true;
-    if (selectedCategoryFilter === 'UNCATEGORIZED') {
-      matchesCategory = !tx.categoryId;
-    } else if (selectedCategoryFilter) {
-      matchesCategory = tx.categoryId === selectedCategoryFilter;
-    }
-
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch =
-      !searchTerm ||
-      tx.payee.toLowerCase().includes(lowerSearch) ||
-      (tx.description && tx.description.toLowerCase().includes(lowerSearch));
-
-    return matchesAccount && matchesCategory && matchesSearch;
-  });
-
   // Pagination computation
-  const totalCount = filteredTransactions.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safePage = Math.min(currentPage, totalPages);
-  const startIdx = (safePage - 1) * pageSize;
-  const endIdx = Math.min(startIdx + pageSize, totalCount);
-  const pageTxs = filteredTransactions.slice(startIdx, endIdx);
+  const startIdx = totalCount === 0 ? 0 : (safePage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + transactions.length, totalCount);
+  const pageTxs = transactions;
 
   // Build visible page numbers (up to 7, with ellipsis logic)
   const getPageNumbers = (): (number | '...')[] => {

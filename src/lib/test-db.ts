@@ -14,7 +14,7 @@ export function getTestDb(): PrismaClient {
     // If DATABASE_URL points to dev.db, or is empty, force test.db to prevent wiping development database
     const url = process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('dev.db')
       ? process.env.DATABASE_URL
-      : 'file:./prisma/test.db';
+      : 'file:./test.db';
 
     _testDb = new PrismaClient({
       datasources: {

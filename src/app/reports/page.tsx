@@ -61,7 +61,7 @@ export default function ReportsPage() {
 
   const handleExportCSV = async () => {
     try {
-      const txs = await getTransactions();
+      const { transactions: txs } = await getTransactions();
       if (txs.length === 0) {
         alert('No transactions to export.');
         return;

@@ -5,7 +5,7 @@ export const revalidate = 0; // Disable caching so accounts manager is always up
 
 export default async function AccountsPage() {
   const accountsList = await getAccounts();
-  const transactionsList = await getTransactions();
+  const { transactions: transactionsList } = await getTransactions();
 
   // Map Decimal/Prisma equivalents to serializable types
   const mappedAccounts = accountsList.map((a) => ({

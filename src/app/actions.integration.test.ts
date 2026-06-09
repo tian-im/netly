@@ -334,7 +334,7 @@ describe('Category Rule actions', () => {
 describe('Transaction actions', () => {
   describe('getTransactions', () => {
     it('returns an empty list when no transactions exist', async () => {
-      expect(await getTransactions()).toEqual([]);
+      expect((await getTransactions()).transactions).toEqual([]);
     });
 
     it('returns all transactions ordered by date descending', async () => {
@@ -346,7 +346,7 @@ describe('Transaction actions', () => {
         data: { date: new Date('2026-06-01'), payee: 'New', amount: -20, accountId: account.id },
       });
 
-      const result = await getTransactions();
+      const { transactions: result } = await getTransactions();
       expect(result[0].payee).toBe('New');
       expect(result[1].payee).toBe('Old');
     });
@@ -357,7 +357,7 @@ describe('Transaction actions', () => {
       await seedTransaction(acc1.id, { payee: 'Tx for Acc1' });
       await seedTransaction(acc2.id, { payee: 'Tx for Acc2' });
 
-      const result = await getTransactions(acc1.id);
+      const { transactions: result } = await getTransactions(acc1.id);
       expect(result).toHaveLength(1);
       expect(result[0].payee).toBe('Tx for Acc1');
     });
@@ -367,9 +367,39 @@ describe('Transaction actions', () => {
       const cat = await seedCategory({ name: 'Food' });
       await seedTransaction(account.id, { categoryId: cat.id });
 
-      const result = await getTransactions();
+      const { transactions: result } = await getTransactions();
       expect(result[0].account.name).toBe('Checking');
       expect(result[0].category?.name).toBe('Food');
+    });
+
+    it('supports pagination, search, and category filtering via options object', async () => {
+      const account = await seedAccount();
+      const cat1 = await seedCategory({ name: 'Groceries' });
+      const cat2 = await seedCategory({ name: 'Entertainment' });
+
+      await seedTransaction(account.id, { payee: 'Woolworths Metro', categoryId: cat1.id, amount: -30 });
+      await seedTransaction(account.id, { payee: 'Netflix', categoryId: cat2.id, amount: -15 });
+      await seedTransaction(account.id, { payee: 'Coles Express', categoryId: cat1.id, amount: -40 });
+      await seedTransaction(account.id, { payee: 'Uber Ride', categoryId: null, amount: -25 });
+
+      // Search matching payee
+      const searchResult = await getTransactions({ searchTerm: 'coles' });
+      expect(searchResult.totalCount).toBe(1);
+      expect(searchResult.transactions[0].payee).toBe('Coles Express');
+
+      // Category filter matching 'UNCATEGORIZED'
+      const uncategorizedResult = await getTransactions({ categoryId: 'UNCATEGORIZED' });
+      expect(uncategorizedResult.totalCount).toBe(1);
+      expect(uncategorizedResult.transactions[0].payee).toBe('Uber Ride');
+
+      // Category filter matching specific category ID
+      const groceriesResult = await getTransactions({ categoryId: cat1.id });
+      expect(groceriesResult.totalCount).toBe(2);
+
+      // Pagination matching page and pageSize
+      const paginatedResult = await getTransactions({ page: 2, pageSize: 2 });
+      expect(paginatedResult.transactions).toHaveLength(2);
+      expect(paginatedResult.totalCount).toBe(4);
     });
   });
 
