@@ -181,7 +181,7 @@ async function main() {
   for (const row of parseResult.data) {
     const rawDate = row['Date'];
     const rawAmount = row['Amount'];
-    const rawCategory = row['Category'] || 'Uncategorised';
+    const rawCategory = (row['Category'] || '').trim();
     const payee = row['Transaction Details'] || 'Unknown Merchant';
     const description = row['Merchant Name'] || row['Transaction Type'] || null;
 
@@ -190,33 +190,39 @@ async function main() {
     const date = new Date(rawDate);
     const amount = cleanAmount(rawAmount);
 
-    // Dynamic category resolution
-    let categoryName = rawCategory.trim();
-    if (!categoryCache[categoryName]) {
-      let type = 'EXPENSE';
-      let cashFlowType = 'OPERATING';
+    // If no category in CSV, leave uncategorized (null) for manual review
+    let categoryId = null;
+    let isReviewed = false;
 
-      if (categoryName.toLowerCase() === 'refund') {
-        type = 'INCOME';
-      } else if (
-        categoryName.toLowerCase().includes('transfer') ||
-        categoryName.toLowerCase().includes('repayment') ||
-        categoryName.toLowerCase().includes('payment')
-      ) {
-        type = 'TRANSFER';
+    if (rawCategory) {
+      let categoryName = rawCategory;
+      if (!categoryCache[categoryName]) {
+        let type = 'EXPENSE';
+        let cashFlowType = 'OPERATING';
+
+        if (categoryName.toLowerCase() === 'refund') {
+          type = 'INCOME';
+        } else if (
+          categoryName.toLowerCase().includes('transfer') ||
+          categoryName.toLowerCase().includes('repayment') ||
+          categoryName.toLowerCase().includes('payment')
+        ) {
+          type = 'TRANSFER';
+        }
+
+        const cat = await prisma.category.create({
+          data: {
+            name: categoryName,
+            type,
+            cashFlowType
+          }
+        });
+        categoryCache[categoryName] = cat;
       }
 
-      const cat = await prisma.category.create({
-        data: {
-          name: categoryName,
-          type,
-          cashFlowType
-        }
-      });
-      categoryCache[categoryName] = cat;
+      categoryId = categoryCache[categoryName].id;
+      isReviewed = true;
     }
-
-    const cat = categoryCache[categoryName];
 
     await prisma.transaction.create({
       data: {
@@ -225,8 +231,8 @@ async function main() {
         description,
         amount,
         accountId: creditAccount.id,
-        categoryId: cat.id,
-        isReviewed: true
+        categoryId,
+        isReviewed
       }
     });
   }
