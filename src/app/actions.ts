@@ -395,3 +395,69 @@ export async function updateCategory(id: string, name: string, type: string, cas
   return updated;
 }
 
+export async function getDatabaseInfo() {
+  const fs = await import('fs');
+  const path = await import('path');
+  
+  const dbPath = path.resolve(process.cwd(), 'prisma/dev.db');
+  let fileSize = 0;
+  let lastModified = new Date();
+  
+  try {
+    if (fs.existsSync(dbPath)) {
+      const stats = fs.statSync(dbPath);
+      fileSize = stats.size;
+      lastModified = stats.mtime;
+    }
+  } catch (e) {
+    console.error('Error reading DB stats:', e);
+  }
+
+  let schemaVersion = '20260609000000_init';
+  try {
+    const migrations: any[] = await db.$queryRawUnsafe(
+      'SELECT migration_name FROM _prisma_migrations ORDER BY applied_steps_count DESC LIMIT 1'
+    );
+    if (migrations && migrations.length > 0) {
+      schemaVersion = migrations[0].migration_name;
+    }
+  } catch (e) {
+    // Fallback
+  }
+
+  const lastTx = await db.transaction.findFirst({
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  });
+  const lastImportTimestamp = lastTx ? lastTx.createdAt.toISOString() : null;
+
+  return {
+    fileSize,
+    lastModified: lastModified.toISOString(),
+    schemaVersion,
+    lastImportTimestamp,
+  };
+}
+
+export async function vacuumDatabase() {
+  await db.$executeRawUnsafe('VACUUM');
+  revalidatePath('/settings');
+}
+
+export async function exportAllTransactions() {
+  return db.transaction.findMany({
+    include: {
+      account: true,
+      category: true,
+    },
+    orderBy: { date: 'asc' }
+  });
+}
+
+export async function exportAllAccounts() {
+  return db.account.findMany({
+    orderBy: { name: 'asc' }
+  });
+}
+
+

@@ -42,6 +42,10 @@ import {
   updateTransactionCategory,
   getFinancialReports,
   resetDatabase,
+  getDatabaseInfo,
+  vacuumDatabase,
+  exportAllTransactions,
+  exportAllAccounts,
 } from '@/app/actions';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -645,4 +649,49 @@ describe('getTestDb URL fallback', () => {
     }
   });
 });
+
+describe('System settings and backup actions', () => {
+  describe('getDatabaseInfo', () => {
+    it('retrieves database details successfully', async () => {
+      const info = await getDatabaseInfo();
+      expect(info).toBeDefined();
+      expect(typeof info.fileSize).toBe('number');
+      expect(typeof info.schemaVersion).toBe('string');
+    });
+  });
+
+  describe('vacuumDatabase', () => {
+    it('runs VACUUM query on sqlite successfully', async () => {
+      await expect(vacuumDatabase()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('exportAllTransactions', () => {
+    it('returns all transactions sorted by date ascending', async () => {
+      const account = await seedAccount();
+      await db.transaction.create({
+        data: { date: new Date('2026-06-10'), payee: 'Later', amount: -20, accountId: account.id }
+      });
+      await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Earlier', amount: -10, accountId: account.id }
+      });
+      const txs = await exportAllTransactions();
+      expect(txs).toHaveLength(2);
+      expect(txs[0].payee).toBe('Earlier');
+      expect(txs[1].payee).toBe('Later');
+    });
+  });
+
+  describe('exportAllAccounts', () => {
+    it('returns all accounts sorted by name ascending', async () => {
+      await seedAccount({ name: 'Zeta' });
+      await seedAccount({ name: 'Beta' });
+      const accs = await exportAllAccounts();
+      expect(accs).toHaveLength(2);
+      expect(accs[0].name).toBe('Beta');
+      expect(accs[1].name).toBe('Zeta');
+    });
+  });
+});
+
 
