@@ -457,6 +457,14 @@
       "template": "{file:commands/projects.md}\n\n$ARGUMENTS"
     }
   },
+  "mcpServers": {
+    "netly-ledger": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer <token>"
+      }
+    }
+  },
   "permission": {
     "mcp_*": "ask",
     "npm *": "deny",

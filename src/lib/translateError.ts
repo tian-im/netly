@@ -25,6 +25,8 @@ const KNOWN_ERROR_CODES = new Set([
   'ERR_NO_CREDENTIALS_REGISTERED',
   'ERR_SETUP_TOKEN_EXPIRED_OR_INVALID',
   'ERR_UNAUTHORIZED',
+  'ERR_MCP_NAME_REQUIRED',
+  'ERR_MCP_TOKEN_NOT_FOUND',
 ]);
 
 export function translateError(err: unknown): string {

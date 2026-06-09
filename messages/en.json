@@ -520,7 +520,25 @@
     "currencyOptionUsd": "USD ($ - US Dollar)",
     "currencyOptionEur": "EUR (€ - Euro)",
     "currencyOptionGbp": "GBP (£ - British Pound)",
-    "currencyOptionCad": "CAD ($ - Canadian Dollar)"
+    "currencyOptionCad": "CAD ($ - Canadian Dollar)",
+    "mcpTitle": "Model Context Protocol (MCP) Access",
+    "mcpDesc": "Configure secure external AI agent integrations. Generate tokens to allow tools access over SSE.",
+    "mcpActiveTokens": "Active Access Tokens",
+    "mcpNoTokens": "No active MCP access tokens.",
+    "mcpCreateBtn": "Generate Token",
+    "mcpCreatedTitle": "MCP Token Generated",
+    "mcpCreatedDesc": "Copy this token immediately. For security, it will not be shown again.",
+    "mcpTokenLabel": "Access Token",
+    "mcpNameLabel": "Token Name",
+    "mcpNamePlaceholder": "e.g. OpenCode Client",
+    "mcpInstruction": "Add this token to your OpenCode config under `mcpServers.netly-ledger.headers.Authorization` as `Bearer <token>`.",
+    "mcpRevokeBtn": "Revoke",
+    "mcpCreatedSuccess": "MCP token generated successfully",
+    "mcpRevokedSuccess": "MCP token revoked successfully",
+    "mcpCreateFailed": "Failed to generate MCP token",
+    "mcpRevokeFailed": "Failed to revoke MCP token",
+    "mcpLastUsed": "Last used: {date}",
+    "mcpNeverUsed": "Never used"
   },
   "errorPage": {
     "title": "Application Error",
@@ -551,7 +569,9 @@
     "ERR_CANNOT_REMOVE_LAST_PASSKEY": "Cannot remove the last PassKey. Please add another one first.",
     "ERR_NO_CREDENTIALS_REGISTERED": "No credentials registered.",
     "ERR_SETUP_TOKEN_EXPIRED_OR_INVALID": "Setup code is expired or invalid.",
-    "ERR_UNAUTHORIZED": "Unauthorized access. Please sign in."
+    "ERR_UNAUTHORIZED": "Unauthorized access. Please sign in.",
+    "ERR_MCP_NAME_REQUIRED": "Token name is required.",
+    "ERR_MCP_TOKEN_NOT_FOUND": "Token not found."
   },
   "passkey": {
     "login": {

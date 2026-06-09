@@ -71,3 +71,11 @@ model Session {
   token     String   @unique
   createdAt DateTime @default(now())
 }
+
+model McpToken {
+  id         String    @id @default(uuid())
+  name       String
+  token      String    @unique // SHA-256 hashed
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+}

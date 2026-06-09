@@ -520,7 +520,25 @@
     "currencyOptionUsd": "USD（$ - 美元）",
     "currencyOptionEur": "EUR（€ - 欧元）",
     "currencyOptionGbp": "GBP（£ - 英镑）",
-    "currencyOptionCad": "CAD（$ - 加元）"
+    "currencyOptionCad": "CAD（$ - 加元）",
+    "mcpTitle": "Model Context Protocol (MCP) 外部接入",
+    "mcpDesc": "配置安全的外部 AI 代理集成。生成令牌以允许通过 SSE 传输协议访问工具。",
+    "mcpActiveTokens": "活跃访问令牌",
+    "mcpNoTokens": "暂无活跃的 MCP 访问令牌。",
+    "mcpCreateBtn": "生成访问令牌",
+    "mcpCreatedTitle": "已生成 MCP 访问令牌",
+    "mcpCreatedDesc": "请立即复制此令牌。出于安全考虑，它将不会再次显示。",
+    "mcpTokenLabel": "访问令牌",
+    "mcpNameLabel": "令牌名称",
+    "mcpNamePlaceholder": "例如：OpenCode 客户端",
+    "mcpInstruction": "将此令牌作为 `Bearer <token>` 添加到您的 OpenCode 配置中的 `mcpServers.netly-ledger.headers.Authorization`。",
+    "mcpRevokeBtn": "撤销",
+    "mcpCreatedSuccess": "成功生成 MCP 访问令牌",
+    "mcpRevokedSuccess": "成功撤销 MCP 访问令牌",
+    "mcpCreateFailed": "生成 MCP 访问令牌失败",
+    "mcpRevokeFailed": "撤销 MCP 访问令牌失败",
+    "mcpLastUsed": "最后使用: {date}",
+    "mcpNeverUsed": "从未被使用"
   },
   "errorPage": {
     "title": "应用错误",
@@ -551,7 +569,9 @@
     "ERR_CANNOT_REMOVE_LAST_PASSKEY": "无法删除最后一个 PassKey。请先添加另一个密钥。",
     "ERR_NO_CREDENTIALS_REGISTERED": "未注册任何凭证。",
     "ERR_SETUP_TOKEN_EXPIRED_OR_INVALID": "设置码已过期或无效。",
-    "ERR_UNAUTHORIZED": "未授权访问。请登录。"
+    "ERR_UNAUTHORIZED": "未授权访问。请登录。",
+    "ERR_MCP_NAME_REQUIRED": "令牌名称不能为空。",
+    "ERR_MCP_TOKEN_NOT_FOUND": "未找到令牌。"
   },
   "passkey": {
     "login": {

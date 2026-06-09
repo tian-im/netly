@@ -1,0 +1,345 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { parseCSV } from "@/lib/csv";
+import { matchRule } from "@/lib/rules";
+
+export function registerTransactionTools(server: McpServer) {
+  server.tool(
+    "import_csv",
+    "Import transactions from CSV content into a ledger account. Automatically filters duplicates and runs categorization rules.",
+    {
+      csvContent: z.string().describe("Raw CSV file content"),
+      accountId: z.string().uuid().describe("Target account ID"),
+      columnMapping: z.object({
+        date: z.string().describe("CSV header name for transaction date"),
+        payee: z.string().describe("CSV header name for payee/merchant"),
+        amount: z.string().optional().describe("CSV header name for single amount column"),
+        debit: z.string().optional().describe("CSV header name for debit column"),
+        credit: z.string().optional().describe("CSV header name for credit column"),
+        description: z.string().optional().describe("CSV header name for description"),
+      }).describe("Mapping of CSV headers to database fields"),
+      dateFormat: z.enum(["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "auto"]).optional().default("auto").describe("Format to parse date columns"),
+    },
+    async ({ csvContent, accountId, columnMapping, dateFormat }) => {
+      try {
+        const account = await db.account.findUnique({ where: { id: accountId } });
+        if (!account) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `Target account not found: ${accountId}` }],
+          };
+        }
+
+        const rules = await db.categoryRule.findMany({ include: { category: true } });
+
+        const dateFormatHint = dateFormat === "auto" ? undefined : dateFormat;
+        const parsedTx = parseCSV(csvContent, columnMapping as any, dateFormatHint);
+
+        if (parsedTx.length === 0) {
+          return {
+            content: [{ type: "text", text: JSON.stringify({ importedCount: 0, skippedCount: 0, uncategorizedCount: 0, message: "No transactions parsed." }) }],
+          };
+        }
+
+        const dates = parsedTx.map((tx) => tx.date.getTime());
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+
+        const existingTransactions = await db.transaction.findMany({
+          where: {
+            accountId,
+            date: { gte: minDate, lte: maxDate },
+          },
+        });
+
+        const makeHash = (date: Date, payee: string, amount: number) => {
+          const dateStr = date.toISOString().split("T")[0];
+          const roundedAmount = Math.round(amount * 100) / 100;
+          return `${dateStr}_${payee.toLowerCase().trim()}_${roundedAmount.toFixed(2)}`;
+        };
+
+        const existingSet = new Set(
+          existingTransactions.map((tx) => makeHash(tx.date, tx.payee, tx.amount))
+        );
+
+        let importedCount = 0;
+        let skippedCount = 0;
+        let uncategorizedCount = 0;
+        const newTransactionsData: any[] = [];
+
+        for (const tx of parsedTx) {
+          const hash = makeHash(tx.date, tx.payee, tx.amount);
+          if (existingSet.has(hash)) {
+            skippedCount++;
+            continue;
+          }
+
+          const matchedCategoryId = matchRule(tx.payee, tx.description, rules);
+          if (!matchedCategoryId) {
+            uncategorizedCount++;
+          }
+
+          newTransactionsData.push({
+            date: tx.date,
+            payee: tx.payee,
+            description: tx.description,
+            amount: Math.round(tx.amount * 100) / 100,
+            accountId,
+            categoryId: matchedCategoryId,
+            isReviewed: matchedCategoryId !== null,
+          });
+          importedCount++;
+        }
+
+        if (newTransactionsData.length > 0) {
+          const batchSize = 100;
+          await db.$transaction(async (tx) => {
+            for (let i = 0; i < newTransactionsData.length; i += batchSize) {
+              const batch = newTransactionsData.slice(i, i + batchSize);
+              await tx.transaction.createMany({ data: batch });
+            }
+          });
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                importedCount,
+                skippedCount,
+                uncategorizedCount,
+                message: `Successfully imported ${importedCount} transactions. Skipped ${skippedCount} duplicates. ${uncategorizedCount} transactions require manual categorization.`,
+              }),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Import failed: ${error.message || error}` }],
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "list_transactions",
+    "Query and list ledger transactions with optional filters and sorting.",
+    {
+      accountId: z.string().optional().describe("Filter by account ID"),
+      categoryId: z.string().optional().describe("Filter by category ID or use 'uncategorized' for transactions without a category"),
+      search: z.string().optional().describe("Search term for payees and descriptions"),
+      dateFrom: z.string().optional().describe("ISO date string for start period"),
+      dateTo: z.string().optional().describe("ISO date string for end period"),
+      isReviewed: z.boolean().optional().describe("Filter reviewed status"),
+      page: z.number().optional().default(1).describe("Page number"),
+      pageSize: z.number().optional().default(50).describe("Page size"),
+      sortBy: z.enum(["date", "amount", "payee"]).optional().default("date").describe("Sort by field"),
+      sortOrder: z.enum(["asc", "desc"]).optional().default("desc").describe("Sort direction"),
+      currency: z.string().optional().describe("Filter by account currency"),
+    },
+    async ({ accountId, categoryId, search, dateFrom, dateTo, isReviewed, page, pageSize, sortBy, sortOrder, currency }) => {
+      try {
+        const where: any = {};
+        if (accountId) where.accountId = accountId;
+        if (categoryId) {
+          if (categoryId.toLowerCase() === "uncategorized") {
+            where.categoryId = null;
+          } else {
+            where.categoryId = categoryId;
+          }
+        }
+        if (search) {
+          const cleanSearch = search.trim().toLowerCase();
+          where.OR = [
+            { payee: { contains: cleanSearch } },
+            { description: { contains: cleanSearch } },
+          ];
+        }
+        if (dateFrom || dateTo) {
+          where.date = {};
+          if (dateFrom) where.date.gte = new Date(dateFrom);
+          if (dateTo) where.date.lte = new Date(dateTo);
+        }
+        if (isReviewed !== undefined) {
+          where.isReviewed = isReviewed;
+        }
+        if (currency) {
+          where.account = { currency: currency.toUpperCase() };
+        }
+
+        const currentPage = page ?? 1;
+        const currentPageSize = pageSize ?? 50;
+
+        const totalCount = await db.transaction.count({ where });
+
+        let orderBy: any = { date: "desc" };
+        if (sortBy && sortOrder) {
+          orderBy = { [sortBy]: sortOrder };
+        }
+
+        const transactions = await db.transaction.findMany({
+          where,
+          include: { account: true, category: true },
+          orderBy,
+          skip: (currentPage - 1) * currentPageSize,
+          take: currentPageSize,
+        });
+
+        const formatted = transactions.map((t) => ({
+          id: t.id,
+          date: t.date.toISOString(),
+          payee: t.payee,
+          description: t.description,
+          amount: t.amount,
+          accountName: t.account.name,
+          accountId: t.accountId,
+          currency: t.account.currency,
+          categoryName: t.category?.name || "Uncategorized",
+          categoryId: t.categoryId,
+          isReviewed: t.isReviewed,
+        }));
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                transactions: formatted,
+                totalCount,
+                page,
+                pageSize,
+              }),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Failed to query transactions: ${error.message || error}` }],
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "update_transaction_category",
+    "Assign a category to multiple transactions. Can optionally create an auto-categorization rule for the merchant.",
+    {
+      transactionIds: z.array(z.string()).describe("List of transaction UUIDs to update"),
+      categoryId: z.string().nullable().describe("Category ID to assign, or null to uncategorize"),
+      createRule: z.boolean().optional().default(false).describe("If true, automatically creates a payee match rule based on the first transaction's payee"),
+    },
+    async ({ transactionIds, categoryId, createRule }) => {
+      try {
+        await db.transaction.updateMany({
+          where: { id: { in: transactionIds } },
+          data: {
+            categoryId,
+            isReviewed: categoryId !== null,
+          },
+        });
+
+        let ruleCreated = false;
+        if (createRule && categoryId && transactionIds.length > 0) {
+          const firstTx = await db.transaction.findUnique({
+            where: { id: transactionIds[0] },
+          });
+          if (firstTx && firstTx.payee) {
+            const pattern = firstTx.payee.trim().toLowerCase();
+            const existingRule = await db.categoryRule.findFirst({
+              where: { pattern, categoryId },
+            });
+            if (!existingRule) {
+              await db.categoryRule.create({
+                data: { pattern, categoryId },
+              });
+              ruleCreated = true;
+            }
+          }
+        }
+
+        return {
+          content: [{ type: "text", text: JSON.stringify({ updated: transactionIds.length, ruleCreated }) }],
+        };
+      } catch (error: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Failed to update categories: ${error.message || error}` }],
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "categorize_uncategorized",
+    "Batch-categorize all CURRENTLY uncategorized transactions whose payee or description matches a keyword pattern. (Note: Use create_category_rule if you want a perpetual rule that automatically runs on all future CSV imports as well).",
+    {
+      pattern: z.string().describe("Keyword pattern to match against payee or description (case-insensitive)"),
+      categoryId: z.string().uuid().describe("Category ID to assign to the matched transactions"),
+      createRule: z.boolean().optional().default(false).describe("If true, creates a payee match rule so future imports are categorized automatically"),
+    },
+    async ({ pattern, categoryId, createRule }) => {
+      try {
+        const lowerPattern = pattern.trim().toLowerCase();
+
+        // 1. Find all matching uncategorized transactions
+        const matchedTransactions = await db.transaction.findMany({
+          where: {
+            categoryId: null,
+            OR: [
+              { payee: { contains: lowerPattern } },
+              { description: { contains: lowerPattern } },
+            ],
+          },
+        });
+        const matchedTxIds = matchedTransactions.map((tx) => tx.id);
+
+        // 2. Perform the update if there are matches
+        if (matchedTxIds.length > 0) {
+          await db.transaction.updateMany({
+            where: { id: { in: matchedTxIds } },
+            data: {
+              categoryId,
+              isReviewed: true,
+            },
+          });
+        }
+
+        // 3. Create the rule if requested and does not already exist
+        let ruleCreated = false;
+        if (createRule) {
+          const existingRule = await db.categoryRule.findFirst({
+            where: { pattern: lowerPattern, categoryId },
+          });
+          if (!existingRule) {
+            await db.categoryRule.create({
+              data: { pattern: lowerPattern, categoryId },
+            });
+            ruleCreated = true;
+          }
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                updatedCount: matchedTxIds.length,
+                ruleCreated,
+                message: `Successfully categorized ${matchedTxIds.length} transactions. Rule created: ${ruleCreated}.`,
+              }),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Failed to batch categorize transactions: ${error.message || error}` }],
+        };
+      }
+    }
+  );
+}

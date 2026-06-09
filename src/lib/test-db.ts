@@ -40,6 +40,7 @@ export async function clearTestDb(): Promise<void> {
     db.transaction.deleteMany(),
     db.category.deleteMany(),
     db.account.deleteMany(),
+    db.mcpToken.deleteMany(),
   ]);
 }
 
