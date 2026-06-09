@@ -15,11 +15,17 @@ interface Account {
 
 interface Transaction {
   id: string;
-  date: Date;
+  date: Date | string;
   amount: number;
   accountId: string;
   currency: string;
-  category: { name: string; type: string } | null;
+  categoryId: string | null;
+  category: {
+    id: string;
+    name: string;
+    type: string;
+    cashFlowType: string;
+  } | null;
 }
 
 interface AccountsClientProps {
@@ -52,18 +58,8 @@ export default function AccountsClient({
   }));
 
   const mappedTransactions = initialTransactions.map((t) => ({
-    id: t.id,
+    ...t,
     date: new Date(t.date),
-    amount: t.amount,
-    accountId: t.accountId,
-    currency: t.currency,
-    categoryId: null,
-    category: t.category ? {
-      id: '',
-      name: t.category.name,
-      type: t.category.type,
-      cashFlowType: 'OPERATING',
-    } : null,
   }));
 
   const bs = generateBalanceSheet(mappedAccounts, mappedTransactions, lastDay);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from './reports';
+import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement, mapTransactionForClient } from './reports';
 
 interface AccountMock {
   id: string;
@@ -295,6 +295,56 @@ describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
       const cashFlow = generateCashFlowStatement(legacyTransactions as any, new Date('2026-06-01'), new Date('2026-06-30'));
       expect(cashFlow.totals.AUD).toBeDefined();
       expect(cashFlow.totals.AUD.operating.net).toBe(200);
+    });
+  });
+
+  describe('mapTransactionForClient', () => {
+    it('should map a full database transaction record to a clean, serializable client-friendly shape', () => {
+      const mockTx = {
+        id: 'tx_test',
+        date: new Date('2026-06-01'),
+        amount: 50.5,
+        accountId: 'acc_1',
+        categoryId: 'cat_1',
+        account: {
+          currency: 'USD',
+        },
+        category: {
+          id: 'cat_1',
+          name: 'Food',
+          type: 'EXPENSE',
+          cashFlowType: 'OPERATING',
+        },
+      };
+
+      const mapped = mapTransactionForClient(mockTx);
+
+      expect(mapped.id).toBe('tx_test');
+      expect(mapped.amount).toBe(50.5);
+      expect(mapped.currency).toBe('USD');
+      expect(mapped.categoryId).toBe('cat_1');
+      expect(mapped.category).toEqual({
+        id: 'cat_1',
+        name: 'Food',
+        type: 'EXPENSE',
+        cashFlowType: 'OPERATING',
+      });
+    });
+
+    it('should default currency to AUD if no account relation is provided', () => {
+      const mockTx = {
+        id: 'tx_test_2',
+        date: new Date('2026-06-01'),
+        amount: -100,
+        accountId: 'acc_1',
+        categoryId: null,
+        category: null,
+      };
+
+      const mapped = mapTransactionForClient(mockTx);
+
+      expect(mapped.currency).toBe('AUD');
+      expect(mapped.category).toBeNull();
     });
   });
 });

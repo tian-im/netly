@@ -1,5 +1,6 @@
 import { getAccounts, getTransactions } from '../actions';
 import AccountsClient from './accounts-client';
+import { mapTransactionForClient } from '@/lib/reports';
 
 export const revalidate = 0; // Disable caching so accounts manager is always up-to-date
 
@@ -17,17 +18,7 @@ export default async function AccountsPage() {
     _count: a._count,
   }));
 
-  const mappedTransactions = transactionsList.map((t) => ({
-    id: t.id,
-    date: t.date,
-    amount: t.amount,
-    accountId: t.accountId,
-    currency: t.account.currency,
-    category: t.category ? {
-      name: t.category.name,
-      type: t.category.type,
-    } : null,
-  }));
+  const mappedTransactions = transactionsList.map(mapTransactionForClient);
 
   return (
     <div className="space-y-6">
