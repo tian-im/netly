@@ -19,6 +19,7 @@ import {
   TrendingUp,
   BarChart3,
   Wallet,
+  Tag,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
@@ -479,56 +480,66 @@ export default function DashboardClient({
 
                   let pathD = '';
                   let areaD = '';
-                  if (netWorthTrend.length > 0) {
+                      if (netWorthTrend.length > 0) {
                     pathD = `M ${getX(0)} ${getY(netWorthTrend[0].value)}`;
                     areaD = `M ${getX(0)} 95 L ${getX(0)} ${getY(netWorthTrend[0].value)}`;
                     for (let i = 1; i < netWorthTrend.length; i++) {
-                      pathD += ` L ${getX(i)} ${getY(netWorthTrend[i].value)}`;
-                      areaD += ` L ${getX(i)} ${getY(netWorthTrend[i].value)}`;
+                      const x0 = getX(i - 1);
+                      const y0 = getY(netWorthTrend[i - 1].value);
+                      const x1 = getX(i);
+                      const y1 = getY(netWorthTrend[i].value);
+                      const cp1x = x0 + (x1 - x0) / 2;
+                      const cp1y = y0;
+                      const cp2x = x0 + (x1 - x0) / 2;
+                      const cp2y = y1;
+                      pathD += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x1} ${y1}`;
+                      areaD += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x1} ${y1}`;
                     }
                     areaD += ` L ${getX(netWorthTrend.length - 1)} 95 Z`;
                   }
 
                   return (
                     <div className="w-full h-full flex flex-col">
-                      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-40 overflow-visible">
-                        <defs>
-                          <linearGradient id="trendAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--p))" stopOpacity="0.25" />
-                            <stop offset="100%" stopColor="hsl(var(--p))" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        {/* Grid lines */}
-                        <line x1="0" y1="15" x2="100" y2="15" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
-                        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
-                        <line x1="0" y1="85" x2="100" y2="85" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
+                      <div className="relative w-full h-40">
+                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible">
+                          <defs>
+                            <linearGradient id="trendAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="hsl(var(--p))" stopOpacity="0.25" />
+                              <stop offset="100%" stopColor="hsl(var(--p))" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          {/* Grid lines */}
+                          <line x1="0" y1="15" x2="100" y2="15" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
+                          <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
+                          <line x1="0" y1="85" x2="100" y2="85" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
 
-                        {/* Area gradient under line */}
-                        {areaD && <path d={areaD} fill="url(#trendAreaGradient)" />}
-
-                        {/* Stroke Path */}
-                        {pathD && (
-                          <path
+                          {/* Stroke Path */}
+                          {pathD && (
+                            <path
                               d={pathD}
                               fill="none"
-                              stroke="hsl(var(--p))"
+                              className="stroke-primary"
                               strokeWidth="1.5"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                          />
-                        )}
+                              vectorEffect="non-scaling-stroke"
+                            />
+                          )}
+                        </svg>
 
                         {/* Node Dots */}
                         {netWorthTrend.map((m, idx) => (
-                          <circle
+                          <div
                             key={idx}
-                            cx={getX(idx)}
-                            cy={getY(m.value)}
-                            r="1.2"
-                            className="fill-primary stroke-base-100 stroke-[0.4] hover:r-2 transition-all cursor-pointer"
+                            style={{
+                              left: `${getX(idx)}%`,
+                              top: `${getY(m.value)}%`,
+                            }}
+                            className="absolute -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary border-2 border-base-100 shadow-md transition-all hover:scale-150 cursor-pointer"
+                            title={`${m.label}: $${m.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           />
                         ))}
-                      </svg>
+                      </div>
                       {/* X-axis labels */}
                       <div className="flex justify-between text-[10px] font-bold opacity-60 px-1 mt-2">
                         {netWorthTrend.map((m, idx) => (
@@ -564,11 +575,10 @@ export default function DashboardClient({
                   y={100 - Math.min(85, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
                   width="30"
                   height={Math.min(85, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
-                  fill="hsl(var(--p))"
                   rx="4"
-                  className="transition-all duration-500"
+                  className="fill-success transition-all duration-500"
                 />
-                <text x="55" y="95" textAnchor="middle" fill="hsl(var(--pc))" className="text-[10px] font-extrabold">{t('chartIncomeLabel')}</text>
+                <text x="55" y="95" textAnchor="middle" className="fill-success-content text-[10px] font-extrabold">{t('chartIncomeLabel')}</text>
                 
                 {/* Expense Bar */}
                 <rect
@@ -576,22 +586,21 @@ export default function DashboardClient({
                   y={100 - Math.min(85, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
                   width="30"
                   height={Math.min(85, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
-                  fill="hsl(var(--s))"
                   rx="4"
-                  className="transition-all duration-500"
+                  className="fill-error transition-all duration-500"
                 />
-                <text x="145" y="95" textAnchor="middle" fill="hsl(var(--sc))" className="text-[10px] font-extrabold">{t('chartExpenseLabel')}</text>
+                <text x="145" y="95" textAnchor="middle" className="fill-error-content text-[10px] font-extrabold">{t('chartExpenseLabel')}</text>
               </svg>
 
               <div className="w-full grid grid-cols-2 gap-4 text-xs font-bold border-t border-base-200 pt-3">
                 <div className="flex flex-col">
-                  <span className="text-primary text-[10px] uppercase opacity-60">{t('totalIncome')}</span>
+                  <span className="text-success/70 text-[10px] uppercase opacity-85">{t('totalIncome')}</span>
                   <span className="text-sm font-extrabold text-success">
                     +${visualIS.totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 </div>
                 <div className="flex flex-col border-l border-base-200 pl-3">
-                  <span className="text-secondary text-[10px] uppercase opacity-60">{t('totalExpenses')}</span>
+                  <span className="text-error/70 text-[10px] uppercase opacity-85">{t('totalExpenses')}</span>
                   <span className="text-sm font-extrabold text-error">
                     -${visualIS.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
@@ -655,8 +664,9 @@ export default function DashboardClient({
         {/* Income Sources breakdown */}
         <div className="card bg-base-100 shadow-lg border border-base-200">
           <div className="card-body p-6">
-            <h3 className="card-title text-base font-bold text-success mb-2">
-              🏷️ {t('incomeBreakdown', { currency: currentVisualCurrency })}
+            <h3 className="card-title text-base font-bold text-success mb-2 flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              {t('incomeBreakdown', { currency: currentVisualCurrency })}
             </h3>
             <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
               {sortedIncome.length === 0 ? (
@@ -684,8 +694,9 @@ export default function DashboardClient({
         {/* Expense Categories progress bars */}
         <div className="card bg-base-100 shadow-lg border border-base-200">
           <div className="card-body p-6">
-            <h3 className="card-title text-base font-bold text-error mb-2">
-              🏷️ {t('expenseBreakdown', { currency: currentVisualCurrency })}
+            <h3 className="card-title text-base font-bold text-error mb-2 flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              {t('expenseBreakdown', { currency: currentVisualCurrency })}
             </h3>
             <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
               {sortedExpenses.length === 0 ? (
