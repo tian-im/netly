@@ -118,7 +118,8 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
    - Team/project knowledge (architecture decisions, API changes, runbooks) → the project's existing docs structure
    - If the current task already produces the relevant docs or code comments, do not duplicate the same information elsewhere
    - If there is no obvious project doc location, ask before creating a new top-level file
-5. **Commit** — Conventional commits format, comprehensive PR summaries
+5. **Verify** — Run tests (`docker compose exec -T web npm run test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
+6. **Commit** — ONLY commit when the user explicitly requests it. Never auto-commit after completing work.
 
 ## Workflow Surface Policy
 
@@ -126,7 +127,13 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 - New workflow contributions should land in `skills/` first.
 - `commands/` is a legacy slash-entry compatibility surface and should only be added or updated when a shim is still required for migration or cross-harness parity.
 
+## Command Execution
+
+> **RULE: ALL commands (npm, npx, prisma, tsc, vitest, sqlite3, etc.) MUST be run inside the container via `docker compose exec -T web <command>`. Never run them directly on the host machine.**
+
 ## Git Workflow
+
+> **RULE: Never run `git commit` or `git push` autonomously. Only commit when the user explicitly asks for it.**
 
 **Commit format:** `<type>: <description>` — Types: feat, fix, refactor, docs, test, chore, perf, ci
 
