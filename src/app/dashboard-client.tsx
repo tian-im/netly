@@ -1,7 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { generateBalanceSheet, generateIncomeStatement } from '@/lib/reports';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  generateBalanceSheet,
+  generateIncomeStatement,
+  generateCashFlowStatement,
+} from '@/lib/reports';
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  AlertTriangle,
+  PiggyBank,
+  DollarSign,
+  Activity,
+  Calendar,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface Account {
   id: string;
@@ -14,11 +31,17 @@ interface Account {
 
 interface Transaction {
   id: string;
-  date: Date;
+  date: Date | string;
   amount: number;
   accountId: string;
   currency: string;
-  category: { name: string; type: string } | null;
+  categoryId: string | null;
+  category: {
+    id: string;
+    name: string;
+    type: string;
+    cashFlowType: string;
+  } | null;
 }
 
 interface DashboardClientProps {
@@ -27,19 +50,37 @@ interface DashboardClientProps {
   uncategorizedCount: number;
 }
 
+type PeriodType = 'current' | '3m' | '6m' | 'ytd' | '12m';
+
 export default function DashboardClient({
   initialAccounts,
   initialTransactions,
   uncategorizedCount,
 }: DashboardClientProps) {
+  const router = useRouter();
   const [accounts] = useState(initialAccounts);
+  const [period, setPeriod] = useState<PeriodType>('current');
 
-  // Financial report dates (Current Month defaults)
+  // Refresh data on mount to resolve stale server count
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
+
+  // Unified set of all active currencies across accounts
+  const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
+  const [selectedVisualCurrency, setSelectedVisualCurrency] = useState('AUD');
+  const currentVisualCurrency = activeCurrencies.includes(selectedVisualCurrency)
+    ? selectedVisualCurrency
+    : (activeCurrencies[0] || 'AUD');
+
   const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  // Compile calculations
+  // Parse transaction dates once
+  const mappedTransactions = initialTransactions.map((t) => ({
+    ...t,
+    date: new Date(t.date),
+  }));
+
   const mappedAccounts = accounts.map((a) => ({
     id: a.id,
     name: a.name,
@@ -48,42 +89,76 @@ export default function DashboardClient({
     currency: a.currency,
   }));
 
-  const mappedTransactions = initialTransactions.map((t) => ({
-    id: t.id,
-    date: new Date(t.date),
-    amount: t.amount,
-    accountId: t.accountId,
-    currency: t.currency,
-    categoryId: null,
-    category: t.category ? {
-      id: '',
-      name: t.category.name,
-      type: t.category.type,
-      cashFlowType: 'OPERATING',
-    } : null,
-  }));
+  // Determine current period date boundaries
+  let firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+  if (period === '3m') {
+    firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  } else if (period === '6m') {
+    firstDay = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  } else if (period === 'ytd') {
+    firstDay = new Date(now.getFullYear(), 0, 1);
+  } else if (period === '12m') {
+    firstDay = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  }
+
+  // Current selected period reports
   const bs = generateBalanceSheet(mappedAccounts, mappedTransactions, lastDay);
   const is = generateIncomeStatement(mappedTransactions, firstDay, lastDay);
+  const cfs = generateCashFlowStatement(mappedTransactions, firstDay, lastDay);
 
-  // Uncategorized transactions count — sourced directly from DB query in the server component
-  const pendingCount = uncategorizedCount;
+  // Dynamic Prior Period Date Ranges for comparative delta arrows
+  let prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  let prevPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-  // Unified set of all currencies across accounts and transactions
-  const allCurrencies = Array.from(
-    new Set([
-      ...Object.keys(bs.totals),
-      ...Object.keys(is.totals),
-    ])
-  ).sort();
+  if (period === '3m') {
+    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    prevPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 2, 0);
+  } else if (period === '6m') {
+    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    prevPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 5, 0);
+  } else if (period === '12m') {
+    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 23, 1);
+    prevPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 11, 0);
+  } else if (period === 'ytd') {
+    prevPeriodStart = new Date(now.getFullYear() - 1, 0, 1);
+    const lastDayOfPrevYearMonth = new Date(now.getFullYear() - 1, now.getMonth() + 1, 0).getDate();
+    const safeDay = Math.min(now.getDate(), lastDayOfPrevYearMonth);
+    prevPeriodEnd = new Date(now.getFullYear() - 1, now.getMonth(), safeDay);
+  }
 
-  // Visualizations State (Choose currency to render details for)
-  const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
-  const [selectedVisualCurrency, setSelectedVisualCurrency] = useState('AUD');
-  const currentVisualCurrency = activeCurrencies.includes(selectedVisualCurrency)
-    ? selectedVisualCurrency
-    : (activeCurrencies[0] || 'AUD');
+  // Calculate prior period reports
+  const prevBS = generateBalanceSheet(mappedAccounts, mappedTransactions, prevPeriodEnd);
+  const prevIS = generateIncomeStatement(mappedTransactions, prevPeriodStart, prevPeriodEnd);
 
+  // Calculate Net Worth Trend over the selected period (trailing or fixed to period size)
+  let trendLength = 12;
+  if (period === 'current') trendLength = 6; // Trailing 6 months to make current month view readable as a line
+  else if (period === '3m') trendLength = 3;
+  else if (period === '6m') trendLength = 6;
+  else if (period === 'ytd') trendLength = now.getMonth() + 1;
+  else if (period === '12m') trendLength = 12;
+
+  const trendMonths = Array.from({ length: trendLength }).map((_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (trendLength - 1 - i), 1);
+    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    return {
+      label: d.toLocaleDateString('default', { month: 'short' }),
+      end: monthEnd,
+    };
+  });
+
+  const netWorthTrend = trendMonths.map((m) => {
+    const tempBS = generateBalanceSheet(mappedAccounts, mappedTransactions, m.end);
+    const value = tempBS.totals[currentVisualCurrency]?.netWorth ?? 0;
+    return {
+      label: m.label,
+      value,
+    };
+  });
+
+  // Selected currency metrics
   const visualIS = is.totals[currentVisualCurrency] || {
     income: [],
     expenses: [],
@@ -92,186 +167,581 @@ export default function DashboardClient({
     netIncome: 0,
   };
 
-  // Sort expenses by amount descending for "Top Expense Categories"
+  const visualCF = cfs.totals[currentVisualCurrency] || {
+    operating: { inflow: 0, outflow: 0, net: 0 },
+    investing: { inflow: 0, outflow: 0, net: 0 },
+    financing: { inflow: 0, outflow: 0, net: 0 },
+    netCashFlow: 0,
+  };
+
+  // Savings rate calculation
+  const savingsRate = visualIS.totalIncome > 0 
+    ? (visualIS.netIncome / visualIS.totalIncome) * 100 
+    : 0;
+
+  // OCF & FCF
+  const ocf = visualCF.operating.net;
+  const fcf = visualCF.operating.net - visualCF.investing.outflow;
+
+  // Cash Runway calculation
+  const liquidAssets = bs.totals[currentVisualCurrency]?.totalAssets ?? 0;
+  let periodMonths = 1;
+  if (period === '3m') periodMonths = 3;
+  else if (period === '6m') periodMonths = 6;
+  else if (period === 'ytd') periodMonths = now.getMonth() + 1;
+  else if (period === '12m') periodMonths = 12;
+
+  const averageMonthlyCashFlow = visualCF.netCashFlow / periodMonths;
+  const isBurn = averageMonthlyCashFlow < 0;
+  const runwayMonths = isBurn ? liquidAssets / Math.abs(averageMonthlyCashFlow) : null;
+
+  // Sort categories descending
   const sortedExpenses = [...visualIS.expenses].sort((a, b) => b.amount - a.amount);
+  const sortedIncome = [...visualIS.income].sort((a, b) => b.amount - a.amount);
 
   return (
     <div className="space-y-6">
-      {/* Overview Stat Cards */}
-      <div className="stats stats-vertical md:stats-horizontal shadow bg-base-100 w-full overflow-hidden">
-        <div className="stat min-w-[280px]">
-          <div className="stat-title text-base-content/60 font-bold">Net Worth</div>
-          <div className="space-y-2 mt-2">
-            {allCurrencies.length === 0 ? (
-              <div className="text-sm opacity-50 py-1">No accounts created</div>
-            ) : (
-              allCurrencies.map((currency) => {
-                const netWorth = bs.totals[currency]?.netWorth ?? 0;
-                return (
-                  <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
-                    <span className="badge badge-outline badge-sm font-bold">{currency}</span>
-                    <span className={`text-xl font-extrabold ${netWorth >= 0 ? 'text-success' : 'text-error'}`}>
-                      {netWorth >= 0 ? '' : '-'}${Math.abs(netWorth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                );
-              })
-            )}
+      {/* Review Queue Alert banner */}
+      {uncategorizedCount > 0 && (
+        <div className="alert alert-warning shadow-md border-l-4 border-warning flex justify-between items-center bg-warning/10 text-warning-content">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+            <div>
+              <span className="font-bold">Uncategorized transactions pending!</span>
+              <p className="text-xs opacity-90 mt-0.5">
+                You have {uncategorizedCount} transaction{uncategorizedCount === 1 ? '' : 's'} without a category. Financial reports and metrics will be incomplete.
+              </p>
+            </div>
           </div>
+          <Link
+            href="/transactions?filter=uncategorized"
+            className="btn btn-warning btn-sm gap-1 hover:scale-105 transition-transform"
+          >
+            Categorize Now <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
+
+      {/* Selector Options Header Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-base-100 p-4 rounded-2xl shadow-sm border border-base-200">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span className="font-bold text-sm text-base-content/70">Analyze Period:</span>
+            <div className="join bg-base-200 p-0.5 rounded-lg">
+              {(
+                [
+                  { id: 'current', label: 'Month' },
+                  { id: '3m', label: '3M' },
+                  { id: '6m', label: '6M' },
+                  { id: 'ytd', label: 'YTD' },
+                  { id: '12m', label: '12M' },
+                ] as const
+              ).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPeriod(p.id)}
+                  className={`btn btn-xs join-item rounded-md border-0 ${
+                    period === p.id
+                      ? 'btn-primary text-primary-content shadow-sm'
+                      : 'bg-transparent text-base-content/70 hover:bg-base-300'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Link
+            href="/reports"
+            className="btn btn-outline btn-xs gap-1 text-primary border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+          >
+            Detailed Statements <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
 
-        <div className="stat min-w-[280px]">
-          <div className="stat-title text-base-content/60 font-bold">Month Net Income</div>
-          <div className="space-y-2 mt-2">
-            {allCurrencies.length === 0 ? (
-              <div className="text-sm opacity-50 py-1">No accounts created</div>
-            ) : (
-              allCurrencies.map((currency) => {
-                const netIncome = is.totals[currency]?.netIncome ?? 0;
-                return (
-                  <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
-                    <span className="badge badge-outline badge-sm font-bold">{currency}</span>
-                    <span className={`text-xl font-extrabold ${netIncome >= 0 ? 'text-success' : 'text-error'}`}>
-                      {netIncome >= 0 ? '' : '-'}${Math.abs(netIncome).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                );
-              })
-            )}
+        {activeCurrencies.length > 1 && (
+          <div className="flex items-center gap-2 justify-end">
+            <span className="text-xs font-bold opacity-60">Currency:</span>
+            <div className="join bg-base-200 p-0.5 rounded-lg">
+              {activeCurrencies.map((cur) => (
+                <button
+                  key={cur}
+                  onClick={() => setSelectedVisualCurrency(cur)}
+                  className={`btn btn-xs join-item rounded-md border-0 ${
+                    currentVisualCurrency === cur
+                      ? 'btn-primary text-primary-content shadow-sm'
+                      : 'bg-transparent text-base-content/70 hover:bg-base-300'
+                  }`}
+                >
+                  {cur}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div className="stat">
-          <div className="stat-title text-base-content/60 font-bold">Review Queue</div>
-          <div className="stat-value text-3xl text-warning font-extrabold mt-1">
-            {pendingCount} <span className="text-base font-bold opacity-60">txns</span>
-          </div>
-          <div className="stat-desc mt-1">{pendingCount === 1 ? 'transaction' : 'transactions'} needing a category</div>
-        </div>
+        )}
       </div>
 
-      {/* Main expanded cards list */}
-      <div className="space-y-6">
-        {/* Managed Accounts table (expanded to take full width) */}
-        <div className="card bg-base-100 shadow-xl border border-base-200">
-          <div className="card-body">
-            <h2 className="card-title text-xl font-bold flex justify-between items-center text-primary">
-              💰 Managed Accounts
-            </h2>
-            
-            {accounts.length === 0 ? (
-              <div className="text-center py-8 text-base-content/50">
-                No accounts created yet. Please create an account in Accounts manager to start importing statement CSV files.
-              </div>
-            ) : (
-              <div className="overflow-x-auto mt-4">
-                <table className="table w-full">
-                  <thead>
-                    <tr className="border-b border-base-200">
-                      <th>Account Name</th>
-                      <th>Type</th>
-                      <th className="text-right">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accounts.map((acc) => {
-                      const accBalance = bs.accounts.find((a) => a.id === acc.id)?.balance ?? acc.startingBalance;
-                      return (
-                        <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
-                          <td>
-                            <div className="font-bold flex items-center gap-2">
-                              {acc.name}
-                              <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
-                            </div>
-                            <div className="text-xs text-base-content/50">
-                              {acc._count?.transactions || 0} transaction(s)
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-sm font-semibold`}>
-                              {acc.type}
-                            </span>
-                          </td>
-                          <td className={`text-right font-mono font-bold ${accBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                            ${accBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Net Worth */}
+        <div className="card bg-base-100 shadow-md border border-base-200">
+          <div className="card-body p-5">
+            <div className="flex justify-between items-start">
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">Net Worth</span>
+              <DollarSign className="h-5 w-5 text-primary" />
+            </div>
+            <div className="mt-2">
+              {accounts.length === 0 ? (
+                <span className="text-sm opacity-50">No accounts</span>
+              ) : (
+                (() => {
+                  const currentNW = bs.totals[currentVisualCurrency]?.netWorth ?? 0;
+                  const priorNW = prevBS.totals[currentVisualCurrency]?.netWorth ?? 0;
+                  const nwDelta = currentNW - priorNW;
+                  const nwPct = priorNW !== 0 ? (nwDelta / Math.abs(priorNW)) * 100 : 0;
+
+                  return (
+                    <div>
+                      <div className={`text-2xl font-extrabold ${currentNW >= 0 ? 'text-success' : 'text-error'}`}>
+                        {currentNW >= 0 ? '' : '-'}${Math.abs(currentNW).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1 text-xs">
+                        {nwDelta >= 0 ? (
+                          <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+                        ) : (
+                          <ArrowDownRight className="h-3.5 w-3.5 text-error" />
+                        )}
+                        <span className={nwDelta >= 0 ? 'text-success font-semibold' : 'text-error font-semibold'}>
+                          {nwDelta >= 0 ? '+' : '-'}${Math.abs(nwDelta).toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}{' '}
+                          ({nwPct.toFixed(1)}%)
+                        </span>
+                        <span className="opacity-50">vs prior period</span>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
           </div>
         </div>
 
-        {/* SVG Visualizations: Income vs Expenses (expanded to take full width) */}
-        <div className="card bg-base-100 shadow-xl border border-base-200">
-          <div className="card-body">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-base-200 pb-3 mb-2">
-              <h2 className="card-title text-xl font-bold text-primary">📊 Cash Flow (Current Month)</h2>
-              {activeCurrencies.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold opacity-60">Currency:</span>
-                  <div className="join">
-                    {activeCurrencies.map((cur) => (
-                      <button
-                        key={cur}
-                        onClick={() => setSelectedVisualCurrency(cur)}
-                        className={`btn btn-xs join-item ${currentVisualCurrency === cur ? 'btn-primary' : 'btn-outline'}`}
-                      >
-                        {cur}
-                      </button>
-                    ))}
+        {/* Net Income */}
+        <div className="card bg-base-100 shadow-md border border-base-200">
+          <div className="card-body p-5">
+            <div className="flex justify-between items-start">
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">
+                {period === 'current' ? 'Month' : period.toUpperCase()} Net Income
+              </span>
+              <Activity className="h-5 w-5 text-primary" />
+            </div>
+            <div className="mt-2">
+              {accounts.length === 0 ? (
+                <span className="text-sm opacity-50">No accounts</span>
+              ) : (
+                (() => {
+                  const periodIncome = visualIS.netIncome;
+                  const priorIncome = prevIS.totals[currentVisualCurrency]?.netIncome ?? 0;
+                  const incomeDelta = periodIncome - priorIncome;
+                  const incomePct = priorIncome !== 0 ? (incomeDelta / Math.abs(priorIncome)) * 100 : 0;
+
+                  return (
+                    <div>
+                      <div className={`text-2xl font-extrabold ${periodIncome >= 0 ? 'text-success' : 'text-error'}`}>
+                        {periodIncome >= 0 ? '' : '-'}${Math.abs(periodIncome).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1 text-xs">
+                        {incomeDelta >= 0 ? (
+                          <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+                        ) : (
+                          <ArrowDownRight className="h-3.5 w-3.5 text-error" />
+                        )}
+                        <span className={incomeDelta >= 0 ? 'text-success font-semibold' : 'text-error font-semibold'}>
+                          {incomeDelta >= 0 ? '+' : '-'}${Math.abs(incomeDelta).toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          })}{' '}
+                          ({incomePct.toFixed(1)}%)
+                        </span>
+                        <span className="opacity-50">vs prior period</span>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Savings Rate */}
+        <div className="card bg-base-100 shadow-md border border-base-200">
+          <div className="card-body p-5">
+            <div className="flex justify-between items-start">
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">Savings Rate</span>
+              <PiggyBank className="h-5 w-5 text-primary" />
+            </div>
+            <div className="mt-2">
+              <div className={`text-2xl font-extrabold ${savingsRate >= 0 ? 'text-success' : 'text-error'}`}>
+                {savingsRate.toFixed(1)}%
+              </div>
+              <div className="w-full bg-base-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div
+                  className={`h-full ${savingsRate >= 20 ? 'bg-success' : savingsRate >= 0 ? 'bg-warning' : 'bg-error'}`}
+                  style={{ width: `${Math.max(0, Math.min(100, savingsRate))}%` }}
+                ></div>
+              </div>
+              <span className="text-xs opacity-50 mt-1 block">Target: 20%+</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Cash runway / cash balance info */}
+        <div className="card bg-base-100 shadow-md border border-base-200">
+          <div className="card-body p-5">
+            <div className="flex justify-between items-start">
+              <span className="text-sm font-bold opacity-60 uppercase tracking-wider">Cash Runway</span>
+              <AlertTriangle className={`h-5 w-5 ${isBurn ? 'text-error animate-pulse' : 'text-success'}`} />
+            </div>
+            <div className="mt-2">
+              {isBurn && runwayMonths !== null ? (
+                <div>
+                  <div className="text-2xl font-extrabold text-error">
+                    {runwayMonths < 1 ? 'Under 1 Month' : `${runwayMonths.toFixed(1)} Mos`}
                   </div>
+                  <span className="text-xs text-error font-semibold block mt-1">
+                    Burn rate: ${Math.abs(averageMonthlyCashFlow).toFixed(0)}/mo
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-2xl font-extrabold text-success">Infinite</div>
+                  <span className="text-xs text-success font-semibold block mt-1">
+                    Net cash flow: +${averageMonthlyCashFlow.toFixed(0)}/mo
+                  </span>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="flex flex-col md:flex-row items-center justify-around gap-12 mt-4">
-              {/* SVG comparison chart */}
-              <div className="relative w-full max-w-md h-52 bg-base-200 rounded-xl p-4 flex flex-col justify-between">
-                <div className="text-xs text-base-content/50 font-bold uppercase tracking-wider">Inflows vs Outflows ({currentVisualCurrency})</div>
-                
-                {/* Simple SVG Chart */}
-                <svg viewBox="0 0 200 100" className="w-full h-36">
-                  {/* Income Bar */}
-                  <rect x="40" y={100 - Math.min(80, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} width="35" height={Math.min(80, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} fill="hsl(var(--p))" rx="4" />
-                  <text x="57" y="95" textAnchor="middle" fill="currentColor" className="text-[10px] font-bold">In</text>
-                  
-                  {/* Expense Bar */}
-                  <rect x="125" y={100 - Math.min(80, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} width="35" height={Math.min(80, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)} fill="hsl(var(--s))" rx="4" />
-                  <text x="142" y="95" textAnchor="middle" fill="currentColor" className="text-[10px] font-bold">Out</text>
-                </svg>
-
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-primary">Inflow: ${visualIS.totalIncome.toFixed(0)}</span>
-                  <span className="text-secondary">Outflow: ${visualIS.totalExpenses.toFixed(0)}</span>
-                </div>
+      {/* Main visual blocks */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Net Worth Trend (Line Chart) */}
+        <div className="card bg-base-100 shadow-lg border border-base-200 lg:col-span-2">
+          <div className="card-body p-6">
+            <h3 className="card-title text-base font-bold text-primary flex justify-between items-center">
+              📈 Net Worth Trend ({period.toUpperCase()} - {currentVisualCurrency})
+            </h3>
+            
+            {accounts.length === 0 ? (
+              <div className="flex items-center justify-center h-52 text-base-content/50">
+                No data to display. Please create an account.
               </div>
+            ) : (
+              <div className="relative w-full h-56 mt-4">
+                {(() => {
+                  const values = netWorthTrend.map((t) => t.value);
+                  const maxVal = Math.max(...values, 100);
+                  const minVal = Math.min(...values, 0);
+                  const range = maxVal - minVal;
 
-              {/* Categories progress bars */}
-              <div className="flex-1 w-full space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-base-content/60">Top Expense Categories ({currentVisualCurrency})</h3>
-                {sortedExpenses.length === 0 ? (
-                  <p className="text-xs text-base-content/50">No expenses recorded for this month.</p>
-                ) : (
-                  sortedExpenses.slice(0, 4).map((exp) => {
-                    const percentage = Math.round((exp.amount / Math.max(1, visualIS.totalExpenses)) * 100);
-                    return (
-                      <div key={exp.name} className="space-y-1">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span>{exp.name}</span>
-                          <span>${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)</span>
-                        </div>
-                        <progress className="progress progress-secondary w-full" value={percentage} max="100"></progress>
+                  const getX = (idx: number) => (idx / (netWorthTrend.length - 1 || 1)) * 90 + 5; // percentage-based X
+                  const getY = (val: number) => {
+                    if (range === 0) return 50;
+                    return 85 - ((val - minVal) / range) * 70; // percentage-based Y (padding 15% top/bottom)
+                  };
+
+                  let pathD = '';
+                  let areaD = '';
+                  if (netWorthTrend.length > 0) {
+                    pathD = `M ${getX(0)} ${getY(netWorthTrend[0].value)}`;
+                    areaD = `M ${getX(0)} 95 L ${getX(0)} ${getY(netWorthTrend[0].value)}`;
+                    for (let i = 1; i < netWorthTrend.length; i++) {
+                      pathD += ` L ${getX(i)} ${getY(netWorthTrend[i].value)}`;
+                      areaD += ` L ${getX(i)} ${getY(netWorthTrend[i].value)}`;
+                    }
+                    areaD += ` L ${getX(netWorthTrend.length - 1)} 95 Z`;
+                  }
+
+                  return (
+                    <div className="w-full h-full flex flex-col">
+                      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-40 overflow-visible">
+                        <defs>
+                          <linearGradient id="trendAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--p))" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="hsl(var(--p))" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {/* Grid lines */}
+                        <line x1="0" y1="15" x2="100" y2="15" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
+                        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
+                        <line x1="0" y1="85" x2="100" y2="85" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5" />
+
+                        {/* Area gradient under line */}
+                        {areaD && <path d={areaD} fill="url(#trendAreaGradient)" />}
+
+                        {/* Stroke Path */}
+                        {pathD && (
+                          <path
+                            d={pathD}
+                            fill="none"
+                            stroke="hsl(var(--p))"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        )}
+
+                        {/* Node Dots */}
+                        {netWorthTrend.map((m, idx) => (
+                          <circle
+                            key={idx}
+                            cx={getX(idx)}
+                            cy={getY(m.value)}
+                            r="1.2"
+                            className="fill-primary stroke-base-100 stroke-[0.4] hover:r-2 transition-all cursor-pointer"
+                          />
+                        ))}
+                      </svg>
+                      {/* X-axis labels */}
+                      <div className="flex justify-between text-[10px] font-bold opacity-60 px-1 mt-2">
+                        {netWorthTrend.map((m, idx) => (
+                          <span key={idx} className={netWorthTrend.length > 7 && idx % 2 !== 0 ? 'hidden sm:inline' : ''}>
+                            {m.label}
+                          </span>
+                        ))}
                       </div>
-                    );
-                  })
-                )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Income vs Expenses Summary */}
+        <div className="card bg-base-100 shadow-lg border border-base-200">
+          <div className="card-body p-6 flex flex-col justify-between">
+            <div>
+              <h3 className="card-title text-base font-bold text-primary mb-1">
+                📊 Income vs Expenses ({currentVisualCurrency})
+              </h3>
+              <p className="text-xs opacity-50 mb-4">Revenue vs spending comparison</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-6">
+              <svg viewBox="0 0 200 100" className="w-full h-32 overflow-visible">
+                {/* Income Bar */}
+                <rect
+                  x="40"
+                  y={100 - Math.min(85, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
+                  width="30"
+                  height={Math.min(85, (visualIS.totalIncome / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
+                  fill="hsl(var(--p))"
+                  rx="4"
+                  className="transition-all duration-500"
+                />
+                <text x="55" y="95" textAnchor="middle" fill="hsl(var(--pc))" className="text-[10px] font-extrabold">INC</text>
+                
+                {/* Expense Bar */}
+                <rect
+                  x="130"
+                  y={100 - Math.min(85, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
+                  width="30"
+                  height={Math.min(85, (visualIS.totalExpenses / Math.max(1, visualIS.totalIncome + visualIS.totalExpenses)) * 100)}
+                  fill="hsl(var(--s))"
+                  rx="4"
+                  className="transition-all duration-500"
+                />
+                <text x="145" y="95" textAnchor="middle" fill="hsl(var(--sc))" className="text-[10px] font-extrabold">EXP</text>
+              </svg>
+
+              <div className="w-full grid grid-cols-2 gap-4 text-xs font-bold border-t border-base-200 pt-3">
+                <div className="flex flex-col">
+                  <span className="text-primary text-[10px] uppercase opacity-60">Total Income</span>
+                  <span className="text-sm font-extrabold text-success">
+                    +${visualIS.totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+                <div className="flex flex-col border-l border-base-200 pl-3">
+                  <span className="text-secondary text-[10px] uppercase opacity-60">Total Expenses</span>
+                  <span className="text-sm font-extrabold text-error">
+                    -${visualIS.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Cash Flow details & Category break down grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Cash Flow Statement card */}
+        <div className="card bg-base-100 shadow-lg border border-base-200">
+          <div className="card-body p-6 flex flex-col justify-between">
+            <div>
+              <h3 className="card-title text-base font-bold text-primary mb-4">
+                💸 Cash Flow Metrics ({currentVisualCurrency})
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b border-base-200 pb-2">
+                  <span className="text-xs font-semibold opacity-70">Operating Cash Flow (OCF)</span>
+                  <span className={`font-bold font-mono text-sm ${ocf >= 0 ? 'text-success' : 'text-error'}`}>
+                    {ocf >= 0 ? '+' : '-'}${Math.abs(ocf).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-base-200 pb-2">
+                  <span className="text-xs font-semibold opacity-70">Free Cash Flow (FCF)</span>
+                  <span className={`font-bold font-mono text-sm ${fcf >= 0 ? 'text-success' : 'text-error'}`}>
+                    {fcf >= 0 ? '+' : '-'}${Math.abs(fcf).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-base-200 pb-2">
+                  <span className="text-xs font-semibold opacity-70">Investing Cash Flow Net</span>
+                  <span className={`font-bold font-mono text-sm ${visualCF.investing.net >= 0 ? 'text-success' : 'text-error'}`}>
+                    {visualCF.investing.net >= 0 ? '+' : '-'}${Math.abs(visualCF.investing.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold opacity-70">Financing Cash Flow Net</span>
+                  <span className={`font-bold font-mono text-sm ${visualCF.financing.net >= 0 ? 'text-success' : 'text-error'}`}>
+                    {visualCF.financing.net >= 0 ? '+' : '-'}${Math.abs(visualCF.financing.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-base-200 flex justify-end">
+              <Link
+                href="/reports"
+                className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
+              >
+                Detailed Statements <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Income Sources breakdown */}
+        <div className="card bg-base-100 shadow-lg border border-base-200">
+          <div className="card-body p-6">
+            <h3 className="card-title text-base font-bold text-success mb-2">
+              🏷️ Income Breakdown ({currentVisualCurrency})
+            </h3>
+            <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
+              {sortedIncome.length === 0 ? (
+                <p className="text-xs text-base-content/50 py-4 text-center">No income recorded for this period.</p>
+              ) : (
+                sortedIncome.map((inc) => {
+                  const percentage = Math.round((inc.amount / Math.max(1, visualIS.totalIncome)) * 100);
+                  return (
+                    <div key={inc.name} className="space-y-1">
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span>{inc.name}</span>
+                        <span>
+                          ${inc.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)
+                        </span>
+                      </div>
+                      <progress className="progress progress-success w-full" value={percentage} max="100"></progress>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Expense Categories progress bars */}
+        <div className="card bg-base-100 shadow-lg border border-base-200">
+          <div className="card-body p-6">
+            <h3 className="card-title text-base font-bold text-error mb-2">
+              🏷️ Expense Breakdown ({currentVisualCurrency})
+            </h3>
+            <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
+              {sortedExpenses.length === 0 ? (
+                <p className="text-xs text-base-content/50 py-4 text-center">No expenses recorded for this period.</p>
+              ) : (
+                sortedExpenses.map((exp) => {
+                  const percentage = Math.round((exp.amount / Math.max(1, visualIS.totalExpenses)) * 100);
+                  return (
+                    <div key={exp.name} className="space-y-1">
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span>{exp.name}</span>
+                        <span>
+                          ${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)
+                        </span>
+                      </div>
+                      <progress className="progress progress-secondary w-full" value={percentage} max="100"></progress>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Managed Accounts table */}
+      <div className="card bg-base-100 shadow-lg border border-base-200">
+        <div className="card-body p-6">
+          <h2 className="card-title text-lg font-bold flex justify-between items-center text-primary">
+            💰 Account Balances
+          </h2>
+          
+          {accounts.length === 0 ? (
+            <div className="text-center py-8 text-base-content/50">
+              No accounts created yet. Please create an account in Accounts manager to start importing statement CSV files.
+            </div>
+          ) : (
+            <div className="overflow-x-auto mt-2">
+              <table className="table w-full">
+                <thead>
+                  <tr className="border-b border-base-200">
+                    <th>Account Name</th>
+                    <th>Type</th>
+                    <th className="text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map((acc) => {
+                    const accBalance = bs.accounts.find((a) => a.id === acc.id)?.balance ?? acc.startingBalance;
+                    return (
+                      <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
+                        <td>
+                          <div className="font-bold flex items-center gap-2">
+                            {acc.name}
+                            <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
+                          </div>
+                          <div className="text-xs text-base-content/50">
+                            {acc._count?.transactions || 0} transaction(s)
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-sm font-semibold`}>
+                            {acc.type}
+                          </span>
+                        </td>
+                        <td className={`text-right font-mono font-bold ${accBalance >= 0 ? 'text-success' : 'text-error'}`}>
+                          ${accBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

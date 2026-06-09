@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { getAccounts, getTransactions } from './actions';
 import DashboardClient from './dashboard-client';
+import { mapTransactionForClient } from '@/lib/reports';
 
 export const revalidate = 0; // Disable caching so dashboard is always up-to-date
 
@@ -19,17 +20,7 @@ export default async function DashboardPage() {
     _count: a._count,
   }));
 
-  const mappedTransactions = transactionsList.map((t) => ({
-    id: t.id,
-    date: t.date,
-    amount: t.amount,
-    accountId: t.accountId,
-    currency: t.account.currency,
-    category: t.category ? {
-      name: t.category.name,
-      type: t.category.type,
-    } : null,
-  }));
+  const mappedTransactions = transactionsList.map(mapTransactionForClient);
 
   return (
     <div className="space-y-6">

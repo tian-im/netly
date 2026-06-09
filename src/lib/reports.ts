@@ -32,13 +32,29 @@ export function generateBalanceSheet(
   endDate: Date
 ) {
   const parsedEndDate = new Date(endDate);
+  const endMs = parsedEndDate.getTime();
+
+  // Index transactions by accountId for O(N) retrieval
+  const txsByAccount: Record<string, TransactionLike[]> = {};
+  for (const tx of transactions) {
+    if (!txsByAccount[tx.accountId]) {
+      txsByAccount[tx.accountId] = [];
+    }
+    txsByAccount[tx.accountId].push(tx);
+  }
   
   // Calculate running balances for each account up to endDate
   const accountBalances = accounts.map((account) => {
-    const accTransactions = transactions.filter(
-      (tx) => tx.accountId === account.id && new Date(tx.date) <= parsedEndDate
-    );
-    const netChange = accTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const accTransactions = txsByAccount[account.id] || [];
+    let netChange = 0;
+    
+    for (const tx of accTransactions) {
+      const txMs = tx.date instanceof Date ? tx.date.getTime() : new Date(tx.date).getTime();
+      if (txMs <= endMs) {
+        netChange += tx.amount;
+      }
+    }
+    
     const balance = account.startingBalance + netChange;
 
     return {
@@ -255,3 +271,24 @@ export function generateCashFlowStatement(
     totals,
   };
 }
+
+/**
+ * Maps a database transaction record with relationships to a clean, serializable client-friendly shape.
+ */
+export function mapTransactionForClient(t: any) {
+  return {
+    id: t.id,
+    date: t.date,
+    amount: t.amount,
+    accountId: t.accountId,
+    currency: t.account?.currency || t.currency || 'AUD',
+    categoryId: t.categoryId,
+    category: t.category ? {
+      id: t.category.id,
+      name: t.category.name,
+      type: t.category.type,
+      cashFlowType: t.category.cashFlowType,
+    } : null,
+  };
+}
+
