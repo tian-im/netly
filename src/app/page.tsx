@@ -1,3 +1,4 @@
+import { db } from '@/lib/db';
 import { getAccounts, getTransactions } from './actions';
 import DashboardClient from './dashboard-client';
 
@@ -6,6 +7,7 @@ export const revalidate = 0; // Disable caching so dashboard is always up-to-dat
 export default async function DashboardPage() {
   const accountsList = await getAccounts();
   const transactionsList = await getTransactions();
+  const uncategorizedCount = await db.transaction.count({ where: { categoryId: null } });
 
   // Map Decimal/Prisma equivalents to serializable types
   const mappedAccounts = accountsList.map((a) => ({
@@ -43,6 +45,7 @@ export default async function DashboardPage() {
       <DashboardClient
         initialAccounts={mappedAccounts}
         initialTransactions={mappedTransactions}
+        uncategorizedCount={uncategorizedCount}
       />
     </div>
   );

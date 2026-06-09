@@ -10,7 +10,7 @@ export default function TransactionsPage() {
   
   // Filter states
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(''); // '' = all, 'UNCATEGORIZED' = null categoryId, else categoryId
   const [searchTerm, setSearchTerm] = useState('');
 
   // Rules manager states
@@ -98,8 +98,14 @@ export default function TransactionsPage() {
   // Filter and search computation
   const filteredTransactions = transactions.filter((tx) => {
     const matchesAccount = !selectedAccountId || tx.accountId === selectedAccountId;
-    const matchesCategory = !selectedCategoryId || tx.categoryId === selectedCategoryId;
     
+    let matchesCategory = true;
+    if (selectedCategoryFilter === 'UNCATEGORIZED') {
+      matchesCategory = !tx.categoryId;
+    } else if (selectedCategoryFilter) {
+      matchesCategory = tx.categoryId === selectedCategoryFilter;
+    }
+
     const lowerSearch = searchTerm.toLowerCase();
     const matchesSearch =
       !searchTerm ||
@@ -150,11 +156,12 @@ export default function TransactionsPage() {
               {/* Category filter */}
               <div className="form-control w-full md:w-auto">
                 <select
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
                   className="select select-bordered select-sm w-full"
                 >
                   <option value="">All Categories</option>
+                  <option value="UNCATEGORIZED">⚠️ Uncategorized only</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                   ))}

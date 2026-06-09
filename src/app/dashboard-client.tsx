@@ -24,11 +24,13 @@ interface Transaction {
 interface DashboardClientProps {
   initialAccounts: Account[];
   initialTransactions: Transaction[];
+  uncategorizedCount: number;
 }
 
 export default function DashboardClient({
   initialAccounts,
   initialTransactions,
+  uncategorizedCount,
 }: DashboardClientProps) {
   const [accounts] = useState(initialAccounts);
 
@@ -64,8 +66,16 @@ export default function DashboardClient({
   const bs = generateBalanceSheet(mappedAccounts, mappedTransactions, lastDay);
   const is = generateIncomeStatement(mappedTransactions, firstDay, lastDay);
 
-  // Uncategorized transactions count
-  const pendingCount = initialTransactions.filter((tx) => !tx.category).length;
+  // Uncategorized transactions count — sourced directly from DB query in the server component
+  const pendingCount = uncategorizedCount;
+
+  // Unified set of all currencies across accounts and transactions
+  const allCurrencies = Array.from(
+    new Set([
+      ...Object.keys(bs.totals),
+      ...Object.keys(is.totals),
+    ])
+  ).sort();
 
   // Visualizations State (Choose currency to render details for)
   const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
@@ -82,6 +92,9 @@ export default function DashboardClient({
     netIncome: 0,
   };
 
+  // Sort expenses by amount descending for "Top Expense Categories"
+  const sortedExpenses = [...visualIS.expenses].sort((a, b) => b.amount - a.amount);
+
   return (
     <div className="space-y-6">
       {/* Overview Stat Cards */}
@@ -89,17 +102,20 @@ export default function DashboardClient({
         <div className="stat min-w-[280px]">
           <div className="stat-title text-base-content/60 font-bold">Net Worth</div>
           <div className="space-y-2 mt-2">
-            {Object.keys(bs.totals).length === 0 ? (
+            {allCurrencies.length === 0 ? (
               <div className="text-sm opacity-50 py-1">No accounts created</div>
             ) : (
-              Object.entries(bs.totals).map(([currency, total]) => (
-                <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
-                  <span className="badge badge-outline badge-sm font-bold">{currency}</span>
-                  <span className={`text-xl font-extrabold ${total.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
-                    {total.netWorth >= 0 ? '' : '-'}${Math.abs(total.netWorth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              ))
+              allCurrencies.map((currency) => {
+                const netWorth = bs.totals[currency]?.netWorth ?? 0;
+                return (
+                  <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
+                    <span className="badge badge-outline badge-sm font-bold">{currency}</span>
+                    <span className={`text-xl font-extrabold ${netWorth >= 0 ? 'text-success' : 'text-error'}`}>
+                      {netWorth >= 0 ? '' : '-'}${Math.abs(netWorth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -107,25 +123,30 @@ export default function DashboardClient({
         <div className="stat min-w-[280px]">
           <div className="stat-title text-base-content/60 font-bold">Month Net Income</div>
           <div className="space-y-2 mt-2">
-            {Object.keys(is.totals).length === 0 ? (
-              <div className="text-sm opacity-50 py-1">No transactions this month</div>
+            {allCurrencies.length === 0 ? (
+              <div className="text-sm opacity-50 py-1">No accounts created</div>
             ) : (
-              Object.entries(is.totals).map(([currency, total]) => (
-                <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
-                  <span className="badge badge-outline badge-sm font-bold">{currency}</span>
-                  <span className={`text-xl font-extrabold ${total.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
-                    {total.netIncome >= 0 ? '' : '-'}${Math.abs(total.netIncome).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              ))
+              allCurrencies.map((currency) => {
+                const netIncome = is.totals[currency]?.netIncome ?? 0;
+                return (
+                  <div key={currency} className="flex items-center justify-between border-b border-base-content/5 last:border-0 pb-1 last:pb-0">
+                    <span className="badge badge-outline badge-sm font-bold">{currency}</span>
+                    <span className={`text-xl font-extrabold ${netIncome >= 0 ? 'text-success' : 'text-error'}`}>
+                      {netIncome >= 0 ? '' : '-'}${Math.abs(netIncome).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
 
         <div className="stat">
           <div className="stat-title text-base-content/60 font-bold">Review Queue</div>
-          <div className="stat-value text-3xl text-warning font-extrabold mt-1">{pendingCount}</div>
-          <div className="stat-desc mt-1">Uncategorized transactions</div>
+          <div className="stat-value text-3xl text-warning font-extrabold mt-1">
+            {pendingCount} <span className="text-base font-bold opacity-60">txns</span>
+          </div>
+          <div className="stat-desc mt-1">{pendingCount === 1 ? 'transaction' : 'transactions'} needing a category</div>
         </div>
       </div>
 
@@ -232,16 +253,16 @@ export default function DashboardClient({
               {/* Categories progress bars */}
               <div className="flex-1 w-full space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-base-content/60">Top Expense Categories ({currentVisualCurrency})</h3>
-                {visualIS.expenses.length === 0 ? (
+                {sortedExpenses.length === 0 ? (
                   <p className="text-xs text-base-content/50">No expenses recorded for this month.</p>
                 ) : (
-                  visualIS.expenses.slice(0, 4).map((exp) => {
+                  sortedExpenses.slice(0, 4).map((exp) => {
                     const percentage = Math.round((exp.amount / Math.max(1, visualIS.totalExpenses)) * 100);
                     return (
                       <div key={exp.name} className="space-y-1">
                         <div className="flex justify-between text-xs font-semibold">
                           <span>{exp.name}</span>
-                          <span>${exp.amount.toFixed(0)} ({percentage}%)</span>
+                          <span>${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)</span>
                         </div>
                         <progress className="progress progress-secondary w-full" value={percentage} max="100"></progress>
                       </div>
