@@ -22,13 +22,13 @@ Run AgentShield against the current project or a target path, then turn the find
 Prefer the packaged scanner:
 
 ```bash
-npx ecc-agentshield scan --path "${TARGET_PATH:-.}" --format text
+docker compose exec -T web npx ecc-agentshield scan --path "${TARGET_PATH:-.}" --format text
 ```
 
 For local AgentShield development, run from the AgentShield checkout:
 
 ```bash
-npm run scan -- --path "${TARGET_PATH:-.}" --format text
+docker compose exec -T web npm run scan -- --path "${TARGET_PATH:-.}" --format text
 ```
 
 Do not invent findings. Use AgentShield output as the source of truth and separate scanner facts from follow-up judgment.

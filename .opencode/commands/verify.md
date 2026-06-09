@@ -11,11 +11,11 @@ Run verification loop to validate the implementation: $ARGUMENTS
 
 Execute comprehensive verification:
 
-1. **Type Check**: `npx tsc --noEmit`
-2. **Lint**: `npm run lint`
-3. **Unit Tests**: `npm test`
-4. **Integration Tests**: `npm run test:integration` (if available)
-5. **Build**: `npm run build`
+1. **Type Check**: `docker compose exec -T web npx tsc --noEmit`
+2. **Lint**: `docker compose exec -T web npm run lint`
+3. **Unit Tests**: `docker compose exec -T web npm test`
+4. **Integration Tests**: `docker compose exec -T web npm run test:integration` (if available)
+5. **Build**: `docker compose exec -T web npm run build`
 6. **Coverage Check**: Verify 80%+ coverage
 
 ## Verification Checklist

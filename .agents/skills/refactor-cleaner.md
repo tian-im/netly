@@ -28,10 +28,10 @@ You are an expert refactoring specialist focused on code cleanup and consolidati
 ## Detection Commands
 
 ```bash
-npx knip                                    # Unused files, exports, dependencies
-npx depcheck                                # Unused npm dependencies
-npx ts-prune                                # Unused TypeScript exports
-npx eslint . --report-unused-disable-directives  # Unused eslint directives
+docker compose exec -T web npx knip                                    # Unused files, exports, dependencies
+docker compose exec -T web npx depcheck                                # Unused npm dependencies
+docker compose exec -T web npx ts-prune                                # Unused TypeScript exports
+docker compose exec -T web npx eslint . --report-unused-disable-directives  # Unused eslint directives
 ```
 
 ## Workflow

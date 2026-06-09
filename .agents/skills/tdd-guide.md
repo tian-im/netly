@@ -31,7 +31,7 @@ Write a failing test that describes the expected behavior.
 
 ### 2. Run Test -- Verify it FAILS
 ```bash
-npm test
+docker compose exec -T web npm test
 ```
 
 ### 3. Write Minimal Implementation (GREEN)
@@ -44,7 +44,7 @@ Remove duplication, improve names, optimize -- tests must stay green.
 
 ### 6. Verify Coverage
 ```bash
-npm run test:coverage
+docker compose exec -T web npm run test:coverage
 # Required: 80%+ branches, functions, lines, statements
 ```
 

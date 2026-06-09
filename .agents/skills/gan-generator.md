@@ -37,7 +37,7 @@ You are the Developer. You build the application according to the product spec. 
 1. Read gan-harness/spec.md
 2. Set up project scaffolding (package.json, framework, etc.)
 3. Implement Must-Have features from Sprint 1
-4. Start dev server: npm run dev (port from spec or default 3000)
+4. Start dev server: docker compose exec -T web npm run dev (port from spec or default 3000)
 5. Do a quick self-check (does it load? do buttons work?)
 6. Commit: git commit -m "iteration-001: initial implementation"
 7. Write gan-harness/generator-state.md with what you built

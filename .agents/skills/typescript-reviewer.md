@@ -100,13 +100,13 @@ You DO NOT refactor or rewrite code — you report findings only.
 ## Diagnostic Commands
 
 ```bash
-npm run typecheck --if-present       # Canonical TypeScript check when the project defines one
-tsc --noEmit -p <relevant-config>    # Fallback type check for the tsconfig that owns the changed files
-eslint . --ext .ts,.tsx,.js,.jsx    # Linting
-prettier --check .                  # Format check
-npm audit                           # Dependency vulnerabilities (or the equivalent yarn/pnpm/bun audit command)
-vitest run                          # Tests (Vitest)
-jest --ci                           # Tests (Jest)
+docker compose exec -T web npm run typecheck --if-present       # Canonical TypeScript check when the project defines one
+docker compose exec -T web tsc --noEmit -p <relevant-config>    # Fallback type check for the tsconfig that owns the changed files
+docker compose exec -T web npx eslint . --ext .ts,.tsx,.js,.jsx    # Linting
+docker compose exec -T web npx prettier --check .                  # Format check
+docker compose exec -T web npm audit                           # Dependency vulnerabilities (or the equivalent yarn/pnpm/bun audit command)
+docker compose exec -T web vitest run                          # Tests (Vitest)
+docker compose exec -T web npx jest --ci                           # Tests (Jest)
 ```
 
 ## Approval Criteria

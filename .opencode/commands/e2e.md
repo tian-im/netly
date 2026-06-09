@@ -102,4 +102,4 @@ Failed Tests:
 
 ---
 
-**TIP**: Run with `--headed` flag for debugging: `npx playwright test --headed`
+**TIP**: Run with `--headed` flag for debugging: `docker compose exec -T web npx playwright test --headed`

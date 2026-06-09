@@ -30,16 +30,16 @@ You are an expert build error resolution specialist. Your mission is to get buil
 ## Diagnostic Commands
 
 ```bash
-npx tsc --noEmit --pretty
-npx tsc --noEmit --pretty --incremental false   # Show all errors
-npm run build
-npx eslint . --ext .ts,.tsx,.js,.jsx
+docker compose exec -T web npx tsc --noEmit --pretty
+docker compose exec -T web npx tsc --noEmit --pretty --incremental false   # Show all errors
+docker compose exec -T web npm run build
+docker compose exec -T web npx eslint . --ext .ts,.tsx,.js,.jsx
 ```
 
 ## Workflow
 
 ### 1. Collect All Errors
-- Run `npx tsc --noEmit --pretty` to get all type errors
+- Run `docker compose exec -T web npx tsc --noEmit --pretty` to get all type errors
 - Categorize: type inference, missing types, imports, config, dependencies
 - Prioritize: build-blocking first, then type errors, then warnings
 
@@ -93,19 +93,19 @@ For each error:
 
 ```bash
 # Nuclear option: clear all caches
-rm -rf .next node_modules/.cache && npm run build
+docker compose exec -T web sh -c "rm -rf .next node_modules/.cache && npm run build"
 
-# Reinstall dependencies
-rm -rf node_modules package-lock.json && npm install
+# Reinstall dependencies (rebuild container instead)
+docker compose build --no-cache web
 
 # Fix ESLint auto-fixable
-npx eslint . --fix
+docker compose exec -T web npx eslint . --fix
 ```
 
 ## Success Metrics
 
-- `npx tsc --noEmit` exits with code 0
-- `npm run build` completes successfully
+- `docker compose exec -T web npx tsc --noEmit` exits with code 0
+- `docker compose exec -T web npm run build` completes successfully
 - No new errors introduced
 - Minimal lines changed (< 5% of affected file)
 - Tests still passing

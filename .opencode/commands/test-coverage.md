@@ -10,7 +10,7 @@ Analyze test coverage and identify gaps: $ARGUMENTS
 
 ## Your Task
 
-1. **Run coverage report**: `npm test -- --coverage`
+1. **Run coverage report**: `docker compose exec -T web npm test -- --coverage`
 2. **Analyze results** - Identify low coverage areas
 3. **Prioritize gaps** - Critical code first
 4. **Generate missing tests** - For uncovered code

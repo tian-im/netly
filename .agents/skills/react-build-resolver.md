@@ -51,26 +51,26 @@ test -f webpack.config.js -o -f webpack.config.ts                   # webpack
 
 ```bash
 # Run the project's build script first — respect what's configured
-npm run build --if-present
-pnpm build 2>/dev/null
-yarn build 2>/dev/null
-bun run build 2>/dev/null
+docker compose exec -T web npm run build --if-present
+docker compose exec -T web pnpm build 2>/dev/null
+docker compose exec -T web yarn build 2>/dev/null
+docker compose exec -T web bun run build 2>/dev/null
 
 # Typecheck independently of the bundler — only when TypeScript is configured
 # (skips cleanly for JavaScript-only projects)
 # Uses `npx --no-install` to honor the project's pinned TypeScript version;
 # never auto-install an unpinned compiler, which would produce non-reproducible
 # typecheck results across machines.
-npm run typecheck --if-present
-test -f tsconfig.json && npx --no-install tsc --noEmit -p tsconfig.json
+docker compose exec -T web npm run typecheck --if-present
+test -f tsconfig.json && docker compose exec -T web npx --no-install tsc --noEmit -p tsconfig.json
 
 # Bundler-specific
-next build                          # Next.js
-vite build                          # Vite
-react-scripts build                 # CRA
-webpack --mode=production           # webpack
-parcel build src/index.html         # Parcel
-bun build ./src/index.tsx --outdir=dist
+docker compose exec -T web next build                          # Next.js
+docker compose exec -T web vite build                          # Vite
+docker compose exec -T web react-scripts build                 # CRA
+docker compose exec -T web webpack --mode=production           # webpack
+docker compose exec -T web parcel build src/index.html         # Parcel
+docker compose exec -T web bun build ./src/index.tsx --outdir=dist
 ```
 
 ## Resolution Workflow
@@ -91,7 +91,7 @@ bun build ./src/index.tsx --outdir=dist
 | Error | Cause | Fix |
 |---|---|---|
 | `'React' is not defined` | Old JSX transform expected `import React from 'react'` | Set `"jsx": "react-jsx"` in `tsconfig.json` for new transform, or add `import React`. |
-| `Cannot find module 'react' or its corresponding type declarations` | Missing types | `npm i -D @types/react @types/react-dom` |
+| `Cannot find module 'react' or its corresponding type declarations` | Missing types | `docker compose exec -T web npm i -D @types/react @types/react-dom` |
 | `JSX element type 'X' does not have any construct or call signatures` | Wrong type for a component prop | Confirm the import is the component, not a default-vs-named mismatch |
 | `Module '"react"' has no exported member 'X'` | Targeting wrong React version's types | Match `@types/react` major to installed `react` |
 | `Unexpected token '<'` | Loader/transformer missing | Add `@vitejs/plugin-react`, `babel-loader` with `@babel/preset-react`, or equivalent |
@@ -154,20 +154,19 @@ Common triggers:
 
 | Error | Fix |
 |---|---|
-| `Invalid hook call. Hooks can only be called inside of the body of a function component` | Multiple React copies in `node_modules`. Run `npm ls react` — should show exactly one. Use `resolutions`/`overrides` in `package.json` to dedupe. |
+| `Invalid hook call. Hooks can only be called inside of the body of a function component` | Multiple React copies in `node_modules`. Run `docker compose exec -T web npm ls react` — should show exactly one. Use `resolutions`/`overrides` in `package.json` to dedupe. |
 | `Element type is invalid: expected a string or class/function but got: undefined` | Default vs named import mismatch. Check the component's export style. |
 | `Functions are not valid as a React child` | A function reference is passed where a component or value is expected. Add `()` or wrap in JSX. |
 
 ### Dependency Issues
 
 ```bash
-npm ls react                       # check for duplicates
-npm ls @types/react                # check version alignment
-npm dedupe                         # consolidate duplicates
-# Only when `npm ls react` reports duplicates or a version mismatch with `@types/react`.
-# Upgrade react and react-dom as a pair (matching the major already in use) — never independently.
-# Replace <major> with the project's React major (17 / 18 / 19); jumping majors is a separate, deliberate change.
-# npm i react@^<major> react-dom@^<major>
+docker compose exec -T web npm ls react                       # check for duplicates
+docker compose exec -T web npm ls @types/react                # check version alignment
+docker compose exec -T web npm dedupe                         # consolidate duplicates
+# Only when `docker compose exec -T web npm ls react` reports duplicates or a version mismatch with `@types/react`.
+
+# docker compose exec -T web npm i react@^<major> react-dom@^<major>
 ```
 
 When a library throws on hook usage, it almost always means React is duplicated.

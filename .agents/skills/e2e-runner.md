@@ -49,12 +49,12 @@ agent-browser screenshot result.png
 When Agent Browser isn't available, use Playwright directly.
 
 ```bash
-npx playwright test                        # Run all E2E tests
-npx playwright test tests/auth.spec.ts     # Run specific file
-npx playwright test --headed               # See browser
-npx playwright test --debug                # Debug with inspector
-npx playwright test --trace on             # Run with trace
-npx playwright show-report                 # View HTML report
+docker compose exec -T web npx playwright test                        # Run all E2E tests
+docker compose exec -T web npx playwright test tests/auth.spec.ts     # Run specific file
+docker compose exec -T web npx playwright test --headed               # See browser (requires Xvfb in Docker)
+docker compose exec -T web npx playwright test --debug                # Debug with inspector
+docker compose exec -T web npx playwright test --trace on             # Run with trace
+docker compose exec -T web npx playwright show-report                 # View HTML report
 ```
 
 ## Workflow
@@ -94,7 +94,7 @@ test('flaky: market search', async ({ page }) => {
 })
 
 // Identify flakiness
-// npx playwright test --repeat-each=10
+// docker compose exec -T web npx playwright test --repeat-each=10
 ```
 
 Common causes: race conditions (use auto-wait locators), network timing (wait for response), animation timing (wait for `networkidle`).

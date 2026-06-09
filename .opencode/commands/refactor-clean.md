@@ -21,13 +21,13 @@ Analyze and clean up the codebase: $ARGUMENTS
 
 ```bash
 # Find unused exports
-npx knip
+docker compose exec -T web npx knip
 
 # Find unused dependencies
-npx depcheck
+docker compose exec -T web npx depcheck
 
 # Find unused TypeScript exports
-npx ts-prune
+docker compose exec -T web npx ts-prune
 ```
 
 ### Manual Checks
@@ -75,9 +75,9 @@ npx ts-prune
 
 After cleanup:
 
-1. `npm run build` - builds successfully
-2. `npm test` - all tests pass
-3. `npm run lint` - no new lint errors
+1. `docker compose exec -T web npm run build` - builds successfully
+2. `docker compose exec -T web npm test` - all tests pass
+3. `docker compose exec -T web npm run lint` - no new lint errors
 4. Manual smoke test - features work
 
 ## Report Format
