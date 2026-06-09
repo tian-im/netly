@@ -199,3 +199,41 @@ export async function resetDatabase() {
   
   revalidatePath('/');
 }
+
+export async function createCategory(name: string, type: string, cashFlowType: string) {
+  if (!name.trim()) throw new Error('Category name is required');
+  
+  // Verify unique name
+  const existing = await db.category.findUnique({
+    where: { name: name.trim() }
+  });
+  if (existing) throw new Error('Category with this name already exists');
+
+  const category = await db.category.create({
+    data: {
+      name: name.trim(),
+      type,
+      cashFlowType,
+    }
+  });
+
+  revalidatePath('/');
+  return category;
+}
+
+export async function deleteCategory(id: string) {
+  const category = await db.category.findUnique({
+    where: { id }
+  });
+  if (!category) throw new Error('Category not found');
+  
+  if (category.name.toLowerCase() === 'transfer') {
+    throw new Error('The default "Transfer" category is protected and cannot be deleted.');
+  }
+
+  await db.category.delete({
+    where: { id }
+  });
+
+  revalidatePath('/');
+}
