@@ -4,6 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'jsdom',
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'src/**/*.integration.test.ts'],
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

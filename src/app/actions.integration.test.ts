@@ -499,6 +499,16 @@ describe('getFinancialReports', () => {
     expect(cf.financing.net).toBe(-300);
     expect(cf.netCashFlow).toBe(-1800);
   });
+
+  it('handles uncategorized transactions correctly without crashing', async () => {
+    const account = await seedAccount();
+    await seedTransaction(account.id, { payee: 'Uncategorized Spend', amount: -50, categoryId: null });
+    const reports = await getFinancialReports('2026-06-01', '2026-06-30');
+    // It should exist for the currency but have 0/empty totals since transaction is uncategorized
+    const aud = reports.incomeStatement.totals['AUD'];
+    expect(aud.totalIncome).toBe(0);
+    expect(aud.totalExpenses).toBe(0);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
