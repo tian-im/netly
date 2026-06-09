@@ -46,6 +46,33 @@ export async function deleteAccount(id: string) {
   revalidatePath('/');
 }
 
+export async function updateAccount(
+  id: string,
+  name: string,
+  type: 'ASSET' | 'LIABILITY',
+  startingBalance: number,
+  currency: string = 'AUD'
+) {
+  if (!name.trim()) throw new Error('Account name is required');
+
+  const account = await db.account.update({
+    where: { id },
+    data: {
+      name: name.trim(),
+      type,
+      startingBalance,
+      currency: currency.trim().toUpperCase(),
+    }
+  });
+
+  revalidatePath('/accounts');
+  revalidatePath('/import');
+  revalidatePath('/reports');
+  revalidatePath('/transactions');
+  revalidatePath('/');
+  return account;
+}
+
 export async function getCategories() {
   return db.category.findMany({
     include: {

@@ -31,6 +31,7 @@ import {
   getAccounts,
   createAccount,
   deleteAccount,
+  updateAccount,
   getCategories,
   createCategory,
   deleteCategory,
@@ -150,6 +151,36 @@ describe('Account actions', () => {
 
     it('throws when name is blank', async () => {
       await expect(createAccount('   ', 'ASSET', 0)).rejects.toThrow('Account name is required');
+    });
+  });
+
+  describe('updateAccount', () => {
+    it('updates account details correctly', async () => {
+      const account = await seedAccount({ name: 'Old Account', type: 'ASSET', startingBalance: 100, currency: 'AUD' });
+      const updated = await updateAccount(account.id, 'New Account Name', 'LIABILITY', -50, 'USD');
+      
+      expect(updated.name).toBe('New Account Name');
+      expect(updated.type).toBe('LIABILITY');
+      expect(updated.startingBalance).toBe(-50);
+      expect(updated.currency).toBe('USD');
+
+      const found = await db.account.findUnique({ where: { id: account.id } });
+      expect(found?.name).toBe('New Account Name');
+      expect(found?.type).toBe('LIABILITY');
+      expect(found?.startingBalance).toBe(-50);
+      expect(found?.currency).toBe('USD');
+    });
+
+    it('trims whitespace and upcases currency', async () => {
+      const account = await seedAccount();
+      const updated = await updateAccount(account.id, '   Name Trimmed   ', 'ASSET', 0, 'eur');
+      expect(updated.name).toBe('Name Trimmed');
+      expect(updated.currency).toBe('EUR');
+    });
+
+    it('throws when name is blank', async () => {
+      const account = await seedAccount();
+      await expect(updateAccount(account.id, '   ', 'ASSET', 0)).rejects.toThrow('Account name is required');
     });
   });
 
