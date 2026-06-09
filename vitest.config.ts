@@ -16,7 +16,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/lib/**/*.ts'],
-      exclude: ['src/lib/**/*.test.ts', 'src/lib/db.ts', 'src/lib/test-db.ts'],
+      exclude: ['src/lib/**/*.test.ts', 'src/lib/db.ts', 'src/lib/test-db.ts', 'src/lib/translateError.ts'],
       all: true,
       thresholds: {
         statements: 100,

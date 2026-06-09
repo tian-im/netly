@@ -54,7 +54,7 @@ async function main() {
 
   const categoryCache: Record<string, any> = {};
   const existingCategories = await prisma.category.findMany();
-  existingCategories.forEach(cat => {
+  existingCategories.forEach((cat: { id: string; name: string }) => {
     categoryCache[cat.name] = cat;
   });
 

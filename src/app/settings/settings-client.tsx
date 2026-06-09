@@ -4,6 +4,8 @@ import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useFormatter } from 'next-intl';
 import { useLocaleContext } from '../providers';
+import { translateError } from '@/lib/translateError';
+import { startRegistration } from '@simplewebauthn/browser';
 import {
   resetDatabase,
   vacuumDatabase,
@@ -20,11 +22,21 @@ import {
   RefreshCw,
   FileSpreadsheet,
   Clock,
-  Sparkles,
   Settings,
   ShieldAlert,
   History as HistoryIcon,
+  KeyRound,
+  Plus,
+  LogOut,
+  Copy,
 } from 'lucide-react';
+
+interface PassKeyInfo {
+  id: string;
+  deviceName: string | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
 
 interface SettingsClientProps {
   accountsCount: number;
@@ -36,6 +48,7 @@ interface SettingsClientProps {
     schemaVersion: string;
     lastImportTimestamp: string | null;
   };
+  passKeys: PassKeyInfo[];
 }
 
 interface Toast {
@@ -61,32 +74,42 @@ export default function SettingsClient({
   transactionsCount,
   rulesCount,
   dbInfo,
+  passKeys: initialPassKeys,
 }: SettingsClientProps) {
   const router = useRouter();
   const { locale, setLocale } = useLocaleContext();
   const t = useTranslations('settings');
   const tCommon = useTranslations('common');
   const tReports = useTranslations('reports');
+  const tPasskey = useTranslations('passkey.settings');
+  const tErrors = useTranslations('errors');
   const format = useFormatter();
   const [isPending, startTransition] = useTransition();
   const [isVacuuming, setIsVacuuming] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Modal & Confirmation states
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [wipeConfirmInput, setWipeConfirmInput] = useState('');
 
-  // Toast notifications state
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Local preferences states
   const [defaultCurrency, setDefaultCurrency] = useState('AUD');
   const [defaultRange, setDefaultRange] = useState('Month');
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
   const [currentTheme, setCurrentTheme] = useState('night');
 
+  const [passKeys, setPassKeys] = useState<PassKeyInfo[]>(initialPassKeys);
+  const [isAddingPassKey, setIsAddingPassKey] = useState(false);
+  const [newDeviceName, setNewDeviceName] = useState('');
+  const [showAddPassKeyModal, setShowAddPassKeyModal] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [setupToken, setSetupToken] = useState<{ token: string; url: string; expiresAt: number } | null>(null);
+  const [showSetupTokenModal, setShowSetupTokenModal] = useState(false);
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
   useEffect(() => {
-    // Read local preferences
     const savedCurrency = localStorage.getItem('netly_pref_default_currency') || 'AUD';
     const savedRange = localStorage.getItem('netly_pref_default_date_range') || 'Month';
     const savedFormat = localStorage.getItem('netly_pref_date_format') || 'YYYY-MM-DD';
@@ -196,6 +219,96 @@ export default function SettingsClient({
     });
   };
 
+  const handleAddPassKey = async () => {
+    if (!newDeviceName.trim()) return;
+
+    setIsAddingPassKey(true);
+    try {
+      const beginRes = await fetch('/api/auth/register/begin', { method: 'POST' });
+      if (!beginRes.ok) {
+        throw new Error('ERR_UNKNOWN');
+      }
+
+      const options = await beginRes.json();
+      const { state, ...regOptions } = options;
+
+      const regResponse = await startRegistration(regOptions);
+
+      const completeRes = await fetch('/api/auth/register/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, deviceName: newDeviceName.trim(), ...regResponse }),
+      });
+
+      if (!completeRes.ok) {
+        const data = await completeRes.json();
+        throw new Error(data.error);
+      }
+
+      setShowAddPassKeyModal(false);
+      setNewDeviceName('');
+      showToast(tPasskey('addedSuccess'));
+
+      const credRes = await fetch('/api/auth/credentials');
+      if (credRes.ok) {
+        setPassKeys(await credRes.json());
+      } else {
+        router.refresh();
+      }
+    } catch (err: any) {
+      showToast(tErrors(translateError(err.message)), 'error');
+    } finally {
+      setIsAddingPassKey(false);
+    }
+  };
+
+  const handleGenerateSetupToken = async () => {
+    setIsGeneratingToken(true);
+    try {
+      const res = await fetch('/api/auth/setup-token/generate', { method: 'POST' });
+      if (!res.ok) {
+        throw new Error('ERR_UNKNOWN');
+      }
+      const data = await res.json();
+      setSetupToken(data);
+      setShowSetupTokenModal(true);
+      setCopiedToken(false);
+      setCopiedUrl(false);
+    } catch (err: any) {
+      showToast(tErrors(translateError(err.message)), 'error');
+    } finally {
+      setIsGeneratingToken(false);
+    }
+  };
+
+  const handleDeletePassKey = async (id: string) => {
+    setIsDeletingId(id);
+    try {
+      const res = await fetch('/api/auth/credentials', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+
+      setPassKeys((prev) => prev.filter((pk) => pk.id !== id));
+      showToast(tPasskey('removedSuccess'));
+    } catch (err: any) {
+      showToast(tErrors(translateError(err.message)), 'error');
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+  };
+
   const formattedFileSize = dbInfo.fileSize
     ? (dbInfo.fileSize / 1024).toFixed(1) + ' KB'
     : tCommon('unknown');
@@ -220,6 +333,81 @@ export default function SettingsClient({
         <p className="text-base-content/60 text-sm mt-1">
           {t('subtitle')}
         </p>
+      </div>
+
+      {/* PassKey Management Card */}
+      <div className="card bg-base-100 shadow-xl border border-base-200">
+        <div className="card-body p-6">
+          <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2 mb-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            {tPasskey('title')}
+          </h2>
+          <p className="text-xs text-base-content/60 mb-4">
+            {tPasskey('desc')}
+          </p>
+
+          <div className="space-y-2">
+            {passKeys.map((pk) => (
+              <div
+                key={pk.id}
+                className="flex items-center justify-between p-3 bg-base-200/50 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <KeyRound className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {pk.deviceName || tPasskey('unnamed')}
+                    </p>
+                    <p className="text-xs text-base-content/40">
+                      {tPasskey('added')} {format.dateTime(new Date(pk.createdAt), { dateStyle: 'medium' })}
+                      {pk.lastUsedAt && ` · ${tPasskey('lastUsed')} ${format.dateTime(new Date(pk.lastUsedAt), { dateStyle: 'medium' })}`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeletePassKey(pk.id)}
+                  disabled={isDeletingId === pk.id || passKeys.length <= 1}
+                  className="btn btn-ghost btn-xs text-error gap-1"
+                  title={passKeys.length <= 1 ? tPasskey('cannotRemoveLast') : tPasskey('remove')}
+                >
+                  {isDeletingId === pk.id ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {passKeys.length === 0 && (
+            <p className="text-sm text-base-content/40 text-center py-4">
+              {tPasskey('noPasskeys')}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-2 mt-3">
+            <button
+              onClick={() => setShowAddPassKeyModal(true)}
+              className="btn btn-outline btn-primary btn-sm gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              {tPasskey('addBtn')}
+            </button>
+            <button
+              onClick={handleGenerateSetupToken}
+              disabled={isGeneratingToken}
+              className="btn btn-outline btn-secondary btn-sm gap-2"
+            >
+              {isGeneratingToken ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              {tPasskey('addDeviceBtn')}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* DB Stats Cards */}
@@ -276,7 +464,6 @@ export default function SettingsClient({
             </p>
 
             <div className="space-y-4">
-              {/* Theme Selector */}
               <div className="form-control w-full">
                 <label className="label py-1" htmlFor="theme-select">
                   <span className="label-text text-xs font-bold text-base-content/75">
@@ -297,7 +484,6 @@ export default function SettingsClient({
                 </select>
               </div>
 
-              {/* Default Currency */}
               <div className="form-control w-full">
                 <label className="label py-1" htmlFor="currency-select">
                   <span className="label-text text-xs font-bold text-base-content/75">
@@ -318,7 +504,6 @@ export default function SettingsClient({
                 </select>
               </div>
 
-              {/* Default range */}
               <div className="form-control w-full">
                 <label className="label py-1" htmlFor="range-select">
                   <span className="label-text text-xs font-bold text-base-content/75">
@@ -339,7 +524,6 @@ export default function SettingsClient({
                 </select>
               </div>
 
-              {/* Date format */}
               <div className="form-control w-full">
                 <label className="label py-1" htmlFor="date-format-select">
                     <span className="label-text text-xs font-bold text-base-content/75">
@@ -358,7 +542,6 @@ export default function SettingsClient({
                   </select>
                 </div>
 
-                {/* Language */}
                 <div className="form-control w-full">
                   <label className="label py-1">
                     <span className="label-text text-xs font-bold text-base-content/75">
@@ -512,8 +695,180 @@ export default function SettingsClient({
               {t('wipeDbBtn')}
             </button>
           </div>
+          <div className="divider my-2"></div>
+          <div className="flex justify-between items-center gap-4 flex-wrap">
+            <div className="text-xs text-base-content/50">
+              <LogOut className="h-4 w-4 inline mr-1" />
+              Sign out of your account
+            </div>
+            <button
+              onClick={handleLogout}
+              className="btn btn-outline btn-sm gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Add PassKey Modal */}
+      {showAddPassKeyModal && (
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true">
+          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
+            <h3 className="font-bold text-lg text-primary flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              {tPasskey('modalTitle')}
+            </h3>
+            <div className="py-4 space-y-3">
+              <p className="text-sm text-base-content/80">
+                {tPasskey('modalDesc')}
+              </p>
+              <div className="form-control w-full">
+                <label className="label py-1" htmlFor="new-passkey-name">
+                  <span className="label-text font-semibold text-base-content/75">
+                    {tPasskey('deviceName')}
+                  </span>
+                </label>
+                <input
+                  id="new-passkey-name"
+                  type="text"
+                  placeholder={tPasskey('deviceNamePlaceholder')}
+                  value={newDeviceName}
+                  onChange={(e) => setNewDeviceName(e.target.value)}
+                  className="input input-bordered w-full"
+                  disabled={isAddingPassKey}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="modal-action">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddPassKeyModal(false);
+                  setNewDeviceName('');
+                }}
+                className="btn btn-ghost btn-sm"
+                disabled={isAddingPassKey}
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleAddPassKey}
+                className="btn btn-primary btn-sm gap-2"
+                disabled={isAddingPassKey || !newDeviceName.trim()}
+              >
+                {isAddingPassKey ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {isAddingPassKey ? tPasskey('registering') : tPasskey('registerBtn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Setup Token Modal */}
+      {showSetupTokenModal && setupToken && (
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true">
+          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
+            <h3 className="font-bold text-lg text-primary flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              {tPasskey('setupTokenModalTitle')}
+            </h3>
+            <div className="py-4 space-y-4">
+              <p className="text-sm text-base-content/80">
+                {tPasskey('setupTokenModalDesc')}
+              </p>
+
+              <div className="space-y-3">
+                {/* Code field */}
+                <div className="form-control w-full">
+                  <span className="label-text font-semibold text-base-content/75 mb-1">
+                    {tPasskey('setupTokenLabel')}
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={setupToken.token}
+                      className="input input-bordered font-mono font-bold text-center tracking-wider w-full text-lg bg-base-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(setupToken.token);
+                        setCopiedToken(true);
+                        setTimeout(() => setCopiedToken(false), 2000);
+                      }}
+                      className="btn btn-primary btn-square"
+                      title={tPasskey('copyBtn')}
+                    >
+                      {copiedToken ? (
+                        <span className="text-xs font-bold">{tPasskey('copiedSuccess')}</span>
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* URL field */}
+                <div className="form-control w-full">
+                  <span className="label-text font-semibold text-base-content/75 mb-1">
+                    {tPasskey('setupUrlLabel')}
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={setupToken.url}
+                      className="input input-bordered text-xs w-full bg-base-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(setupToken.url);
+                        setCopiedUrl(true);
+                        setTimeout(() => setCopiedUrl(false), 2000);
+                      }}
+                      className="btn btn-primary btn-square"
+                      title={tPasskey('copyBtn')}
+                    >
+                      {copiedUrl ? (
+                        <span className="text-xs font-bold">{tPasskey('copiedSuccess')}</span>
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="alert alert-warning text-xs mt-2 gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-warning-content" />
+                <span className="text-warning-content font-semibold">{tPasskey('setupTokenExpires')}</span>
+              </div>
+            </div>
+            <div className="modal-action">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSetupTokenModal(false);
+                  setSetupToken(null);
+                }}
+                className="btn btn-sm"
+              >
+                {tCommon('close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Wipe Confirmation Modal */}
       {showWipeModal && (
@@ -523,7 +878,7 @@ export default function SettingsClient({
               <ShieldAlert className="h-5 w-5 text-error" />
               {t('wipeConfirmTitle')}
             </h3>
-            
+
             <div className="py-4 text-sm text-base-content/80 space-y-3">
               <p>
                 {t('wipeConfirmWarning')}

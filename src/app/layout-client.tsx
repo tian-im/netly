@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { LocaleProvider } from './providers';
 import Sidebar from './sidebar';
 import { useTranslations } from 'next-intl';
 
-/** Rendered inside LocaleProvider so useTranslations has access to NextIntlClientProvider */
 function MobileNavBrand() {
   const t = useTranslations('nav');
   return (
@@ -16,13 +16,23 @@ function MobileNavBrand() {
 }
 
 export default function LayoutClient({ children, ssrLocale }: { children: React.ReactNode; ssrLocale?: string }) {
+  const pathname = usePathname();
+  const isPublicPage = pathname === '/login' || pathname === '/setup';
+
+  if (isPublicPage) {
+    return (
+      <LocaleProvider ssrLocale={ssrLocale}>
+        {children}
+      </LocaleProvider>
+    );
+  }
+
   return (
     <LocaleProvider ssrLocale={ssrLocale}>
       <div className="drawer lg:drawer-open h-full">
         <input id="nav-drawer" type="checkbox" className="drawer-toggle" />
-        
+
         <div className="drawer-content flex flex-col h-full overflow-hidden">
-          {/* Header / Navbar for Mobile view */}
           <div className="navbar bg-base-100 lg:hidden shadow-md shrink-0">
             <div className="flex-none">
               <label htmlFor="nav-drawer" className="btn btn-square btn-ghost drawer-button">
@@ -34,13 +44,11 @@ export default function LayoutClient({ children, ssrLocale }: { children: React.
             <MobileNavBrand />
           </div>
 
-          {/* Main scrollable page workspace */}
           <main className="flex-1 overflow-y-auto p-4 lg:p-8">
             {children}
           </main>
         </div>
 
-        {/* Drawer Sidebar for Desktop and Mobile overlays */}
         <div className="drawer-side shrink-0 z-50">
           <label htmlFor="nav-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
           <Sidebar />

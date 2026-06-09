@@ -303,6 +303,8 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
 
 export async function resetDatabase() {
   await db.$transaction([
+    db.session.deleteMany(),
+    db.passKeyCredential.deleteMany(),
     db.categoryRule.deleteMany(),
     db.transaction.deleteMany(),
     db.category.deleteMany(),

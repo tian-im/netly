@@ -458,6 +458,8 @@
     }
   },
   "permission": {
-    "mcp_*": "ask"
+    "mcp_*": "ask",
+    "npm *": "deny",
+    "npx_*": "deny"
   }
 }

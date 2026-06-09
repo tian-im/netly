@@ -52,3 +52,22 @@ model CategoryRule {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
+
+// WebAuthn / PassKey credentials for single-user auth
+model PassKeyCredential {
+  id           String    @id
+  userId       String    @default("default")
+  publicKey    Bytes
+  counter      BigInt    @default(0)
+  transports   String    @default("[]")
+  deviceName   String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+}
+
+// Active sessions
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+}

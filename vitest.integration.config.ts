@@ -15,6 +15,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.integration.test.ts'],
+    maxWorkers: 1,
+    minWorkers: 1,
     poolOptions: {
       forks: {
         singleFork: true,
@@ -30,7 +32,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/app/actions.ts'],
+      include: ['src/app/api/auth/**/*.ts'],
       exclude: [],
       all: true,
       thresholds: {

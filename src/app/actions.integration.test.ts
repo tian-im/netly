@@ -101,7 +101,8 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await disconnectTestDb();
+  // Don't disconnect — test files share a single fork and disconnecting
+  // would break sibling test files' module-scoped mocks.
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -155,7 +156,7 @@ describe('Account actions', () => {
     });
 
     it('throws when name is blank', async () => {
-      await expect(createAccount('   ', 'ASSET', 0)).rejects.toThrow('Account name is required');
+      await expect(createAccount('   ', 'ASSET', 0)).rejects.toThrow('ERR_ACCOUNT_NAME_REQUIRED');
     });
   });
 
@@ -185,7 +186,7 @@ describe('Account actions', () => {
 
     it('throws when name is blank', async () => {
       const account = await seedAccount();
-      await expect(updateAccount(account.id, '   ', 'ASSET', 0)).rejects.toThrow('Account name is required');
+      await expect(updateAccount(account.id, '   ', 'ASSET', 0)).rejects.toThrow('ERR_ACCOUNT_NAME_REQUIRED');
     });
   });
 
@@ -244,14 +245,14 @@ describe('Category actions', () => {
 
     it('throws when name is blank', async () => {
       await expect(createCategory('', 'EXPENSE', 'OPERATING')).rejects.toThrow(
-        'Category name is required'
+        'ERR_CATEGORY_NAME_REQUIRED'
       );
     });
 
     it('throws when duplicate name is used', async () => {
       await createCategory('Groceries', 'EXPENSE', 'OPERATING');
       await expect(createCategory('Groceries', 'EXPENSE', 'OPERATING')).rejects.toThrow(
-        'Category with this name already exists'
+        'ERR_CATEGORY_NAME_EXISTS'
       );
     });
   });
@@ -265,12 +266,12 @@ describe('Category actions', () => {
     });
 
     it('throws when category does not exist', async () => {
-      await expect(deleteCategory('nonexistent-id')).rejects.toThrow('Category not found');
+      await expect(deleteCategory('nonexistent-id')).rejects.toThrow('ERR_CATEGORY_NOT_FOUND');
     });
 
     it('throws when trying to delete the protected Transfer category', async () => {
       const cat = await seedCategory({ name: 'Transfer', type: 'TRANSFER' });
-      await expect(deleteCategory(cat.id)).rejects.toThrow('protected');
+      await expect(deleteCategory(cat.id)).rejects.toThrow('ERR_TRANSFER_CATEGORY_PROTECTED');
     });
 
     it('sets transactions to Uncategorized when parent category is deleted', async () => {
@@ -303,7 +304,7 @@ describe('Category actions', () => {
     it('throws when name is blank', async () => {
       const cat = await seedCategory();
       await expect(updateCategory(cat.id, '  ', 'EXPENSE', 'OPERATING')).rejects.toThrow(
-        'Category name is required'
+        'ERR_CATEGORY_NAME_REQUIRED'
       );
     });
 
@@ -311,14 +312,14 @@ describe('Category actions', () => {
       await seedCategory({ name: 'Duplicate' });
       const cat = await seedCategory({ name: 'Target' });
       await expect(updateCategory(cat.id, 'Duplicate', 'EXPENSE', 'OPERATING')).rejects.toThrow(
-        'Category with this name already exists'
+        'ERR_CATEGORY_NAME_EXISTS'
       );
     });
 
     it('throws when trying to rename the protected Transfer category', async () => {
       const cat = await seedCategory({ name: 'Transfer', type: 'TRANSFER' });
       await expect(updateCategory(cat.id, 'Something Else', 'TRANSFER', 'OPERATING')).rejects.toThrow(
-        'protected'
+        'ERR_TRANSFER_CATEGORY_PROTECTED'
       );
     });
   });
@@ -339,7 +340,7 @@ describe('Category Rule actions', () => {
 
     it('throws when pattern is blank', async () => {
       const cat = await seedCategory();
-      await expect(createCategoryRule('  ', cat.id)).rejects.toThrow('Pattern is required');
+      await expect(createCategoryRule('  ', cat.id)).rejects.toThrow('ERR_PATTERN_REQUIRED');
     });
 
     it('auto-categorizes existing uncategorized transactions that match the new rule', async () => {
@@ -500,7 +501,7 @@ describe('Transaction actions', () => {
 
     it('throws when transaction does not exist', async () => {
       await expect(updateTransactionCategory('bad-id', null)).rejects.toThrow(
-        'Transaction not found'
+        'ERR_TRANSACTION_NOT_FOUND'
       );
     });
 
