@@ -2,116 +2,307 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { getTransactions, getAccounts, getCategories, updateTransactionCategory } from '../actions';
+import { Account, Category, Transaction, SortConfig } from './types';
+import FilterBar from './components/FilterBar';
+import TransactionTable from './components/TransactionTable';
+import Pagination from './components/Pagination';
+import RulePromptModal from './components/RulePromptModal';
+import TransactionDetailDrawer from './components/TransactionDetailDrawer';
+import BulkActionPanel from './components/BulkActionPanel';
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error';
+}
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-
-  // Filter states
-  const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Prompt states for creating global rules on manual categorization
+  // Unified query parameters to avoid double-fetching
+  const [query, setQuery] = useState({
+    accountId: '',
+    categoryId: '',
+    searchTerm: '',
+    page: 1,
+    pageSize: 25,
+  });
+
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    sortBy: 'date',
+    sortOrder: 'desc',
+  });
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Selected transaction detail view drawer state
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+
+  // Preference for auto-creating rules: 'ask' | 'always' | 'never'
+  const [ruleMode, setRuleMode] = useState<'ask' | 'always' | 'never'>('ask');
+
+  // Manual rule creation modal states
   const [showRulePrompt, setShowRulePrompt] = useState(false);
-  const [promptTx, setPromptTx] = useState<any | null>(null);
+  const [promptTx, setPromptTx] = useState<Transaction | null>(null);
   const [promptCatId, setPromptCatId] = useState('');
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const [isPending, startTransition] = useTransition();
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
   const loadData = async () => {
-    const accs = await getAccounts();
-    const cats = await getCategories();
-    setAccounts(accs);
-    setCategories(cats);
+    try {
+      const [accs, cats] = await Promise.all([getAccounts(), getCategories()]);
+      setAccounts(accs);
+      setCategories(cats);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to load static datasets', 'error');
+    }
   };
 
   const fetchTransactions = async () => {
+    setIsLoading(true);
     try {
       const result = await getTransactions({
-        accountId: selectedAccountId || undefined,
-        categoryId: selectedCategoryFilter || undefined,
-        searchTerm: searchTerm || undefined,
-        page: currentPage,
-        pageSize,
+        accountId: query.accountId || undefined,
+        categoryId: query.categoryId || undefined,
+        searchTerm: query.searchTerm || undefined,
+        page: query.page,
+        pageSize: query.pageSize,
+        sortBy: sortConfig.sortBy,
+        sortOrder: sortConfig.sortOrder,
       });
       setTransactions(result.transactions);
       setTotalCount(result.totalCount);
-    } catch (err) {
-      console.error('Failed to fetch transactions:', err);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to fetch transactions', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
     loadData();
+
+    // Read localStorage preferences
+    const saved = localStorage.getItem('netly_rule_mode');
+    if (saved === 'always' || saved === 'never' || saved === 'ask') {
+      setRuleMode(saved);
+    }
   }, []);
 
+  // Fetch transactions exactly once when any query parameter or sorting changes
   useEffect(() => {
     fetchTransactions();
-  }, [selectedAccountId, selectedCategoryFilter, searchTerm, currentPage, pageSize]);
+  }, [
+    query.accountId,
+    query.categoryId,
+    query.searchTerm,
+    query.page,
+    query.pageSize,
+    sortConfig.sortBy,
+    sortConfig.sortOrder,
+  ]);
 
-  // Reset to page 1 whenever filters or page size change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedAccountId, selectedCategoryFilter, searchTerm, pageSize]);
+  const handleFilterChange = (updates: Partial<typeof query>) => {
+    setQuery((prev) => {
+      const newQuery = { ...prev, ...updates };
+      // Always reset page to 1 when a filter criteria (other than page itself) changes
+      if (!updates.hasOwnProperty('page')) {
+        newQuery.page = 1;
+      }
+      return newQuery;
+    });
+  };
 
-  const handleCategoryChange = async (tx: any, catId: string) => {
+  const handleRuleModeChange = (mode: 'ask' | 'always' | 'never') => {
+    setRuleMode(mode);
+    localStorage.setItem('netly_rule_mode', mode);
+    showToast(
+      `Rule prompt option updated: ${
+        mode === 'ask'
+          ? 'Ask each time'
+          : mode === 'always'
+          ? 'Create rule automatically'
+          : 'Never create rules'
+      }`
+    );
+  };
+
+  const handleSort = (field: string) => {
+    setSortConfig((prev) => {
+      if (prev.sortBy === field) {
+        return {
+          sortBy: field,
+          sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
+        };
+      }
+      return {
+        sortBy: field,
+        sortOrder: 'asc',
+      };
+    });
+  };
+
+  const handleCategoryChange = async (tx: Transaction, catId: string) => {
     if (!catId) {
+      const confirmUncat = window.confirm(
+        `Are you sure you want to set the transaction for "${tx.payee}" back to Uncategorized?`
+      );
+      if (!confirmUncat) return;
+
       startTransition(async () => {
-        await updateTransactionCategory(tx.id, null);
-        await fetchTransactions();
+        try {
+          await updateTransactionCategory(tx.id, null);
+          showToast(`Transaction for "${tx.payee}" marked as Uncategorized.`);
+          // Sync detail view drawer if open
+          if (selectedTx?.id === tx.id) {
+            setSelectedTx((prev) => (prev ? { ...prev, categoryId: null, category: null, isReviewed: false } : null));
+          }
+          await fetchTransactions();
+        } catch (err: any) {
+          showToast(err.message || 'Failed to update transaction category', 'error');
+        }
       });
       return;
     }
-    setPromptTx(tx);
-    setPromptCatId(catId);
-    setShowRulePrompt(true);
+
+    if (ruleMode === 'always') {
+      startTransition(async () => {
+        try {
+          const updated = await updateTransactionCategory(tx.id, catId, true);
+          showToast(`Assigned category and created automation rule for "${tx.payee}".`);
+          if (selectedTx?.id === tx.id) {
+            setSelectedTx(updated);
+          }
+          await fetchTransactions();
+        } catch (err: any) {
+          showToast(err.message || 'Failed to update transaction', 'error');
+        }
+      });
+    } else if (ruleMode === 'never') {
+      startTransition(async () => {
+        try {
+          const updated = await updateTransactionCategory(tx.id, catId, false);
+          showToast(`Assigned category to transaction "${tx.payee}".`);
+          if (selectedTx?.id === tx.id) {
+            setSelectedTx(updated);
+          }
+          await fetchTransactions();
+        } catch (err: any) {
+          showToast(err.message || 'Failed to update transaction', 'error');
+        }
+      });
+    } else {
+      // ruleMode === 'ask'
+      setPromptTx(tx);
+      setPromptCatId(catId);
+      setShowRulePrompt(true);
+    }
   };
 
   const executeCategorization = async (createRule: boolean) => {
     if (!promptTx) return;
     startTransition(async () => {
       try {
-        await updateTransactionCategory(promptTx.id, promptCatId, createRule);
+        const updated = await updateTransactionCategory(promptTx.id, promptCatId, createRule);
+        showToast(
+          `Categorized transaction. ${
+            createRule ? `Saved global match rule for "${promptTx.payee}".` : ''
+          }`
+        );
         setShowRulePrompt(false);
         setPromptTx(null);
+        if (selectedTx?.id === promptTx.id) {
+          setSelectedTx(updated);
+        }
         await fetchTransactions();
       } catch (err: any) {
-        alert(err.message || 'Failed to update transaction');
+        showToast(err.message || 'Failed to update transaction', 'error');
       }
     });
   };
 
-  // Pagination computation
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
-  const startIdx = totalCount === 0 ? 0 : (safePage - 1) * pageSize;
-  const endIdx = Math.min(startIdx + transactions.length, totalCount);
-  const pageTxs = transactions;
+  // Bulk actions
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
-  // Build visible page numbers (up to 7, with ellipsis logic)
-  const getPageNumbers = (): (number | '...')[] => {
-    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    const pages: (number | '...')[] = [1];
-    if (safePage > 3) pages.push('...');
-    for (let p = Math.max(2, safePage - 1); p <= Math.min(totalPages - 1, safePage + 1); p++) {
-      pages.push(p);
+  const handleToggleSelectAll = () => {
+    const allOnPageIds = transactions.map((t) => t.id);
+    const areAllSelected = allOnPageIds.every((id) => selectedIds.includes(id));
+
+    if (areAllSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !allOnPageIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => {
+        const next = [...prev];
+        allOnPageIds.forEach((id) => {
+          if (!next.includes(id)) next.push(id);
+        });
+        return next;
+      });
     }
-    if (safePage < totalPages - 2) pages.push('...');
-    pages.push(totalPages);
-    return pages;
+  };
+
+  const handleBulkCategorize = async (catId: string) => {
+    const isUncategorizing = catId === 'UNCATEGORIZED';
+    const targetCatId = isUncategorizing ? null : catId;
+
+    if (isUncategorizing) {
+      const confirmUncat = window.confirm(
+        `Are you sure you want to uncategorize the ${selectedIds.length} selected transactions?`
+      );
+      if (!confirmUncat) return;
+    }
+
+    startTransition(async () => {
+      try {
+        await Promise.all(
+          selectedIds.map((id) => updateTransactionCategory(id, targetCatId, false))
+        );
+        showToast(`Successfully categorized ${selectedIds.length} transactions.`);
+        setSelectedIds([]);
+        // Sync drawer if open and was modified
+        if (selectedTx && selectedIds.includes(selectedTx.id)) {
+          const matchedCategory = categories.find((c) => c.id === targetCatId);
+          setSelectedTx((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  categoryId: targetCatId,
+                  category: matchedCategory || null,
+                  isReviewed: targetCatId !== null,
+                }
+              : null
+          );
+        }
+        await fetchTransactions();
+      } catch (err: any) {
+        showToast(err.message || 'Failed to run bulk categorization', 'error');
+      }
+    });
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative pb-16">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -124,251 +315,88 @@ export default function TransactionsPage() {
         </div>
         {/* Total count badge */}
         <div className="shrink-0">
-          <span className="badge badge-ghost badge-lg font-mono font-bold">
+          <span className="badge badge-neutral badge-lg font-mono font-bold py-3">
             {totalCount.toLocaleString()} transaction{totalCount !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div className="card bg-base-100 shadow border border-base-200">
-        <div className="card-body p-4 flex flex-col md:flex-row gap-3 items-center">
-          {/* Account filter */}
-          <select
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="select select-bordered select-sm w-full md:w-48"
-          >
-            <option value="">All Accounts</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-
-          {/* Category filter */}
-          <select
-            value={selectedCategoryFilter}
-            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-            className="select select-bordered select-sm w-full md:w-52"
-          >
-            <option value="">All Categories</option>
-            <option value="UNCATEGORIZED">⚠️ Uncategorized only</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
-            ))}
-          </select>
-
-          {/* Search */}
-          <div className="relative flex-1 w-full">
-            <span className="absolute left-3 top-2.5 text-base-content/40">🔍</span>
-            <input
-              type="text"
-              placeholder="Search payee or memo..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input input-bordered input-sm w-full pl-9"
-            />
-          </div>
-
-          {/* Page size selector */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-base-content/50 whitespace-nowrap">Show</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="select select-bordered select-sm w-20"
-            >
-              {PAGE_SIZE_OPTIONS.map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <FilterBar
+        accounts={accounts}
+        categories={categories}
+        selectedAccountId={query.accountId}
+        selectedCategoryId={query.categoryId}
+        searchTerm={query.searchTerm}
+        pageSize={query.pageSize}
+        ruleMode={ruleMode}
+        onFilterChange={handleFilterChange}
+        onRuleModeChange={handleRuleModeChange}
+      />
 
       {/* Ledger Table */}
-      <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
-        <table className="table w-full">
-          <thead>
-            <tr className="border-b border-base-200">
-              <th className="w-24">Date</th>
-              <th className="w-32">Account</th>
-              <th>Payee / Memo</th>
-              <th className="w-44">Category</th>
-              <th className="text-right w-36">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageTxs.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-16 text-base-content/40">
-                  {transactions.length === 0 ? (
-                    <span>No transactions imported yet.</span>
-                  ) : (
-                    <span>No transactions match the selected filters.</span>
-                  )}
-                </td>
-              </tr>
-            ) : (
-              pageTxs.map((tx) => (
-                <tr
-                  key={tx.id}
-                  className={`hover:bg-base-200/50 border-b border-base-200 ${!tx.isReviewed ? 'bg-warning/5 border-l-4 border-l-warning' : ''}`}
-                >
-                  {/* Date */}
-                  <td className="font-mono text-xs align-top pt-3">
-                    {new Date(tx.date).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                    })}
-                  </td>
+      <TransactionTable
+        transactions={transactions}
+        categories={categories}
+        isLoading={isLoading}
+        selectedIds={selectedIds}
+        sortConfig={sortConfig}
+        onSort={handleSort}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
+        onCategoryChange={handleCategoryChange}
+        onRowClick={setSelectedTx}
+      />
 
-                  {/* Account */}
-                  <td className="text-xs font-semibold align-top pt-3 break-words">
-                    {tx.account.name}
-                  </td>
+      {/* Pagination */}
+      <Pagination
+        totalCount={totalCount}
+        pageSize={query.pageSize}
+        currentPage={query.page}
+        onPageChange={(page) => handleFilterChange({ page })}
+      />
 
-                  {/* Payee + description */}
-                  <td className="align-top pt-3">
-                    <div className="font-bold text-sm break-words">{tx.payee}</div>
-                    {tx.description && (
-                      <div className="text-xs text-base-content/45 break-words mt-0.5">
-                        {tx.description}
-                      </div>
-                    )}
-                  </td>
+      {/* Automation Rule Prompt Modal */}
+      <RulePromptModal
+        isOpen={showRulePrompt}
+        transaction={promptTx}
+        categoryId={promptCatId}
+        categories={categories}
+        isPending={isPending}
+        onConfirm={executeCategorization}
+      />
 
-                  {/* Category select */}
-                  <td className="align-top pt-2">
-                    <select
-                      value={tx.categoryId || ''}
-                      onChange={(e) => handleCategoryChange(tx, e.target.value)}
-                      className={`select select-bordered select-xs w-full font-semibold ${!tx.categoryId ? 'select-warning text-warning-content' : ''}`}
-                      disabled={isPending}
-                    >
-                      <option value="">Uncategorized</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.type})
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+      {/* Transaction Detail View Drawer */}
+      <TransactionDetailDrawer
+        transaction={selectedTx}
+        categories={categories}
+        isPending={isPending}
+        onClose={() => setSelectedTx(null)}
+        onCategoryChange={handleCategoryChange}
+      />
 
-                  {/* Amount */}
-                  <td className={`text-right font-mono font-bold align-top pt-3 ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}>
-                    {tx.amount >= 0 ? '+' : ''}
-                    ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                    <span className="text-xs font-normal opacity-60">{tx.account.currency}</span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Bulk Action floating controls */}
+      <BulkActionPanel
+        selectedCount={selectedIds.length}
+        categories={categories}
+        isPending={isPending}
+        onClearSelection={() => setSelectedIds([])}
+        onBulkCategorize={handleBulkCategorize}
+      />
 
-        {/* Pagination footer */}
-        {totalCount > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-base-200 bg-base-100">
-            {/* Result range info */}
-            <p className="text-xs text-base-content/50">
-              Showing <span className="font-semibold text-base-content">{startIdx + 1}–{endIdx}</span> of{' '}
-              <span className="font-semibold text-base-content">{totalCount.toLocaleString()}</span> transactions
-            </p>
-
-            {/* Page controls */}
-            <div className="join">
-              {/* First page */}
-              <button
-                className="join-item btn btn-sm btn-ghost"
-                onClick={() => setCurrentPage(1)}
-                disabled={safePage === 1}
-                title="First page"
-              >
-                «
-              </button>
-
-              {/* Prev */}
-              <button
-                className="join-item btn btn-sm btn-ghost"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                title="Previous page"
-              >
-                ‹
-              </button>
-
-              {/* Numbered pages */}
-              {getPageNumbers().map((p, i) =>
-                p === '...' ? (
-                  <button key={`ellipsis-${i}`} className="join-item btn btn-sm btn-disabled">
-                    …
-                  </button>
-                ) : (
-                  <button
-                    key={p}
-                    className={`join-item btn btn-sm ${safePage === p ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => setCurrentPage(p as number)}
-                  >
-                    {p}
-                  </button>
-                )
-              )}
-
-              {/* Next */}
-              <button
-                className="join-item btn btn-sm btn-ghost"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                title="Next page"
-              >
-                ›
-              </button>
-
-              {/* Last page */}
-              <button
-                className="join-item btn btn-sm btn-ghost"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={safePage === totalPages}
-                title="Last page"
-              >
-                »
-              </button>
-            </div>
+      {/* Toasts Notification Container */}
+      <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`alert shadow-lg text-xs font-semibold ${
+              t.type === 'error' ? 'alert-error text-error-content' : 'alert-success text-success-content'
+            }`}
+          >
+            <span>{t.message}</span>
           </div>
-        )}
+        ))}
       </div>
-
-      {/* Categorization Rule Modal Prompt */}
-      {showRulePrompt && promptTx && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-black text-lg text-primary">Create Automation Rule?</h3>
-            <p className="py-4 text-sm">
-              You mapped <span className="font-bold">"{promptTx.payee}"</span> to category{' '}
-              <span className="font-bold">"{categories.find((c) => c.id === promptCatId)?.name}"</span>.
-              Would you like to automatically categorize all future transactions matching this merchant?
-            </p>
-            <div className="modal-action">
-              <button
-                onClick={() => executeCategorization(false)}
-                className="btn btn-outline"
-                disabled={isPending}
-              >
-                No, just this one
-              </button>
-              <button
-                onClick={() => executeCategorization(true)}
-                className="btn btn-primary"
-                disabled={isPending}
-              >
-                Yes, save rule
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

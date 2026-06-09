@@ -138,6 +138,8 @@ export async function getTransactions(
     searchTerm?: string;
     page?: number;
     pageSize?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }
 ) {
   let accountId: string | undefined;
@@ -145,6 +147,8 @@ export async function getTransactions(
   let searchTerm: string | undefined;
   let page: number | undefined;
   let pageSize: number | undefined;
+  let sortBy: string | undefined;
+  let sortOrder: 'asc' | 'desc' | undefined;
 
   if (typeof paramsOrAccountId === 'string') {
     accountId = paramsOrAccountId;
@@ -154,6 +158,8 @@ export async function getTransactions(
     searchTerm = paramsOrAccountId.searchTerm;
     page = paramsOrAccountId.page;
     pageSize = paramsOrAccountId.pageSize;
+    sortBy = paramsOrAccountId.sortBy;
+    sortOrder = paramsOrAccountId.sortOrder;
   }
 
   const where: any = {};
@@ -177,13 +183,24 @@ export async function getTransactions(
 
   const totalCount = await db.transaction.count({ where });
 
+  let orderBy: any = { date: 'desc' };
+  if (sortBy && sortOrder) {
+    if (sortBy === 'account') {
+      orderBy = { account: { name: sortOrder } };
+    } else if (sortBy === 'category') {
+      orderBy = { category: { name: sortOrder } };
+    } else {
+      orderBy = { [sortBy]: sortOrder };
+    }
+  }
+
   const transactions = await db.transaction.findMany({
     where,
     include: {
       account: true,
       category: true,
     },
-    orderBy: { date: 'desc' },
+    orderBy,
     ...(page && pageSize ? {
       skip: (page - 1) * pageSize,
       take: pageSize
@@ -213,7 +230,7 @@ export async function updateTransactionCategory(
       categoryId,
       isReviewed: categoryId !== null
     },
-    include: { category: true }
+    include: { category: true, account: true }
   });
 
   if (createGlobalRule && categoryId && transaction.payee) {
