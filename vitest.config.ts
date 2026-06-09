@@ -4,6 +4,8 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'jsdom',
+    include: ['src/**/*.test.ts'],
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'src/**/*.integration.test.ts'],
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
@@ -11,7 +13,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/lib/**/*.ts'],
-      exclude: ['src/lib/**/*.test.ts', 'src/lib/db.ts'],
+      exclude: ['src/lib/**/*.test.ts', 'src/lib/db.ts', 'src/lib/test-db.ts'],
       all: true,
       thresholds: {
         statements: 100,

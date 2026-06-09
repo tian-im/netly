@@ -1,21 +1,23 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { getTransactions, getAccounts, getCategories, updateTransactionCategory, createCategoryRule, deleteCategoryRule } from '../actions';
+import { getTransactions, getAccounts, getCategories, updateTransactionCategory } from '../actions';
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  
+
   // Filter states
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(''); // '' = all, 'UNCATEGORIZED' = null categoryId, else categoryId
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Rules manager states
-  const [newRulePattern, setNewRulePattern] = useState('');
-  const [newRuleCatId, setNewRuleCatId] = useState('');
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // Prompt states for creating global rules on manual categorization
   const [showRulePrompt, setShowRulePrompt] = useState(false);
@@ -31,26 +33,25 @@ export default function TransactionsPage() {
     setTransactions(txs);
     setAccounts(accs);
     setCategories(cats);
-    if (cats.length > 0 && !newRuleCatId) {
-      setNewRuleCatId(cats[0].id);
-    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
+  // Reset to page 1 whenever filters or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedAccountId, selectedCategoryFilter, searchTerm, pageSize]);
+
   const handleCategoryChange = async (tx: any, catId: string) => {
     if (!catId) {
-      // Uncategorize
       startTransition(async () => {
         await updateTransactionCategory(tx.id, null);
         await loadData();
       });
       return;
     }
-
-    // If categorizing, prompt user to optionally create a global rule for the payee merchant
     setPromptTx(tx);
     setPromptCatId(catId);
     setShowRulePrompt(true);
@@ -58,7 +59,6 @@ export default function TransactionsPage() {
 
   const executeCategorization = async (createRule: boolean) => {
     if (!promptTx) return;
-
     startTransition(async () => {
       try {
         await updateTransactionCategory(promptTx.id, promptCatId, createRule);
@@ -71,34 +71,10 @@ export default function TransactionsPage() {
     });
   };
 
-  const handleCreateRule = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRulePattern.trim() || !newRuleCatId) return;
-
-    startTransition(async () => {
-      try {
-        await createCategoryRule(newRulePattern, newRuleCatId);
-        setNewRulePattern('');
-        await loadData();
-      } catch (err: any) {
-        alert(err.message || 'Failed to create rule');
-      }
-    });
-  };
-
-  const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this rule?')) return;
-    
-    startTransition(async () => {
-      await deleteCategoryRule(ruleId);
-      await loadData();
-    });
-  };
-
-  // Filter and search computation
+  // Filter computation
   const filteredTransactions = transactions.filter((tx) => {
     const matchesAccount = !selectedAccountId || tx.accountId === selectedAccountId;
-    
+
     let matchesCategory = true;
     if (selectedCategoryFilter === 'UNCATEGORIZED') {
       matchesCategory = !tx.categoryId;
@@ -115,6 +91,27 @@ export default function TransactionsPage() {
     return matchesAccount && matchesCategory && matchesSearch;
   });
 
+  // Pagination computation
+  const totalCount = filteredTransactions.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, totalCount);
+  const pageTxs = filteredTransactions.slice(startIdx, endIdx);
+
+  // Build visible page numbers (up to 7, with ellipsis logic)
+  const getPageNumbers = (): (number | '...')[] => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | '...')[] = [1];
+    if (safePage > 3) pages.push('...');
+    for (let p = Math.max(2, safePage - 1); p <= Math.min(totalPages - 1, safePage + 1); p++) {
+      pages.push(p);
+    }
+    if (safePage < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -127,242 +124,244 @@ export default function TransactionsPage() {
             Review transactions, categorize them, and define match rules to automate future statements.
           </p>
         </div>
+        {/* Total count badge */}
+        <div className="shrink-0">
+          <span className="badge badge-ghost badge-lg font-mono font-bold">
+            {totalCount.toLocaleString()} transaction{totalCount !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
-      {/* Tabs / Multi-section: Ledger and Rules Manager */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* Left Side: Transactions List */}
-        <div className="xl:col-span-3 space-y-4">
-          
-          {/* Filters Bar */}
-          <div className="card bg-base-100 shadow border border-base-200">
-            <div className="card-body p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-              
-              {/* Account filter */}
-              <div className="form-control w-full md:w-auto">
-                <select
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="select select-bordered select-sm w-full"
-                >
-                  <option value="">All Accounts</option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
-              </div>
+      {/* Filters Bar */}
+      <div className="card bg-base-100 shadow border border-base-200">
+        <div className="card-body p-4 flex flex-col md:flex-row gap-3 items-center">
+          {/* Account filter */}
+          <select
+            value={selectedAccountId}
+            onChange={(e) => setSelectedAccountId(e.target.value)}
+            className="select select-bordered select-sm w-full md:w-48"
+          >
+            <option value="">All Accounts</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
 
-              {/* Category filter */}
-              <div className="form-control w-full md:w-auto">
-                <select
-                  value={selectedCategoryFilter}
-                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                  className="select select-bordered select-sm w-full"
-                >
-                  <option value="">All Categories</option>
-                  <option value="UNCATEGORIZED">⚠️ Uncategorized only</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
-                  ))}
-                </select>
-              </div>
+          {/* Category filter */}
+          <select
+            value={selectedCategoryFilter}
+            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+            className="select select-bordered select-sm w-full md:w-52"
+          >
+            <option value="">All Categories</option>
+            <option value="UNCATEGORIZED">⚠️ Uncategorized only</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
+            ))}
+          </select>
 
-              {/* Search filter */}
-              <div className="form-control w-full md:flex-1">
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-base-content/40">🔍</span>
-                  <input
-                    type="text"
-                    placeholder="Search payee or memo..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input input-bordered input-sm w-full pl-9"
-                  />
-                </div>
-              </div>
-            </div>
+          {/* Search */}
+          <div className="relative flex-1 w-full">
+            <span className="absolute left-3 top-2.5 text-base-content/40">🔍</span>
+            <input
+              type="text"
+              placeholder="Search payee or memo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input input-bordered input-sm w-full pl-9"
+            />
           </div>
 
-          {/* Ledger Table */}
-          <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="table w-full">
-                <thead>
-                  <tr className="border-b border-base-200">
-                    <th>Date</th>
-                    <th>Account</th>
-                    <th>Payee</th>
-                    <th>Category</th>
-                    <th className="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-12 text-base-content/40">
-                        No transactions found matching the selected filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredTransactions.map((tx) => (
-                      <tr 
-                        key={tx.id} 
-                        className={`hover:bg-base-200/50 border-b border-base-200 ${!tx.isReviewed ? 'bg-warning/5 border-l-4 border-l-warning' : ''}`}
-                      >
-                        <td className="font-mono text-xs">
-                          {new Date(tx.date).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                          })}
-                        </td>
-                        <td className="text-xs font-semibold max-w-[120px] truncate">
-                          {tx.account.name}
-                        </td>
-                        <td>
-                          <div className="font-bold text-sm">{tx.payee}</div>
-                          {tx.description && (
-                            <div className="text-xs text-base-content/45 max-w-[250px] truncate">
-                              {tx.description}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          <select
-                            value={tx.categoryId || ''}
-                            onChange={(e) => handleCategoryChange(tx, e.target.value)}
-                            className={`select select-bordered select-xs w-full max-w-[180px] font-semibold ${!tx.categoryId ? 'select-warning text-warning-content' : ''}`}
-                            disabled={isPending}
-                          >
-                            <option value="">Uncategorized</option>
-                            {categories.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name} ({c.type})
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className={`text-right font-mono font-bold ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}>
-                          {tx.amount >= 0 ? '+' : ''}
-                          ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {tx.account.currency}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+          {/* Page size selector */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-base-content/50 whitespace-nowrap">Show</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="select select-bordered select-sm w-20"
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* Right Side: Rules Manager Panel */}
-        <div className="xl:col-span-1 space-y-6">
-          {/* Create Rule Form */}
-          <div className="card bg-base-100 shadow-xl border border-base-200">
-            <div className="card-body p-6">
-              <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary">
-                ⚙️ Create Match Rule
-              </h2>
-              <p className="text-xs text-base-content/60">
-                Define keyword rules to auto-categorize future statement uploads.
-              </p>
-
-              <form onSubmit={handleCreateRule} className="space-y-4 mt-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold text-xs">Merchant Keyword</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Uber, Coles"
-                    value={newRulePattern}
-                    onChange={(e) => setNewRulePattern(e.target.value)}
-                    className="input input-bordered input-sm"
-                    required
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-semibold text-xs">Assign Category</span>
-                  </label>
-                  <select
-                    value={newRuleCatId}
-                    onChange={(e) => setNewRuleCatId(e.target.value)}
-                    className="select select-bordered select-sm"
-                    required
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm w-full mt-2"
-                  disabled={isPending || !newRulePattern.trim()}
+      {/* Ledger Table */}
+      <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
+        <table className="table w-full">
+          <thead>
+            <tr className="border-b border-base-200">
+              <th className="w-24">Date</th>
+              <th className="w-32">Account</th>
+              <th>Payee / Memo</th>
+              <th className="w-44">Category</th>
+              <th className="text-right w-36">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageTxs.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-16 text-base-content/40">
+                  {transactions.length === 0 ? (
+                    <span>No transactions imported yet.</span>
+                  ) : (
+                    <span>No transactions match the selected filters.</span>
+                  )}
+                </td>
+              </tr>
+            ) : (
+              pageTxs.map((tx) => (
+                <tr
+                  key={tx.id}
+                  className={`hover:bg-base-200/50 border-b border-base-200 ${!tx.isReviewed ? 'bg-warning/5 border-l-4 border-l-warning' : ''}`}
                 >
-                  Create Rule
-                </button>
-              </form>
-            </div>
-          </div>
+                  {/* Date */}
+                  <td className="font-mono text-xs align-top pt-3">
+                    {new Date(tx.date).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                    })}
+                  </td>
 
-          {/* Rules List */}
-          <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
-            <div className="card-body p-4">
-              <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary">
-                📜 Current Rules ({categories.reduce((acc, cat) => acc + (cat.rules?.length || 0), 0)})
-              </h2>
-            </div>
-            
-            <div className="max-h-[300px] overflow-y-auto px-4 pb-4 space-y-2">
-              {categories.map((cat) => {
-                if (!cat.rules || cat.rules.length === 0) return null;
-                return cat.rules.map((rule: any) => (
-                  <div key={rule.id} className="flex justify-between items-center bg-base-200 p-2 rounded-lg text-xs">
-                    <div>
-                      <span className="font-semibold text-base-content">"{rule.pattern}"</span>
-                      <span className="text-[10px] block text-base-content/50 uppercase tracking-widest mt-0.5">
-                        {cat.name}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteRule(rule.id)}
-                      className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10"
+                  {/* Account */}
+                  <td className="text-xs font-semibold align-top pt-3 break-words">
+                    {tx.account.name}
+                  </td>
+
+                  {/* Payee + description */}
+                  <td className="align-top pt-3">
+                    <div className="font-bold text-sm break-words">{tx.payee}</div>
+                    {tx.description && (
+                      <div className="text-xs text-base-content/45 break-words mt-0.5">
+                        {tx.description}
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Category select */}
+                  <td className="align-top pt-2">
+                    <select
+                      value={tx.categoryId || ''}
+                      onChange={(e) => handleCategoryChange(tx, e.target.value)}
+                      className={`select select-bordered select-xs w-full font-semibold ${!tx.categoryId ? 'select-warning text-warning-content' : ''}`}
                       disabled={isPending}
                     >
-                      ✕
-                    </button>
-                  </div>
-                ));
-              })}
+                      <option value="">Uncategorized</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.type})
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  {/* Amount */}
+                  <td className={`text-right font-mono font-bold align-top pt-3 ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}>
+                    {tx.amount >= 0 ? '+' : ''}
+                    ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+                    <span className="text-xs font-normal opacity-60">{tx.account.currency}</span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {/* Pagination footer */}
+        {totalCount > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-base-200 bg-base-100">
+            {/* Result range info */}
+            <p className="text-xs text-base-content/50">
+              Showing <span className="font-semibold text-base-content">{startIdx + 1}–{endIdx}</span> of{' '}
+              <span className="font-semibold text-base-content">{totalCount.toLocaleString()}</span> transactions
+            </p>
+
+            {/* Page controls */}
+            <div className="join">
+              {/* First page */}
+              <button
+                className="join-item btn btn-sm btn-ghost"
+                onClick={() => setCurrentPage(1)}
+                disabled={safePage === 1}
+                title="First page"
+              >
+                «
+              </button>
+
+              {/* Prev */}
+              <button
+                className="join-item btn btn-sm btn-ghost"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                title="Previous page"
+              >
+                ‹
+              </button>
+
+              {/* Numbered pages */}
+              {getPageNumbers().map((p, i) =>
+                p === '...' ? (
+                  <button key={`ellipsis-${i}`} className="join-item btn btn-sm btn-disabled">
+                    …
+                  </button>
+                ) : (
+                  <button
+                    key={p}
+                    className={`join-item btn btn-sm ${safePage === p ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setCurrentPage(p as number)}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              {/* Next */}
+              <button
+                className="join-item btn btn-sm btn-ghost"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                title="Next page"
+              >
+                ›
+              </button>
+
+              {/* Last page */}
+              <button
+                className="join-item btn btn-sm btn-ghost"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={safePage === totalPages}
+                title="Last page"
+              >
+                »
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Categorization Rule Modal Prompt */}
       {showRulePrompt && promptTx && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-black text-lg text-primary">Create Automations Rule?</h3>
+            <h3 className="font-black text-lg text-primary">Create Automation Rule?</h3>
             <p className="py-4 text-sm">
-              You mapped transaction <span className="font-bold">"{promptTx.payee}"</span> to category <span className="font-bold">"{categories.find(c => c.id === promptCatId)?.name}"</span>. 
-              Would you like to automatically map all future transactions matching this merchant name?
+              You mapped <span className="font-bold">"{promptTx.payee}"</span> to category{' '}
+              <span className="font-bold">"{categories.find((c) => c.id === promptCatId)?.name}"</span>.
+              Would you like to automatically categorize all future transactions matching this merchant?
             </p>
             <div className="modal-action">
-              <button 
-                onClick={() => executeCategorization(false)} 
+              <button
+                onClick={() => executeCategorization(false)}
                 className="btn btn-outline"
                 disabled={isPending}
               >
                 No, just this one
               </button>
-              <button 
-                onClick={() => executeCategorization(true)} 
+              <button
+                onClick={() => executeCategorization(true)}
                 className="btn btn-primary"
                 disabled={isPending}
               >

@@ -6,6 +6,7 @@ export const revalidate = 0; // Disable cache so category manager updates live
 export default async function CategoriesPage() {
   const categoriesList = await db.category.findMany({
     include: {
+      rules: true,
       _count: {
         select: {
           transactions: true,
@@ -23,6 +24,7 @@ export default async function CategoriesPage() {
     cashFlowType: c.cashFlowType,
     transactionsCount: c._count.transactions,
     rulesCount: c._count.rules,
+    rules: c.rules.map((r) => ({ id: r.id, pattern: r.pattern })),
   }));
 
   return (
@@ -32,7 +34,7 @@ export default async function CategoriesPage() {
           Categories Manager
         </h1>
         <p className="text-base-content/60 text-sm mt-1">
-          Create, view, and delete financial categories and check transaction volumes.
+          Create and manage financial categories, and define match rules to auto-categorize future imports.
         </p>
       </div>
 
