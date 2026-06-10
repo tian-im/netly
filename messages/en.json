@@ -538,7 +538,10 @@
     "mcpCreateFailed": "Failed to generate MCP token",
     "mcpRevokeFailed": "Failed to revoke MCP token",
     "mcpLastUsed": "Last used: {date}",
-    "mcpNeverUsed": "Never used"
+    "mcpNeverUsed": "Never used",
+    "signOutLabel": "Sign out of your account",
+    "signOutBtn": "Sign Out",
+    "copiedSuccess": "Copied to clipboard"
   },
   "errorPage": {
     "title": "Application Error",

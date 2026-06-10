@@ -22,6 +22,19 @@ export function generateLedgerCSV(transactions: Transaction[]): string {
 }
 
 /**
+ * Converts a list of accounts to a CSV string.
+ */
+export function generateAccountCSV(accounts: any[]): string {
+  const csvRows = ['ID,Name,Type,Starting Balance,Currency,Created At'];
+  for (const acc of accounts) {
+    const cleanName = acc.name.replace(/"/g, '""');
+    const dateStr = acc.createdAt ? new Date(acc.createdAt).toISOString().split('T')[0] : '';
+    csvRows.push(`"${acc.id}","${cleanName}","${acc.type}",${acc.startingBalance},"${acc.currency}","${dateStr}"`);
+  }
+  return csvRows.join('\n');
+}
+
+/**
  * Triggers a browser download of the CSV content.
  */
 export function downloadCSV(csvContent: string, fileName: string) {

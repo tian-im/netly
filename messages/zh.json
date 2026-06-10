@@ -538,7 +538,10 @@
     "mcpCreateFailed": "生成 MCP 访问令牌失败",
     "mcpRevokeFailed": "撤销 MCP 访问令牌失败",
     "mcpLastUsed": "最后使用: {date}",
-    "mcpNeverUsed": "从未被使用"
+    "mcpNeverUsed": "从未被使用",
+    "signOutLabel": "登出您的账户",
+    "signOutBtn": "登出",
+    "copiedSuccess": "已复制到剪贴板"
   },
   "errorPage": {
     "title": "应用错误",

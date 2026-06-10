@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { generateLedgerCSV, downloadCSV } from './csv-export';
+import { generateLedgerCSV, generateAccountCSV, downloadCSV } from './csv-export';
 import { Transaction } from '@/app/transactions/types';
 
 describe('CSV Export Utility', () => {
@@ -95,6 +95,29 @@ describe('CSV Export Utility', () => {
       const expectedLines = [
         'Date,Account,Currency,Payee,Category,Type,Amount,Description',
         '"2026-06-03","Credit Card","USD","Uber ""Luxury""","Uncategorized","N/A",-50,"Business ""class"" ride"'
+      ];
+
+      expect(csv).toBe(expectedLines.join('\n'));
+    });
+  });
+
+  describe('generateAccountCSV', () => {
+    it('should generate a correct CSV string for accounts', () => {
+      const mockAccounts = [
+        {
+          id: 'acc_1',
+          name: 'Checking "Primary"',
+          type: 'ASSET',
+          startingBalance: 1200.5,
+          currency: 'AUD',
+          createdAt: '2026-06-01T12:00:00.000Z',
+        },
+      ];
+
+      const csv = generateAccountCSV(mockAccounts);
+      const expectedLines = [
+        'ID,Name,Type,Starting Balance,Currency,Created At',
+        '"acc_1","Checking ""Primary""","ASSET",1200.5,"AUD","2026-06-01"'
       ];
 
       expect(csv).toBe(expectedLines.join('\n'));
