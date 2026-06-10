@@ -7,7 +7,7 @@ const PUBLIC_PATHS = ['/login', '/setup'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/api/auth') || pathname.startsWith('/_next') || pathname.startsWith('/icons') || pathname === '/favicon.ico') {
+  if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/mcp') || pathname.startsWith('/_next') || pathname.startsWith('/icons') || pathname === '/favicon.ico') {
     return NextResponse.next();
   }
 

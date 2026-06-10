@@ -235,10 +235,8 @@ export default function ReportsClient() {
         <div className="card-body p-5">
           <div className="flex flex-col md:flex-row items-end gap-4 justify-between">
             <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
-              <div className="form-control flex-1">
-                <label className="label">
-                  <span className="label-text font-bold">{t('startDate')}</span>
-                </label>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-bold text-base-content">{t('startDate')}</label>
                 <input
                   type="date"
                   value={startDateStr}
@@ -246,10 +244,8 @@ export default function ReportsClient() {
                   className="input input-bordered input-sm"
                 />
               </div>
-              <div className="form-control flex-1">
-                <label className="label">
-                  <span className="label-text font-bold">{t('endDate')}</span>
-                </label>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-sm font-bold text-base-content">{t('endDate')}</label>
                 <input
                   type="date"
                   value={endDateStr}

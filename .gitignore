@@ -155,3 +155,4 @@ prisma/prisma/
 *.db-journal
 
 
+.mcp-token
