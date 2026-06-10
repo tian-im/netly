@@ -51,50 +51,20 @@ export default function TransactionDrillDownModal({
 
     startTransition(async () => {
       try {
-        // Fetch matching transactions
-        const response = await getTransactions(accountId ? { accountId } : undefined);
+        // Fetch matching transactions from database using server-side filtering
+        const response = await getTransactions({
+          accountId,
+          startDateStr,
+          endDateStr,
+          currency,
+          categoryName,
+          cashFlowSection,
+          cashFlowType,
+        });
         const allTxs = response.transactions;
 
-        const start = new Date(startDateStr);
-        const end = new Date(endDateStr);
-        end.setHours(23, 59, 59, 999); // Safe boundary for end of day
-
-        // Filter client-side by date, currency, category, and cash flow criteria
-        const filtered = allTxs.filter((tx: any) => {
-          const txDate = new Date(tx.date);
-          const txCurrency = tx.account?.currency || 'AUD';
-
-          // 1. Check Date Range
-          if (txDate < start || txDate > end) return false;
-
-          // 2. Check Currency
-          if (txCurrency !== currency) return false;
-
-          // 3. Check Account ID (already filtered if fetched with accountId, but double check)
-          if (accountId && tx.accountId !== accountId) return false;
-
-          // 4. Check Category Name
-          if (categoryName) {
-            const txCatName = tx.category ? tx.category.name : 'Uncategorized';
-            if (txCatName !== categoryName) return false;
-          }
-
-          // 5. Check Cash Flow Section & Type
-          if (cashFlowSection) {
-            if (!tx.category || tx.category.type === 'TRANSFER') return false;
-            
-            const txCFSection = tx.category.cashFlowType;
-            if (txCFSection !== cashFlowSection.toUpperCase()) return false;
-
-            if (cashFlowType === 'inflow' && tx.amount <= 0) return false;
-            if (cashFlowType === 'outflow' && tx.amount >= 0) return false;
-          }
-
-          return true;
-        });
-
         // Map to display shape
-        const mapped = filtered.map((tx: any) => ({
+        const mapped = allTxs.map((tx: any) => ({
           id: tx.id,
           date: new Date(tx.date).toISOString().split('T')[0],
           payee: tx.payee,

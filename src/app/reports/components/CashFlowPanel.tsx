@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { CashFlowStatement, CashFlowSection } from '../types';
 import { ArrowDownRight, Search } from 'lucide-react';
+import { getCurrencySymbol } from '@/lib/currencies';
+import { RenderDelta } from '@/lib/render-delta';
 
 interface CashFlowPanelProps {
   report: CashFlowStatement;
@@ -29,24 +31,7 @@ export default function CashFlowPanel({
   };
 
   const priorTotals = comparisonReport?.totals[currency] || null;
-
-  const renderDelta = (current: number, prior: number, isOutflow = false) => {
-    if (!comparisonReport) return null;
-    const delta = current - prior;
-    if (delta === 0) return <span className="text-xs text-base-content/40 font-mono">0.00 (0%)</span>;
-
-    const pctChange = prior !== 0 ? (delta / Math.abs(prior)) * 100 : 100;
-    // For outflows, lower is better. For inflows/net, higher is better.
-    const isPositiveImpact = isOutflow ? delta < 0 : delta > 0;
-
-    return (
-      <span className={`text-xs font-semibold font-mono ${isPositiveImpact ? 'text-success' : 'text-error'}`}>
-        {delta > 0 ? '+' : ''}
-        {delta.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        {' '}({delta > 0 ? '+' : ''}{pctChange.toFixed(0)}%)
-      </span>
-    );
-  };
+  const symbol = getCurrencySymbol(currency);
 
   const renderSection = (
     title: string,
@@ -60,9 +45,9 @@ export default function CashFlowPanel({
           <span>{title}</span>
           <div className="flex flex-col items-end">
             <span className={data.net >= 0 ? 'text-success' : 'text-error'}>
-              ${data.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {symbol}{data.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
-            {priorData && renderDelta(data.net, priorData.net)}
+            <RenderDelta current={data.net} prior={priorData ? priorData.net : 0} showDelta={!!comparisonReport} />
           </div>
         </div>
 
@@ -77,9 +62,9 @@ export default function CashFlowPanel({
             </button>
             <div className="flex flex-col items-end">
               <span className="text-success font-semibold">
-                +${data.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                +{symbol}{data.inflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              {priorData && renderDelta(data.inflow, priorData.inflow)}
+              <RenderDelta current={data.inflow} prior={priorData ? priorData.inflow : 0} showDelta={!!comparisonReport} />
             </div>
           </div>
 
@@ -93,9 +78,9 @@ export default function CashFlowPanel({
             </button>
             <div className="flex flex-col items-end">
               <span className="text-error font-semibold">
-                -${data.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                -{symbol}{data.outflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
-              {priorData && renderDelta(data.outflow, priorData.outflow, true)}
+              <RenderDelta current={data.outflow} prior={priorData ? priorData.outflow : 0} showDelta={!!comparisonReport} reverseImpact={true} />
             </div>
           </div>
         </div>
@@ -111,10 +96,10 @@ export default function CashFlowPanel({
           <ArrowDownRight className="h-5 w-5" /> {t('cashFlow.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          {t('cashFlow.netCashFlowLabel')}: ${totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('cashFlow.netCashFlowLabel')}: {symbol}{totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              {t('cashFlow.priorLabel')}: ${priorTotals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('cashFlow.priorLabel')}: {symbol}{priorTotals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -147,9 +132,9 @@ export default function CashFlowPanel({
           <span className="font-extrabold text-md">{t('cashFlow.netIncreaseDecrease')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netCashFlow >= 0 ? 'text-success' : 'text-error'}`}>
-              ${totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
+              {symbol}{totals.netCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
             </span>
-            {priorTotals && renderDelta(totals.netCashFlow, priorTotals.netCashFlow)}
+            <RenderDelta current={totals.netCashFlow} prior={priorTotals ? priorTotals.netCashFlow : 0} showDelta={!!comparisonReport} />
           </div>
         </div>
       </div>

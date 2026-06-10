@@ -4,12 +4,18 @@ import { useTranslations } from 'next-intl';
 
 interface DateRangePresetsProps {
   onSelectRange: (start: string, end: string) => void;
+  startDateStr: string;
+  endDateStr: string;
 }
 
-export default function DateRangePresets({ onSelectRange }: DateRangePresetsProps) {
+export default function DateRangePresets({
+  onSelectRange,
+  startDateStr,
+  endDateStr,
+}: DateRangePresetsProps) {
   const t = useTranslations('reports');
 
-  const handlePreset = (preset: 'this-month' | 'last-quarter' | 'this-year' | 'all-time') => {
+  const getPresetDates = (preset: string) => {
     const now = new Date();
     let startStr = '';
     let endStr = now.toISOString().split('T')[0];
@@ -18,6 +24,33 @@ export default function DateRangePresets({ onSelectRange }: DateRangePresetsProp
       case 'this-month': {
         const startOfCurMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         startStr = startOfCurMonth.toISOString().split('T')[0];
+        break;
+      }
+      case 'last-month': {
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        startStr = startOfLastMonth.toISOString().split('T')[0];
+        endStr = endOfLastMonth.toISOString().split('T')[0];
+        break;
+      }
+      case 'three-months': {
+        const start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+        startStr = start.toISOString().split('T')[0];
+        break;
+      }
+      case 'six-months': {
+        const start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+        startStr = start.toISOString().split('T')[0];
+        break;
+      }
+      case 'twelve-months': {
+        const start = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+        startStr = start.toISOString().split('T')[0];
+        break;
+      }
+      case 'ytd': {
+        const startOfCurYear = new Date(now.getFullYear(), 0, 1);
+        startStr = startOfCurYear.toISOString().split('T')[0];
         break;
       }
       case 'last-quarter': {
@@ -42,37 +75,43 @@ export default function DateRangePresets({ onSelectRange }: DateRangePresetsProp
         break;
       }
     }
+    return { startStr, endStr };
+  };
 
+  const handlePreset = (preset: string) => {
+    const { startStr, endStr } = getPresetDates(preset);
     onSelectRange(startStr, endStr);
   };
+
+  const isActive = (preset: string) => {
+    const { startStr, endStr } = getPresetDates(preset);
+    return startDateStr === startStr && endDateStr === endStr;
+  };
+
+  const presetList = [
+    { key: 'this-month', label: t('datePresets.thisMonth') },
+    { key: 'last-month', label: t('datePresets.month') },
+    { key: 'three-months', label: t('datePresets.threeMonths') },
+    { key: 'six-months', label: t('datePresets.sixMonths') },
+    { key: 'twelve-months', label: t('datePresets.twelveMonths') },
+    { key: 'ytd', label: t('datePresets.ytd') },
+    { key: 'last-quarter', label: t('datePresets.lastQuarter') },
+    { key: 'this-year', label: t('datePresets.thisYear') },
+    { key: 'all-time', label: t('datePresets.allTime') },
+  ];
 
   return (
     <div className="flex flex-wrap gap-2 items-center justify-start mt-2">
       <span className="text-xs font-bold text-base-content/60">{t('datePresets.presetsLabel')}</span>
-      <button
-        onClick={() => handlePreset('this-month')}
-        className="btn btn-xs btn-outline hover:btn-primary"
-      >
-        {t('datePresets.thisMonth')}
-      </button>
-      <button
-        onClick={() => handlePreset('last-quarter')}
-        className="btn btn-xs btn-outline hover:btn-primary"
-      >
-        {t('datePresets.lastQuarter')}
-      </button>
-      <button
-        onClick={() => handlePreset('this-year')}
-        className="btn btn-xs btn-outline hover:btn-primary"
-      >
-        {t('datePresets.thisYear')}
-      </button>
-      <button
-        onClick={() => handlePreset('all-time')}
-        className="btn btn-xs btn-outline hover:btn-primary"
-      >
-        {t('datePresets.allTime')}
-      </button>
+      {presetList.map((preset) => (
+        <button
+          key={preset.key}
+          onClick={() => handlePreset(preset.key)}
+          className={`btn btn-xs ${isActive(preset.key) ? 'btn-primary' : 'btn-outline hover:btn-primary'}`}
+        >
+          {preset.label}
+        </button>
+      ))}
     </div>
   );
 }

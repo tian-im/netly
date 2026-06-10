@@ -381,7 +381,6 @@
     "noTxToExport": "没有可导出的交易流水。",
     "exportSuccess": "完整账目 CSV 成功导出",
     "exportFailed": "导出 CSV 失败：",
-    "exportCsv": "导出报表 (CSV)",
     "noData": "未找到交易流水。请导入 CSV 账单以生成财务报表。",
     "periodComparison": "周期环比对比",
     "comparisonDesc": "将当前周期与上一个周期进行对比，以追踪您的财务变化。",
@@ -448,7 +447,7 @@
       "netIncreaseDecrease": "现金及现金等价物净增加/减少"
     },
     "datePresets": {
-      "month": "本月",
+      "month": "上个月",
       "threeMonths": "最近 3 个月",
       "sixMonths": "最近 6 个月",
       "twelveMonths": "最近 12 个月",

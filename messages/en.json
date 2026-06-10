@@ -381,7 +381,6 @@
     "noTxToExport": "No transactions to export.",
     "exportSuccess": "Ledger CSV exported successfully",
     "exportFailed": "Failed to export CSV: ",
-    "exportCsv": "Export statements (CSV)",
     "noData": "No transactions found. Import a CSV statement to generate statements.",
     "periodComparison": "Period-over-Period Comparison",
     "comparisonDesc": "Compare current period to prior period to track financial changes.",
@@ -448,10 +447,10 @@
       "netIncreaseDecrease": "NET CASH INCREASE / DECREASE"
     },
     "datePresets": {
-      "month": "Current Month",
-      "threeMonths": "Trailing 3 Months",
-      "sixMonths": "Trailing 6 Months",
-      "twelveMonths": "Trailing 12 Months",
+      "month": "Last Month",
+      "threeMonths": "Last 3 Months",
+      "sixMonths": "Last 6 Months",
+      "twelveMonths": "Last 12 Months",
       "ytd": "Year to Date (YTD)",
       "presetsLabel": "Presets:",
       "thisMonth": "This Month",

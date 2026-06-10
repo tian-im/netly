@@ -205,6 +205,12 @@ export async function getTransactions(
     sortOrder?: 'asc' | 'desc';
     dateRange?: string;
     isReviewed?: boolean;
+    startDateStr?: string;
+    endDateStr?: string;
+    currency?: string;
+    categoryName?: string;
+    cashFlowSection?: 'operating' | 'investing' | 'financing';
+    cashFlowType?: 'inflow' | 'outflow';
   }
 ) {
   let accountId: string | undefined;
@@ -216,6 +222,12 @@ export async function getTransactions(
   let sortOrder: 'asc' | 'desc' | undefined;
   let dateRange: string | undefined;
   let isReviewed: boolean | undefined;
+  let startDateStr: string | undefined;
+  let endDateStr: string | undefined;
+  let currency: string | undefined;
+  let categoryName: string | undefined;
+  let cashFlowSection: 'operating' | 'investing' | 'financing' | undefined;
+  let cashFlowType: 'inflow' | 'outflow' | undefined;
 
   if (typeof paramsOrAccountId === 'string') {
     accountId = paramsOrAccountId;
@@ -229,6 +241,12 @@ export async function getTransactions(
     sortOrder = paramsOrAccountId.sortOrder;
     dateRange = paramsOrAccountId.dateRange;
     isReviewed = paramsOrAccountId.isReviewed;
+    startDateStr = paramsOrAccountId.startDateStr;
+    endDateStr = paramsOrAccountId.endDateStr;
+    currency = paramsOrAccountId.currency;
+    categoryName = paramsOrAccountId.categoryName;
+    cashFlowSection = paramsOrAccountId.cashFlowSection;
+    cashFlowType = paramsOrAccountId.cashFlowType;
   }
 
   const where: any = {};
@@ -276,6 +294,44 @@ export async function getTransactions(
         gte: startDate,
         lte: endDate,
       };
+    }
+  } else if (startDateStr || endDateStr) {
+    where.date = {
+      ...(startDateStr ? { gte: new Date(startDateStr) } : {}),
+      ...(endDateStr ? { lte: new Date(new Date(endDateStr).setHours(23, 59, 59, 999)) } : {}),
+    };
+  }
+
+  if (currency) {
+    where.account = {
+      ...(where.account || {}),
+      currency: currency.toUpperCase()
+    };
+  }
+
+  if (categoryName) {
+    if (categoryName === 'Uncategorized') {
+      where.categoryId = null;
+    } else {
+      where.category = {
+        ...(where.category || {}),
+        name: categoryName
+      };
+    }
+  }
+
+  if (cashFlowSection) {
+    where.category = {
+      ...(where.category || {}),
+      cashFlowType: cashFlowSection.toUpperCase(),
+      NOT: {
+        type: 'TRANSFER'
+      }
+    };
+    if (cashFlowType === 'inflow') {
+      where.amount = { gt: 0 };
+    } else if (cashFlowType === 'outflow') {
+      where.amount = { lt: 0 };
     }
   }
 
@@ -375,12 +431,43 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
 
   const accountsList = await db.account.findMany();
   
-  const transactionsList = await db.transaction.findMany({
+  const rangeTransactionsList = await db.transaction.findMany({
+    where: {
+      date: {
+        gte: startDate,
+        lte: endDate,
+      }
+    },
     include: {
       category: true,
       account: true,
     }
   });
+
+  // Fetch the aggregate sum of transaction amounts up to endDate for each account for the Balance Sheet
+  const balanceSums = await db.transaction.groupBy({
+    by: ['accountId'],
+    where: {
+      date: {
+        lte: endDate
+      }
+    },
+    _sum: {
+      amount: true
+    }
+  });
+
+  const balanceSheetTransactions = balanceSums.map((sum) => ({
+    id: `bs-summary-${sum.accountId}`,
+    date: endDate,
+    amount: sum._sum.amount || 0,
+    accountId: sum.accountId,
+    categoryId: null,
+    category: null,
+    account: {
+      currency: accountsList.find(a => a.id === sum.accountId)?.currency || 'AUD'
+    }
+  }));
 
   // Format Decimal/Float equivalents for calculators
   const mappedAccounts = accountsList.map((a) => ({
@@ -391,7 +478,7 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
     currency: a.currency,
   }));
 
-  const mappedTransactions = transactionsList.map((t) => ({
+  const mappedTransactions = rangeTransactionsList.map((t) => ({
     id: t.id,
     date: new Date(t.date),
     amount: t.amount,
@@ -406,7 +493,17 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
     } : null,
   }));
 
-  const balanceSheet = generateBalanceSheet(mappedAccounts, mappedTransactions, endDate);
+  const mappedBSTransactions = balanceSheetTransactions.map((t) => ({
+    id: t.id,
+    date: t.date,
+    amount: t.amount,
+    accountId: t.accountId,
+    currency: t.account.currency,
+    categoryId: t.categoryId,
+    category: null,
+  }));
+
+  const balanceSheet = generateBalanceSheet(mappedAccounts, mappedBSTransactions, endDate);
   const incomeStatement = generateIncomeStatement(mappedTransactions, startDate, endDate);
   const cashFlowStatement = generateCashFlowStatement(mappedTransactions, startDate, endDate);
 

@@ -2,8 +2,10 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { IncomeStatement, CategoryTotal } from '../types';
+import { IncomeStatement } from '../types';
 import { Receipt, Search } from 'lucide-react';
+import { getCurrencySymbol } from '@/lib/currencies';
+import { RenderDelta } from '@/lib/render-delta';
 
 interface IncomeStatementPanelProps {
   report: IncomeStatement;
@@ -28,6 +30,7 @@ export default function IncomeStatementPanel({
   };
 
   const priorTotals = comparisonReport?.totals[currency] || null;
+  const symbol = getCurrencySymbol(currency);
 
   // Find prior value for a category name
   const getPriorCategoryAmount = (categoryName: string, isExpense: boolean): number => {
@@ -55,24 +58,6 @@ export default function IncomeStatementPanel({
 
   const expenseRatio = 100 - incomeRatio;
 
-  const renderDelta = (current: number, prior: number, isExpense = false) => {
-    if (!comparisonReport) return null;
-    const delta = current - prior;
-    if (delta === 0) return <span className="text-xs text-base-content/40 font-mono">0.00 (0%)</span>;
-
-    const pctChange = prior !== 0 ? (delta / Math.abs(prior)) * 100 : 100;
-    // For expenses, decrease is good/green, increase is bad/red.
-    const isPositiveImpact = isExpense ? delta < 0 : delta > 0;
-
-    return (
-      <span className={`text-xs font-semibold font-mono ${isPositiveImpact ? 'text-success' : 'text-error'}`}>
-        {delta > 0 ? '+' : ''}
-        {delta.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        {' '}({delta > 0 ? '+' : ''}{pctChange.toFixed(0)}%)
-      </span>
-    );
-  };
-
   return (
     <div className="collapse collapse-arrow bg-base-100 shadow border border-base-200">
       <input type="radio" name="reports-accordion" /> 
@@ -81,10 +66,10 @@ export default function IncomeStatementPanel({
           <Receipt className="h-5 w-5" /> {t('incomeStatement.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          {t('incomeStatement.netIncomeShort')}: ${totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('incomeStatement.netIncomeShort')}: {symbol}{totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              {t('balanceSheet.prior')}${priorTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('balanceSheet.prior')}{symbol}{priorTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -134,9 +119,9 @@ export default function IncomeStatementPanel({
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
-                          ${inc.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {symbol}{inc.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
-                        {renderDelta(inc.amount, priorVal)}
+                        <RenderDelta current={inc.amount} prior={priorVal} showDelta={!!comparisonReport} />
                       </div>
                     </div>
                   );
@@ -145,8 +130,8 @@ export default function IncomeStatementPanel({
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
                 <span>{t('incomeStatement.totalIncome')}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-success">${totals.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  {priorTotals && renderDelta(totals.totalIncome, priorTotals.totalIncome)}
+                  <span className="text-success">{symbol}{totals.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <RenderDelta current={totals.totalIncome} prior={priorTotals ? priorTotals.totalIncome : 0} showDelta={!!comparisonReport} />
                 </div>
               </div>
             </div>
@@ -174,9 +159,9 @@ export default function IncomeStatementPanel({
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">
-                          ${exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {symbol}{exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
-                        {renderDelta(exp.amount, priorVal, true)}
+                        <RenderDelta current={exp.amount} prior={priorVal} showDelta={!!comparisonReport} reverseImpact={true} />
                       </div>
                     </div>
                   );
@@ -185,8 +170,8 @@ export default function IncomeStatementPanel({
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
                 <span>{t('incomeStatement.totalExpenses')}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-error">${totals.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  {priorTotals && renderDelta(totals.totalExpenses, priorTotals.totalExpenses, true)}
+                  <span className="text-error">{symbol}{totals.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <RenderDelta current={totals.totalExpenses} prior={priorTotals ? priorTotals.totalExpenses : 0} showDelta={!!comparisonReport} reverseImpact={true} />
                 </div>
               </div>
             </div>
@@ -197,9 +182,9 @@ export default function IncomeStatementPanel({
           <span className="font-extrabold text-md">{t('incomeStatement.netIncomeShort')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
-              ${totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
+              {symbol}{totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
             </span>
-            {priorTotals && renderDelta(totals.netIncome, priorTotals.netIncome)}
+            <RenderDelta current={totals.netIncome} prior={priorTotals ? priorTotals.netIncome : 0} showDelta={!!comparisonReport} />
           </div>
         </div>
       </div>

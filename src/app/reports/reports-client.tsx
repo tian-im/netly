@@ -25,29 +25,35 @@ interface Toast {
 
 export default function ReportsClient() {
   const t = useTranslations('reports');
-  const now = new Date();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Read initial URL params or fall back to defaults
-  const urlStart = searchParams.get('start');
-  const urlEnd = searchParams.get('end');
-  const urlCur = searchParams.get('cur');
+  // Read initial URL params or fall back to defaults (Memoized to prevent recreation on every render)
+  const { defaultStartStr, defaultEndStr, defaultCur } = useMemo(() => {
+    const urlStart = searchParams.get('start');
+    const urlEnd = searchParams.get('end');
+    const urlCur = searchParams.get('cur');
+    const d = new Date();
+    return {
+      defaultStartStr: urlStart || new Date(d.getFullYear(), 0, 1).toISOString().split('T')[0],
+      defaultEndStr: urlEnd || d.toISOString().split('T')[0],
+      defaultCur: urlCur || 'AUD',
+    };
+  }, [searchParams]);
 
-  const defaultStartStr = urlStart || new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-  const defaultEndStr = urlEnd || now.toISOString().split('T')[0];
-  const defaultCur = urlCur || 'AUD';
+  const urlComparePrior = searchParams.get('comparePrior') === 'true';
 
   // State
   const [startDateStr, setStartDateStr] = useState(defaultStartStr);
   const [endDateStr, setEndDateStr] = useState(defaultEndStr);
   const [selectedReportCurrency, setSelectedReportCurrency] = useState(defaultCur);
-  const [comparePrior, setComparePrior] = useState(false);
+  const [comparePrior, setComparePrior] = useState(urlComparePrior);
 
   // Compiled reports
   const [reports, setReports] = useState<FinancialReports | null>(null);
   const [comparisonReports, setComparisonReports] = useState<FinancialReports | null>(null);
+  const [loadedParams, setLoadedParams] = useState<{ start: string; end: string; compare: boolean } | null>(null);
 
   // UI state
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -75,26 +81,44 @@ export default function ReportsClient() {
   };
 
   // Sync URL search params
-  const syncParams = (start: string, end: string, cur: string) => {
+  const syncParams = (start: string, end: string, cur: string, compare: boolean) => {
     const params = new URLSearchParams();
     params.set('start', start);
     params.set('end', end);
     params.set('cur', cur);
+    if (compare) {
+      params.set('comparePrior', 'true');
+    }
     router.replace(`${pathname}?${params.toString()}`);
   };
 
-  const loadReports = (startStr = startDateStr, endStr = endDateStr) => {
+  // Load when searchParams changes (acts as the single source of truth)
+  useEffect(() => {
+    const start = searchParams.get('start') || defaultStartStr;
+    const end = searchParams.get('end') || defaultEndStr;
+    const cur = searchParams.get('cur') || defaultCur;
+    const compare = searchParams.get('comparePrior') === 'true';
+
+    setStartDateStr(start);
+    setEndDateStr(end);
+    setSelectedReportCurrency(cur);
+    setComparePrior(compare);
+
+    // If report is already loaded for the target dates and comparison toggle, do not fetch again
+    if (reports && loadedParams && loadedParams.start === start && loadedParams.end === end && loadedParams.compare === compare) {
+      return;
+    }
+
     startTransition(async () => {
       try {
-        const data = await getFinancialReports(startStr, endStr);
+        const data = await getFinancialReports(start, end);
         setReports(data);
 
-        // Fetch comparison reports if toggled
-        if (comparePrior) {
-          const start = new Date(startStr);
-          const end = new Date(endStr);
-          const durationMs = end.getTime() - start.getTime();
-          const priorEnd = new Date(start.getTime() - 24 * 60 * 60 * 1000);
+        if (compare) {
+          const startD = new Date(start);
+          const endD = new Date(end);
+          const durationMs = endD.getTime() - startD.getTime();
+          const priorEnd = new Date(startD.getTime() - 24 * 60 * 60 * 1000);
           const priorStart = new Date(priorEnd.getTime() - durationMs);
           
           const priorStartStr = priorStart.toISOString().split('T')[0];
@@ -105,30 +129,43 @@ export default function ReportsClient() {
         } else {
           setComparisonReports(null);
         }
-
-        syncParams(startStr, endStr, selectedReportCurrency);
+        setLoadedParams({ start, end, compare });
       } catch (err: any) {
         showToast(err.message || t('noReportDesc'), 'error');
       }
     });
-  };
-
-  // Load initially or when dates/comparison changes
-  useEffect(() => {
-    loadReports();
-  }, [comparePrior]);
+  // searchParams is the single source of truth; defaultXxx values are memoised from it
+  // and do not need to be listed as separate deps.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Sync currency changes to URL
   const handleCurrencyChange = (cur: string) => {
-    setSelectedReportCurrency(cur);
-    syncParams(startDateStr, endDateStr, cur);
+    const start = searchParams.get('start') || defaultStartStr;
+    const end = searchParams.get('end') || defaultEndStr;
+    const compare = searchParams.get('comparePrior') === 'true';
+    syncParams(start, end, cur, compare);
   };
 
   // Preset handler
   const handlePresetSelect = (start: string, end: string) => {
-    setStartDateStr(start);
-    setEndDateStr(end);
-    loadReports(start, end);
+    const cur = searchParams.get('cur') || defaultCur;
+    const compare = searchParams.get('comparePrior') === 'true';
+    syncParams(start, end, cur, compare);
+  };
+
+  // Compare prior toggle handler
+  const handleComparePriorChange = (compare: boolean) => {
+    const start = searchParams.get('start') || defaultStartStr;
+    const end = searchParams.get('end') || defaultEndStr;
+    const cur = searchParams.get('cur') || defaultCur;
+    syncParams(start, end, cur, compare);
+  };
+
+  // Compile button handler
+  const handleCompile = () => {
+    const cur = searchParams.get('cur') || defaultCur;
+    syncParams(startDateStr, endDateStr, cur, comparePrior);
   };
 
   // Available currencies
@@ -146,7 +183,7 @@ export default function ReportsClient() {
     if (reports && reportCurrencies.length > 0 && !reportCurrencies.includes(selectedReportCurrency)) {
       handleCurrencyChange(reportCurrencies[0]);
     }
-  }, [reports, reportCurrencies]);
+  }, [reports, reportCurrencies, selectedReportCurrency]);
 
   const handleExportCSV = async () => {
     try {
@@ -226,13 +263,13 @@ export default function ReportsClient() {
                 <input
                   type="checkbox"
                   checked={comparePrior}
-                  onChange={(e) => setComparePrior(e.target.checked)}
+                  onChange={(e) => handleComparePriorChange(e.target.checked)}
                   className="checkbox checkbox-primary checkbox-xs"
                 />
                 <span className="label-text text-xs font-semibold">{t('comparePrior')}</span>
               </label>
               <button
-                onClick={() => loadReports()}
+                onClick={handleCompile}
                 className="btn btn-primary btn-sm w-full md:w-auto gap-2"
                 disabled={isPending}
               >
@@ -246,7 +283,7 @@ export default function ReportsClient() {
               </button>
             </div>
           </div>
-          <DateRangePresets onSelectRange={handlePresetSelect} />
+          <DateRangePresets onSelectRange={handlePresetSelect} startDateStr={startDateStr} endDateStr={endDateStr} />
         </div>
       </div>
 
