@@ -119,10 +119,10 @@ describe('DashboardClient Component', () => {
       totals: prevBS.totals,
     };
 
-    const netWorthTrendByCurrency: Record<string, { label: string; value: number }[]> = {};
+    const netWorthTrendByCurrency: Record<string, { date: string; value: number }[]> = {};
     const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
     activeCurrencies.forEach((currency) => {
-      netWorthTrendByCurrency[currency] = [{ label: 'Jun', value: bs.totals[currency]?.netWorth ?? 0 }];
+      netWorthTrendByCurrency[currency] = [{ date: '2026-06-01T00:00:00.000Z', value: bs.totals[currency]?.netWorth ?? 0 }];
     });
 
     return {

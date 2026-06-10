@@ -7,7 +7,6 @@ import {
   generateCashFlowStatement,
   mapTransactionForClient,
 } from '@/lib/reports';
-import { getFormatter } from 'next-intl/server';
 
 export const revalidate = 0; // Disable caching so dashboard is always up-to-date
 
@@ -104,13 +103,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   else if (period === 'ytd') trendLength = now.getMonth() + 1;
   else if (period === '12m') trendLength = 12;
 
-  const format = await getFormatter();
-
   const trendMonths = Array.from({ length: trendLength }).map((_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (trendLength - 1 - i), 1);
     const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
     return {
-      label: format.dateTime(d, { month: 'short' }),
+      date: d.toISOString(),
       end: monthEnd,
     };
   });
@@ -120,14 +117,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const activeCurrencies = Array.from(new Set(mappedAccounts.map((a) => a.currency || 'AUD')));
   
   // Pre-generate trend data for each currency
-  const netWorthTrendByCurrency: Record<string, { label: string; value: number }[]> = {};
+  const netWorthTrendByCurrency: Record<string, { date: string; value: number }[]> = {};
   
   activeCurrencies.forEach((currency) => {
     netWorthTrendByCurrency[currency] = trendMonths.map((m) => {
       const tempBS = generateBalanceSheet(mappedAccounts, mappedTransactions, m.end);
       const value = tempBS.totals[currency]?.netWorth ?? 0;
       return {
-        label: m.label,
+        date: m.date,
         value,
       };
     });

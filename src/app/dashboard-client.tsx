@@ -12,7 +12,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useFormatter } from 'next-intl';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -71,7 +71,7 @@ interface DashboardClientProps {
       netIncome: number;
     }>;
   };
-  netWorthTrendByCurrency: Record<string, { label: string; value: number }[]>;
+  netWorthTrendByCurrency: Record<string, { date: string; value: number }[]>;
 }
 
 export default function DashboardClient({
@@ -87,6 +87,7 @@ export default function DashboardClient({
 }: DashboardClientProps) {
   const t = useTranslations('dashboard');
   const tAccounts = useTranslations('accounts');
+  const format = useFormatter();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -130,8 +131,12 @@ export default function DashboardClient({
 
   // Net worth trend data for the selected currency
   const netWorthTrend = useMemo(() => {
-    return netWorthTrendByCurrency[currentVisualCurrency] || [];
-  }, [netWorthTrendByCurrency, currentVisualCurrency]);
+    const trendData = netWorthTrendByCurrency[currentVisualCurrency] || [];
+    return trendData.map((item) => ({
+      label: format.dateTime(new Date(item.date), { month: 'short' }),
+      value: item.value,
+    }));
+  }, [netWorthTrendByCurrency, currentVisualCurrency, format]);
 
   // Selected currency metrics
   const visualIS = useMemo(() => {
