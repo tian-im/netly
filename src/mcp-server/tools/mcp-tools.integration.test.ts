@@ -109,6 +109,76 @@ describe('MCP Tools Integration Tests', () => {
       expect(data.accounts[0].balance).toBe(150);
       expect(data.totals.AUD.netWorth).toBe(150);
     });
+
+    it('create_account: creates an account successfully', async () => {
+      const handler = tools.get('create_account')?.handler;
+      expect(handler).toBeDefined();
+
+      const result = await handler({
+        name: 'Savings Account',
+        type: 'ASSET',
+        startingBalance: 5000,
+        currency: 'USD',
+      });
+      expect(result.isError).toBeFalsy();
+      const data = JSON.parse(result.content[0].text);
+      expect(data.success).toBe(true);
+      expect(data.account.name).toBe('Savings Account');
+      expect(data.account.type).toBe('ASSET');
+      expect(data.account.startingBalance).toBe(5000);
+      expect(data.account.currency).toBe('USD');
+
+      const dbAccount = await db.account.findUnique({ where: { id: data.account.id } });
+      expect(dbAccount).not.toBeNull();
+      expect(dbAccount?.name).toBe('Savings Account');
+    });
+
+    it('create_account: rejects invalid currency', async () => {
+      const handler = tools.get('create_account')?.handler;
+      const result = await handler({
+        name: 'Bad Currency',
+        type: 'ASSET',
+        currency: 'INVALID',
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid currency code');
+    });
+
+    it('create_account: rejects empty name', async () => {
+      const handler = tools.get('create_account')?.handler;
+      const result = await handler({
+        name: '   ',
+        type: 'ASSET',
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Account name is required');
+    });
+
+    it('create_account: uses defaults for balance and currency', async () => {
+      const handler = tools.get('create_account')?.handler;
+      const result = await handler({
+        name: 'Default Account',
+        type: 'LIABILITY',
+      });
+      expect(result.isError).toBeFalsy();
+      const data = JSON.parse(result.content[0].text);
+      expect(data.success).toBe(true);
+      expect(data.account.startingBalance).toBe(0);
+      expect(data.account.currency).toBe('AUD');
+      expect(data.account.type).toBe('LIABILITY');
+    });
+
+    it('create_account: rejects duplicate account name', async () => {
+      const handler = tools.get('create_account')?.handler;
+      // Create first
+      const first = await handler({ name: 'Duplicate Test', type: 'ASSET' });
+      expect(first.isError).toBeFalsy();
+
+      // Attempt duplicate
+      const second = await handler({ name: 'Duplicate Test', type: 'LIABILITY' });
+      expect(second.isError).toBe(true);
+      expect(second.content[0].text).toContain('already exists');
+    });
   });
 
   // Test category tools
@@ -175,8 +245,56 @@ describe('MCP Tools Integration Tests', () => {
       const data = JSON.parse(result.content[0].text);
       expect(data.importedCount).toBe(2);
 
-      const txs = await db.transaction.findMany({ where: { accountId: acc.id } });
+      const txs = await db.transaction.findMany({ where: { accountId: acc.id }, orderBy: { date: 'asc' } });
       expect(txs).toHaveLength(2);
+    });
+
+    it('import_csv: parses headerless CSV with column indices', async () => {
+      const acc = await seedAccount();
+      const csvContent = `01/06/2026,Netflix,-15.99\n02/06/2026,Salary,2500.00`;
+      
+      const handler = tools.get('import_csv')?.handler;
+      const result = await handler({
+        csvContent,
+        accountId: acc.id,
+        columnMapping: { date: '0', payee: '1', amount: '2' },
+        dateFormat: 'DD/MM/YYYY',
+        hasHeaders: false,
+      });
+
+      expect(result.isError).toBeFalsy();
+      const data = JSON.parse(result.content[0].text);
+      expect(data.importedCount).toBe(2);
+
+      const txs = await db.transaction.findMany({ where: { accountId: acc.id }, orderBy: { date: 'asc' } });
+      expect(txs).toHaveLength(2);
+      expect(txs[0].payee).toBe('Netflix');
+      expect(txs[1].payee).toBe('Salary');
+    });
+
+    it('import_csv: parses headerless CSV with debit/credit columns', async () => {
+      const acc = await seedAccount();
+      const csvContent = `01/06/2026,Uber,15.50,\n02/06/2026,Salary,,2500.00`;
+      
+      const handler = tools.get('import_csv')?.handler;
+      const result = await handler({
+        csvContent,
+        accountId: acc.id,
+        columnMapping: { date: '0', payee: '1', debit: '2', credit: '3' },
+        dateFormat: 'DD/MM/YYYY',
+        hasHeaders: false,
+      });
+
+      expect(result.isError).toBeFalsy();
+      const data = JSON.parse(result.content[0].text);
+      expect(data.importedCount).toBe(2);
+
+      const txs = await db.transaction.findMany({ where: { accountId: acc.id }, orderBy: { date: 'asc' } });
+      expect(txs).toHaveLength(2);
+      expect(txs[0].payee).toBe('Uber');
+      expect(txs[0].amount).toBe(-15.5);
+      expect(txs[1].payee).toBe('Salary');
+      expect(txs[1].amount).toBe(2500);
     });
 
     it('list_transactions: query with filters', async () => {

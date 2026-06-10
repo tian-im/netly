@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { parseCSV } from "@/lib/csv";
+import { parseCSV, type ColumnMapping } from "@/lib/csv";
 import { matchRule } from "@/lib/rules";
 
 export function registerTransactionTools(server: McpServer) {
@@ -18,10 +19,11 @@ export function registerTransactionTools(server: McpServer) {
         debit: z.string().optional().describe("CSV header name for debit column"),
         credit: z.string().optional().describe("CSV header name for credit column"),
         description: z.string().optional().describe("CSV header name for description"),
-      }).describe("Mapping of CSV headers to database fields"),
+      }).describe("When hasHeaders=true: CSV header names for each field. When hasHeaders=false: 0-based column indices as strings (e.g. '0', '1', '2')"),
       dateFormat: z.enum(["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "auto"]).optional().default("auto").describe("Format to parse date columns"),
+      hasHeaders: z.boolean().optional().default(true).describe("If true, columnMapping values are CSV header names. If false, they are 0-based column indices (e.g. '0', '1', '2')"),
     },
-    async ({ csvContent, accountId, columnMapping, dateFormat }) => {
+    async ({ csvContent, accountId, columnMapping, dateFormat, hasHeaders }) => {
       try {
         const account = await db.account.findUnique({ where: { id: accountId } });
         if (!account) {
@@ -34,7 +36,7 @@ export function registerTransactionTools(server: McpServer) {
         const rules = await db.categoryRule.findMany({ include: { category: true } });
 
         const dateFormatHint = dateFormat === "auto" ? undefined : dateFormat;
-        const parsedTx = parseCSV(csvContent, columnMapping as any, dateFormatHint);
+        const parsedTx = parseCSV(csvContent, columnMapping as ColumnMapping, dateFormatHint, hasHeaders);
 
         if (parsedTx.length === 0) {
           return {
@@ -66,7 +68,7 @@ export function registerTransactionTools(server: McpServer) {
         let importedCount = 0;
         let skippedCount = 0;
         let uncategorizedCount = 0;
-        const newTransactionsData: any[] = [];
+        const newTransactionsData: Prisma.TransactionCreateManyInput[] = [];
 
         for (const tx of parsedTx) {
           const hash = makeHash(tx.date, tx.payee, tx.amount);
@@ -94,10 +96,10 @@ export function registerTransactionTools(server: McpServer) {
 
         if (newTransactionsData.length > 0) {
           const batchSize = 100;
-          await db.$transaction(async (tx) => {
+          await db.$transaction(async (prisma) => {
             for (let i = 0; i < newTransactionsData.length; i += batchSize) {
               const batch = newTransactionsData.slice(i, i + batchSize);
-              await tx.transaction.createMany({ data: batch });
+              await prisma.transaction.createMany({ data: batch });
             }
           });
         }
@@ -209,8 +211,8 @@ export function registerTransactionTools(server: McpServer) {
               text: JSON.stringify({
                 transactions: formatted,
                 totalCount,
-                page,
-                pageSize,
+                page: currentPage,
+                pageSize: currentPageSize,
               }),
             },
           ],

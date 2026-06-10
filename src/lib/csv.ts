@@ -8,11 +8,24 @@ export interface ParsedTransaction {
 }
 
 /**
+ * Column mapping for CSV parsing. When hasHeaders=true, values are CSV header names.
+ * When hasHeaders=false, values are 0-based column indices as strings (e.g. "0", "1", "2").
+ */
+export interface ColumnMapping {
+  date: string;
+  payee: string;
+  amount?: string;
+  debit?: string;
+  credit?: string;
+  description?: string;
+}
+
+/**
  * Cleans currency strings and converts them to floats.
  * Handles commas, dollar signs, other currency indicators, and parentheses as negative signs.
  */
 export function cleanAmount(value: string): number {
-  if (!value) return NaN;
+  if (!value || value.trim() === '') return NaN;
   
   let cleaned = value.trim();
   
@@ -22,8 +35,8 @@ export function cleanAmount(value: string): number {
     cleaned = cleaned.substring(1, cleaned.length - 1);
   }
 
-  // Remove currency symbols, commas, spaces
-  cleaned = cleaned.replace(/[$,£€\s]/g, '');
+  // Remove currency symbols, commas, spaces — covers major global symbols
+  cleaned = cleaned.replace(/[$,£€¥₩₹₽₱₿\s]/g, '');
 
   let amount = parseFloat(cleaned);
   
@@ -66,10 +79,15 @@ export function parseBankDate(value: string, formatHint?: string): Date {
   }
 
   // Fallback / Auto-detection:
-  // Try YYYY-MM-DD first
+  // Try YYYY-MM-DD first — parsed as local midnight like all other code paths,
+  // rather than `new Date(string)` which would interpret ISO 8601 as UTC.
   if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
-    const date = new Date(cleaned);
-    if (!isNaN(date.getTime())) return date;
+    const [y, m, d] = cleaned.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    // Guard against month/day roll-over (e.g. month 15 → April next year, day 32 → next month)
+    if (!isNaN(date.getTime()) && date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) return date;
+    // Pattern matched but roll-over guard failed → structurally invalid (e.g. month 13 or day 32)
+    throw new Error(`Invalid ISO date: "${cleaned}" — month or day out of range`);
   }
 
   // Try parsing common DD/MM/YYYY format with slashes or dashes
@@ -81,16 +99,31 @@ export function parseBankDate(value: string, formatHint?: string): Date {
     
     // Check if YYYY is at p3
     if (p3 > 1000) {
-      // Ambiguous between DD/MM/YYYY and MM/DD/YYYY. Assume DD/MM/YYYY as default if p1 > 12 or both are <= 12
-      const isDayFirst = p1 > 12 || (p1 <= 12 && p2 <= 12);
-      const day = isDayFirst ? p1 : p2;
-      const month = (isDayFirst ? p2 : p1) - 1;
-      const date = new Date(p3, month, day);
-      if (!isNaN(date.getTime())) return date;
+      // Ambiguous between DD/MM/YYYY and MM/DD/YYYY.
+      // If one part > 12, it must be the day (non-month).
+      // If both ≤ 12, try both interpretations and prefer whichever
+      // passes a sanity check (e.g., the date doesn't silently roll over).
+      if (p1 > 12) {
+        // Must be DD/MM/YYYY (day 13-31)
+        const date = new Date(p3, p2 - 1, p1);
+        if (!isNaN(date.getTime())) return date;
+      } else if (p2 > 12) {
+        // Must be MM/DD/YYYY (day 13-31 in second position)
+        const date = new Date(p3, p1 - 1, p2);
+        if (!isNaN(date.getTime())) return date;
+      } else {
+        // Both ≤ 12 — ambiguous (e.g. 03/04/2026 could be Mar 4 or Apr 3).
+        // Both interpretations are always valid (days 1-12 fit every month),
+        // so we default to DD/MM/YYYY convention.
+        const date = new Date(p3, p2 - 1, p1);
+        if (!isNaN(date.getTime())) return date;
+      }
     }
   }
 
-  // Last-resort standard Date parsing
+  // Last-resort standard Date parsing.
+  // Note: `new Date(string)` behaviour is engine-dependent (works in V8/Node.js for
+  // formats like "03 Jun 26", but not guaranteed by ECMA-262 for all formats).
   const parsed = new Date(cleaned);
   if (!isNaN(parsed.getTime())) {
     return parsed;
@@ -100,12 +133,29 @@ export function parseBankDate(value: string, formatHint?: string): Date {
 }
 
 /**
- * Parses bank CSV contents using header mappings.
+ * Helper: get a value from a CSV row, which may be a header-keyed object or an array.
+ * Exported for testing.
+ */
+export function getRowValue(row: Record<string, string> | string[], key: string): string {
+  if (Array.isArray(row)) {
+    const idx = parseInt(key, 10);
+    if (isNaN(idx) || idx < 0 || idx >= row.length) return '';
+    return row[idx] ?? '';
+  }
+  return row[key] ?? '';
+}
+
+/**
+ * Parses bank CSV contents using header mappings or column index mappings.
+ *
+ * When `hasHeaders` is true (default), `columnMapping` values are CSV header names.
+ * When `hasHeaders` is false, `columnMapping` values are 0-based column indices as strings (e.g. "0", "1", "2").
  */
 export function parseCSV(
   csvText: string,
-  headerMap: { date: string; payee: string; amount?: string; debit?: string; credit?: string; description?: string },
-  dateFormatHint?: string
+  columnMapping: ColumnMapping,
+  dateFormatHint?: string,
+  hasHeaders: boolean = true
 ): ParsedTransaction[] {
   if (!csvText || csvText.trim() === '') {
     return [];
@@ -113,7 +163,7 @@ export function parseCSV(
 
   // Use PapaParse to parse CSV text
   const parseResult = Papa.parse(csvText, {
-    header: true,
+    header: hasHeaders,
     skipEmptyLines: 'greedy',
   });
 
@@ -121,45 +171,67 @@ export function parseCSV(
     throw new Error(`CSV Parsing failed: ${parseResult.errors[0].message}`);
   }
 
-  // Verify headers exist
-  const firstRow = parseResult.data[0] as Record<string, string>;
-  if (!firstRow) return [];
+  const rows = parseResult.data as unknown[];
 
-  const headers = Object.keys(firstRow);
-  
-  const requiredFields = ['date', 'payee'] as const;
-  for (const field of requiredFields) {
-    const headerName = headerMap[field];
-    if (!headers.includes(headerName)) {
-      throw new Error(`Required header "${headerName}" not found in CSV`);
+  if (rows.length === 0) return [];
+
+  if (!hasHeaders) {
+    // Validate that column mappings are numeric indices in headerless mode.
+    // Must be a non-negative integer string like "0", "1", "2".
+    // Leading zeros like "01" are rejected (parseInt + String round-trip check)
+    // to enforce a canonical format and catch accidental header-name pass-through.
+    const indexFields = ['date', 'payee', 'amount', 'debit', 'credit', 'description'] as const;
+    for (const field of indexFields) {
+      const val = columnMapping[field];
+      if (val !== undefined) {
+        const num = parseInt(val, 10);
+        if (isNaN(num) || num < 0 || String(num) !== val.trim()) {
+          throw new Error(`Invalid column index "${val}" for field "${field}" in headerless mode. Must be a non-negative integer.`);
+        }
+      }
     }
   }
 
-  // Verify amount-related headers
-  if (headerMap.amount) {
-    if (!headers.includes(headerMap.amount)) {
-      throw new Error(`Required header "${headerMap.amount}" not found in CSV`);
+  if (hasHeaders) {
+    // Verify headers exist
+    const firstRow = rows[0] as Record<string, string>;
+    const headers = Object.keys(firstRow);
+
+    const requiredFields = ['date', 'payee'] as const;
+    for (const field of requiredFields) {
+      const headerName = columnMapping[field];
+      if (!headers.includes(headerName)) {
+        throw new Error(`Required header "${headerName}" not found in CSV`);
+      }
     }
-  } else if (headerMap.debit || headerMap.credit) {
-    if (headerMap.debit && !headers.includes(headerMap.debit)) {
-      throw new Error(`Debit header "${headerMap.debit}" not found in CSV`);
+
+    // Verify amount-related headers
+    if (columnMapping.amount) {
+      if (!headers.includes(columnMapping.amount)) {
+        throw new Error(`Required header "${columnMapping.amount}" not found in CSV`);
+      }
+    } else if (columnMapping.debit || columnMapping.credit) {
+      if (columnMapping.debit && !headers.includes(columnMapping.debit)) {
+        throw new Error(`Debit header "${columnMapping.debit}" not found in CSV`);
+      }
+      if (columnMapping.credit && !headers.includes(columnMapping.credit)) {
+        throw new Error(`Credit header "${columnMapping.credit}" not found in CSV`);
+      }
+    } else {
+      throw new Error('Either Amount column or Debit/Credit columns must be mapped');
     }
-    if (headerMap.credit && !headers.includes(headerMap.credit)) {
-      throw new Error(`Credit header "${headerMap.credit}" not found in CSV`);
-    }
-  } else {
-    throw new Error('Either Amount column or Debit/Credit columns must be mapped');
   }
 
   const parsedTransactions: ParsedTransaction[] = [];
 
-  for (const row of parseResult.data as Record<string, string>[]) {
+  for (const rawRow of rows) {
     try {
-      const dateVal = row[headerMap.date];
-      const payeeVal = row[headerMap.payee];
-      
-      const descHeader = headerMap.description;
-      const descVal = descHeader ? row[descHeader] : null;
+      const row = rawRow as Record<string, string> | string[];
+      const dateVal = getRowValue(row, columnMapping.date);
+      const payeeVal = getRowValue(row, columnMapping.payee);
+
+      const descKey = columnMapping.description;
+      const descVal = descKey ? getRowValue(row, descKey) : null;
 
       if (!dateVal || !payeeVal) {
         continue; // Skip incomplete rows
@@ -167,14 +239,14 @@ export function parseCSV(
 
       // Calculate amount based on single or double column setup
       let amount = NaN;
-      if (headerMap.amount) {
-        const amountVal = row[headerMap.amount];
+      if (columnMapping.amount) {
+        const amountVal = getRowValue(row, columnMapping.amount);
         if (amountVal) {
           amount = cleanAmount(amountVal);
         }
       } else {
-        const debitVal = headerMap.debit ? row[headerMap.debit] : '';
-        const creditVal = headerMap.credit ? row[headerMap.credit] : '';
+        const debitVal = columnMapping.debit ? getRowValue(row, columnMapping.debit) : '';
+        const creditVal = columnMapping.credit ? getRowValue(row, columnMapping.credit) : '';
 
         const debitAmt = debitVal ? cleanAmount(debitVal) : NaN;
         const creditAmt = creditVal ? cleanAmount(creditVal) : NaN;
@@ -211,7 +283,8 @@ export function parseCSV(
         description: descVal ? descVal.trim() : null,
       });
     } catch (e) {
-      // Skip row if error occurs (e.g. date parsing fails)
+      // Skip row if error occurs (e.g. date parsing fails), but log for debugging
+      console.warn('Skipping CSV row due to parse error:', e);
       continue;
     }
   }

@@ -85,4 +85,86 @@ export function registerAccountTools(server: McpServer) {
       }
     }
   );
+
+  server.tool(
+    "create_account",
+    "Create a new financial account (Asset or Liability) with a specified starting balance and native currency.",
+    {
+      name: z.string().describe("Display name for the account (e.g. 'Checking Account', 'Credit Card')"),
+      type: z.enum(["ASSET", "LIABILITY"]).describe("Account type: Asset (bank accounts, investments) or Liability (credit cards, loans)"),
+      startingBalance: z.number().optional().default(0).describe("Opening balance for the account (default: 0)"),
+      currency: z.string().optional().default("AUD").describe("ISO 4217 currency code (e.g. 'AUD', 'USD', 'EUR'). Default: 'AUD'"),
+    },
+    async ({ name, type, startingBalance, currency }) => {
+      try {
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: "Account name is required." }],
+          };
+        }
+
+        // Zod defaults guarantee these are defined, but guard for direct mock calls
+        const balance = startingBalance ?? 0;
+        const rawCurrency = currency ?? 'AUD';
+        const currencyCode = rawCurrency.toUpperCase().trim();
+        if (!currencyCode || currencyCode.length !== 3) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `Invalid currency code "${rawCurrency}". Must be a 3-letter ISO 4217 code.` }],
+          };
+        }
+
+        // Prevent duplicate account names with case-insensitive comparison.
+        // Prisma with SQLite only supports case-sensitive `=`, so we read all names
+        // and compare via `.toLowerCase()` in JS. This is fine for personal finance
+        // (< 100 accounts). 
+        // Note: there is a TOCTOU race window here — two concurrent calls with the same
+        // name could both pass the check. A DB-level UNIQUE constraint would be the
+        // proper fix if this becomes an issue.
+        const duplicateName = trimmedName.toLowerCase();
+        const allAccounts = await db.account.findMany({ select: { name: true } });
+        const existing = allAccounts.find((a) => a.name.toLowerCase() === duplicateName);
+        if (existing) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `An account with the name "${trimmedName}" already exists (as "${existing.name}").` }],
+          };
+        }
+
+        const account = await db.account.create({
+          data: {
+            name: trimmedName,
+            type,
+            startingBalance: balance,
+            currency: currencyCode,
+          },
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                account: {
+                  id: account.id,
+                  name: account.name,
+                  type: account.type,
+                  startingBalance: account.startingBalance,
+                  currency: account.currency,
+                },
+              }),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Failed to create account: ${error.message || error}` }],
+        };
+      }
+    }
+  );
 }

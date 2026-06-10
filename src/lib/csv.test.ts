@@ -1,7 +1,42 @@
 import { describe, it, expect } from 'vitest';
-import { parseCSV, cleanAmount, parseBankDate } from './csv';
+import { parseCSV, cleanAmount, parseBankDate, getRowValue } from './csv';
 
 describe('CSV Parser Core', () => {
+  describe('getRowValue', () => {
+    it('should get value from an array row', () => {
+      expect(getRowValue(['a', 'b', 'c'], '0')).toBe('a');
+      expect(getRowValue(['a', 'b', 'c'], '1')).toBe('b');
+      expect(getRowValue(['a', 'b', 'c'], '2')).toBe('c');
+    });
+
+    it('should return empty string for out-of-bounds index', () => {
+      expect(getRowValue(['a', 'b'], '5')).toBe('');
+    });
+
+    it('should return empty string for negative index', () => {
+      expect(getRowValue(['a', 'b'], '-1')).toBe('');
+    });
+
+    it('should return empty string for invalid index', () => {
+      expect(getRowValue(['a', 'b'], 'abc')).toBe('');
+    });
+
+    it('should handle undefined array element via fallback', () => {
+      const sparse: string[] = ['a'];
+      (sparse as any)[1] = undefined;
+      expect(getRowValue(sparse, '1')).toBe('');
+    });
+
+    it('should get value from an object row', () => {
+      expect(getRowValue({ date: '2026-01-01', payee: 'Test' }, 'date')).toBe('2026-01-01');
+      expect(getRowValue({ date: '2026-01-01', payee: 'Test' }, 'payee')).toBe('Test');
+    });
+
+    it('should handle undefined object property via fallback', () => {
+      expect(getRowValue({ date: '2026-01-01' } as any, 'missing')).toBe('');
+    });
+  });
+
   describe('cleanAmount', () => {
     it('should parse clean floats', () => {
       expect(cleanAmount('123.45')).toBe(123.45);
@@ -19,6 +54,13 @@ describe('CSV Parser Core', () => {
       expect(cleanAmount('($1,500.50)')).toBe(-1500.5);
     });
 
+    it('should handle additional global currency symbols', () => {
+      expect(cleanAmount('¥2,500')).toBe(2500);
+      expect(cleanAmount('₩1,000')).toBe(1000);
+      expect(cleanAmount('₹500.50')).toBe(500.5);
+      expect(cleanAmount('€99.90')).toBe(99.9);
+    });
+
     it('should throw or return NaN for invalid values', () => {
       expect(Number.isNaN(cleanAmount('abc'))).toBe(true);
       expect(Number.isNaN(cleanAmount(''))).toBe(true);
@@ -33,6 +75,15 @@ describe('CSV Parser Core', () => {
       expect(date.getDate()).toBe(8);
     });
 
+    it('should reject invalid ISO date with roll-over guard', () => {
+      // day=99 rolls over in Date constructor; the roll-over guard must reject it
+      expect(() => parseBankDate('2026-06-99')).toThrow('Invalid ISO date');
+      // month=13 also rolls over
+      expect(() => parseBankDate('2026-13-01')).toThrow('Invalid ISO date');
+      // day=0 is out of range
+      expect(() => parseBankDate('2026-06-00')).toThrow('Invalid ISO date');
+    });
+
     it('should parse user format like "03 Jun 26"', () => {
       const date = parseBankDate('03 Jun 26');
       expect(date.getFullYear()).toBe(2026);
@@ -45,6 +96,22 @@ describe('CSV Parser Core', () => {
       expect(date.getFullYear()).toBe(2026);
       expect(date.getMonth()).toBe(5);
       expect(date.getDate()).toBe(8);
+    });
+
+    it('should detect DD/MM/YYYY when day > 12', () => {
+      // p1=13 > 12 → unambiguous DD/MM/YYYY
+      const date = parseBankDate('13/06/2026');
+      expect(date.getFullYear()).toBe(2026);
+      expect(date.getMonth()).toBe(5); // June
+      expect(date.getDate()).toBe(13);
+    });
+
+    it('should detect MM/DD/YYYY when day > 12 in second position', () => {
+      // p2=13 > 12 while p1=6 ≤ 12 → unambiguous MM/DD/YYYY
+      const date = parseBankDate('06/13/2026');
+      expect(date.getFullYear()).toBe(2026);
+      expect(date.getMonth()).toBe(5); // June
+      expect(date.getDate()).toBe(13);
     });
 
     it('should parse MM/DD/YYYY dates', () => {
@@ -79,6 +146,14 @@ describe('CSV Parser Core', () => {
       expect(date.getFullYear()).toBe(2026);
       expect(date.getMonth()).toBe(5); // June
       expect(date.getDate()).toBe(15);
+    });
+
+    it('should disambiguate ambiguous date like 03/04/2026 as DD/MM by default', () => {
+      // Both parts ≤ 12: DD/MM gets priority per our heuristic
+      const date = parseBankDate('03/04/2026');
+      expect(date.getFullYear()).toBe(2026);
+      expect(date.getMonth()).toBe(3); // April (0-indexed)
+      expect(date.getDate()).toBe(3);
     });
 
     it('should throw an error for unparseable dates', () => {
@@ -229,6 +304,9 @@ Date,Merchant,Amount
 
     it('should round amounts to the nearest cent consistently', () => {
       expect(cleanAmount('12.344')).toBe(12.34);
+      // Note: 12.345 is represented as 12.345000000000000639 in V8/Node.js,
+      // so 12.345 * 100 = 1234.5 exactly, and Math.round(1234.5) = 1235.
+      // This behavior is platform-dependent (IEEE 754).
       expect(cleanAmount('12.345')).toBe(12.35);
       expect(cleanAmount('12.346')).toBe(12.35);
       expect(cleanAmount('-12.345')).toBe(-12.35);
@@ -335,6 +413,139 @@ Date,Merchant,Debit,Credit,Details
         payee: 'Merchant',
       };
       expect(() => parseCSV(csvContent, headerMap)).toThrow('Either Amount column or Debit/Credit columns must be mapped');
+    });
+
+    describe('headerless CSV parsing', () => {
+      it('should parse CSV without headers using column indices', () => {
+        const headerlessCsv = `2026-06-01,Uber,-15.50,Ride to work
+2026-06-02,Salary,2500.00,
+2026-06-03,Woolworths,-82.40,Groceries`;
+
+        const colMapping = {
+          date: '0',
+          payee: '1',
+          amount: '2',
+          description: '3',
+        };
+
+        const result = parseCSV(headerlessCsv, colMapping, undefined, false);
+        expect(result).toHaveLength(3);
+        expect(result[0]).toEqual({
+          date: expect.any(Date),
+          payee: 'Uber',
+          amount: -15.5,
+          description: 'Ride to work',
+        });
+        expect(result[0].date.getFullYear()).toBe(2026);
+        expect(result[1].payee).toBe('Salary');
+        expect(result[1].amount).toBe(2500);
+        expect(result[2].payee).toBe('Woolworths');
+        expect(result[2].amount).toBe(-82.4);
+      });
+
+      it('should parse headerless CSV with date format hint', () => {
+        const headerlessCsv = `01/06/2026,Uber,-15.50`;
+
+        const colMapping = {
+          date: '0',
+          payee: '1',
+          amount: '2',
+        };
+
+        const result = parseCSV(headerlessCsv, colMapping, 'DD/MM/YYYY', false);
+        expect(result).toHaveLength(1);
+        expect(result[0].date.getMonth()).toBe(5);
+        expect(result[0].date.getDate()).toBe(1);
+      });
+
+      it('should parse headerless CSV with separate debit/credit columns', () => {
+        const headerlessCsv = `2026-06-01,Uber,15.50,,Ride to work
+2026-06-02,Salary,,2500.00,`;
+
+        const colMapping = {
+          date: '0',
+          payee: '1',
+          debit: '2',
+          credit: '3',
+          description: '4',
+        };
+
+        const result = parseCSV(headerlessCsv, colMapping, undefined, false);
+        expect(result).toHaveLength(2);
+        expect(result[0].payee).toBe('Uber');
+        expect(result[0].amount).toBe(-15.5);
+        expect(result[1].payee).toBe('Salary');
+        expect(result[1].amount).toBe(2500);
+      });
+
+      it('should skip incomplete rows in headerless CSV', () => {
+        const headerlessCsv = `2026-06-01,Uber,-15.50
+,Netflix,-10.00
+2026-06-03,,45.00`;
+
+        const colMapping = {
+          date: '0',
+          payee: '1',
+          amount: '2',
+        };
+
+        const result = parseCSV(headerlessCsv, colMapping, undefined, false);
+        expect(result).toHaveLength(1);
+        expect(result[0].payee).toBe('Uber');
+      });
+
+      it('should return empty array for empty headerless CSV', () => {
+        const colMapping = { date: '0', payee: '1', amount: '2' };
+        expect(parseCSV('', colMapping, undefined, false)).toHaveLength(0);
+      });
+
+      it('should skip rows with invalid amounts in headerless CSV', () => {
+        const headerlessCsv = `2026-06-01,Uber,-15.50
+2026-06-02,Netflix,invalid_amount`;
+
+        const colMapping = {
+          date: '0',
+          payee: '1',
+          amount: '2',
+        };
+
+        const result = parseCSV(headerlessCsv, colMapping, undefined, false);
+        expect(result).toHaveLength(1);
+        expect(result[0].payee).toBe('Uber');
+      });
+
+      it('should handle out-of-bounds column indices gracefully', () => {
+        const headerlessCsv = `2026-06-01,Uber`;
+
+        const colMapping = {
+          date: '0',
+          payee: '1',
+          amount: '2', // column 2 doesn't exist
+        };
+
+        const result = parseCSV(headerlessCsv, colMapping, undefined, false);
+        expect(result).toHaveLength(0);
+      });
+
+      it('should throw on non-numeric column index in headerless mode', () => {
+        const colMapping = {
+          date: 'date', // should be a number like '0', not 'date'
+          payee: '1',
+          amount: '2',
+        };
+        expect(() => parseCSV('a,b,c', colMapping, undefined, false))
+          .toThrow('Invalid column index');
+      });
+
+      it('should throw on negative column index in headerless mode', () => {
+        const colMapping = {
+          date: '-1',
+          payee: '1',
+          amount: '2',
+        };
+        expect(() => parseCSV('a,b,c', colMapping, undefined, false))
+          .toThrow('Invalid column index');
+      });
     });
   });
 });

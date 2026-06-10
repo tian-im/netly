@@ -2,29 +2,20 @@ import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import Papa from 'papaparse';
+
+import { cleanAmount, parseBankDate } from '../src/lib/csv';
+import { matchRule } from '../src/lib/rules';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from '../src/lib/reports';
 
 const prisma = new PrismaClient();
 
-function cleanAmount(val: string): number {
-  if (!val) return 0;
-  return parseFloat(val.replace(/[$,"\s]/g, ''));
-}
-
-// Keep the specific inline rules matching logic
-function matchRule(payee: string, description: string | null, rules: any[]) {
-  const cleanPayee = payee.toLowerCase();
-  const cleanDesc = description ? description.toLowerCase() : '';
-
-  for (const rule of rules) {
-    const pattern = rule.pattern.toLowerCase();
-    
-    // Substring checks
-    if (cleanPayee.includes(pattern) || cleanDesc.includes(pattern)) {
-      return rule.categoryId;
-    }
-  }
-  return null;
+interface BalanceSheetAccount {
+  id: string;
+  name: string;
+  type: string;
+  startingBalance: number;
+  currency: string;
+  balance: number;
 }
 
 async function main() {
@@ -54,7 +45,11 @@ async function main() {
     throw new Error(`HSBC0306.csv not found at ${csvPath}`);
   }
 
-  const csvContent = fs.readFileSync(csvPath, 'utf-8');
+  // Strip BOM before parsing to avoid \ufeff prefix on column names
+  let csvContent = fs.readFileSync(csvPath, 'utf-8');
+  if (csvContent.charCodeAt(0) === 0xFEFF) {
+    csvContent = csvContent.slice(1);
+  }
 
   console.log('Parsing HSBC CSV statements...');
   const parseResult = Papa.parse(csvContent, {
@@ -66,7 +61,9 @@ async function main() {
     throw new Error(`Failed to parse CSV: ${parseResult.errors[0].message}`);
   }
 
-  // Fetch all categories and rules from database for auto-categorization
+  // Fetch all categories and rules from database for auto-categorization.
+  // `categories` is used below for fallback keyword matching on descriptions
+  // that the rules engine didn't catch (e.g. 'cashback', 'transfer' in description).
   const categories = await prisma.category.findMany();
   const rules = await prisma.categoryRule.findMany();
 
@@ -74,54 +71,101 @@ async function main() {
 
   let uncategorizedCount = 0;
   let categorizedCount = 0;
+  let skippedCount = 0;
+  // hsbcAccount is guaranteed non-null after the if/else block above
+  const accountId = hsbcAccount!.id;
+  const newTransactions: {
+    date: Date;
+    payee: string;
+    description: string | null;
+    amount: number;
+    accountId: string;
+    categoryId: string | null;
+    isReviewed: boolean;
+  }[] = [];
 
-  for (const row of parseResult.data as any[]) {
-    const rawDate = row['Transaction Date'] || row['Transaction Date\ufeff'] || row[Object.keys(row)[0]]; // handle potential BOM characters
-    const rawDescription = row['Description'] || '';
-    const rawAmount = row['Amount'];
+  const importDateStr = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
-    if (!rawDate || !rawAmount) continue;
+  for (const row of parseResult.data as Record<string, string>[]) {
+    try {
+      const rawDate = row['Transaction Date'] || row[Object.keys(row)[0]];
+      const rawDescription = row['Description'] || '';
+      const rawAmount = row['Amount'];
 
-    const date = new Date(rawDate);
-    const amount = cleanAmount(rawAmount);
+      if (!rawDate || !rawAmount) continue;
 
-    if (isNaN(amount)) continue;
+      // Skip rows with no meaningful payee/description content
+      const trimmedDesc = rawDescription.trim();
+      if (!trimmedDesc) continue;
 
-    // Run rules engine matching
-    let matchedCategoryId = matchRule(rawDescription, null, rules);
-    
-    // Fallback manual defaults for common keywords inside HSBC description to showcase rules correctness
-    if (!matchedCategoryId) {
-      const descLower = rawDescription.toLowerCase();
-      if (descLower.includes('cashback') || descLower.includes('refund')) {
-        const refundCat = categories.find(c => c.name.toLowerCase() === 'refund');
-        if (refundCat) matchedCategoryId = refundCat.id;
-      } else if (descLower.includes('transfer') || descLower.includes('tfr')) {
-        const tfrCat = categories.find(c => c.name.toLowerCase() === 'transfer');
-        if (tfrCat) matchedCategoryId = tfrCat.id;
+      // HSBC AU exports dates in DD/MM/YYYY format
+      const date = parseBankDate(rawDate, 'DD/MM/YYYY');
+      const amount = cleanAmount(rawAmount);
+
+      if (isNaN(amount)) {
+        skippedCount++;
+        continue;
       }
-    }
 
-    if (matchedCategoryId) {
-      categorizedCount++;
-    } else {
-      uncategorizedCount++;
-    }
+      // Run rules engine matching (substring + regex patterns from DB)
+      let matchedCategoryId = matchRule(trimmedDesc, null, rules);
+      
+      // Fallback keyword matching for patterns the rules engine didn't catch.
+      // This overlaps with rules engine scope — ideally these would be DB rules
+      // instead. Note: if the 'refund' or 'transfer' categories don't exist,
+      // find() returns undefined and the fallback silently no-ops.
+      // We manually lowercase here because matchRule (called above) handles its
+      // own internal lowercasing, but this fallback does simple String.includes().
+      if (!matchedCategoryId) {
+        const descLower = trimmedDesc.toLowerCase();
+        if (descLower.includes('cashback') || descLower.includes('refund')) {
+          const refundCat = categories.find(c => c.name.toLowerCase() === 'refund');
+          if (refundCat) matchedCategoryId = refundCat.id;
+        } else if (descLower.includes('transfer') || descLower.includes('tfr')) {
+          const tfrCat = categories.find(c => c.name.toLowerCase() === 'transfer');
+          if (tfrCat) matchedCategoryId = tfrCat.id;
+        }
+      }
 
-    await prisma.transaction.create({
-      data: {
+      if (matchedCategoryId) {
+        categorizedCount++;
+      } else {
+        uncategorizedCount++;
+      }
+
+      // HSBC CSVs don't have a separate payee column — the description is the
+      // transaction narration (e.g. "Coles Supermarket RICHMOND"). We use it as
+      // payee, and store the import timestamp in description for auditability.
+      const truncatedPayee = trimmedDesc.substring(0, 100);
+      newTransactions.push({
         date,
-        payee: rawDescription.trim().substring(0, 100),
-        description: 'HSBC Import Feed',
+        payee: truncatedPayee,
+        description: `Imported from HSBC on ${importDateStr}`,
         amount,
-        accountId: hsbcAccount.id,
+        accountId,
         categoryId: matchedCategoryId,
         isReviewed: matchedCategoryId !== null
+      });
+    } catch (e) {
+      // Log and skip rows with unparseable dates or other errors,
+      // consistent with how parseCSV handles bad rows in the main pipeline.
+      console.warn('Skipping HSBC row due to parse error:', e);
+      skippedCount++;
+    }
+  }
+
+  // Batch insert in a single transaction
+  if (newTransactions.length > 0) {
+    const batchSize = 100;
+    await prisma.$transaction(async (prismaTx) => {
+      for (let i = 0; i < newTransactions.length; i += batchSize) {
+        const batch = newTransactions.slice(i, i + batchSize);
+        await prismaTx.transaction.createMany({ data: batch });
       }
     });
   }
 
-  console.log(`HSBC transactions imported: ${categorizedCount} auto-categorized, ${uncategorizedCount} marked for review.`);
+  console.log(`HSBC transactions imported: ${categorizedCount} auto-categorized, ${uncategorizedCount} marked for review.${skippedCount > 0 ? ` ${skippedCount} rows skipped due to errors.` : ''}`);
 
   // Run reports against ALL accounts (Checking, Credit Card, HSBC)
   const accounts = await prisma.account.findMany();
@@ -152,13 +196,16 @@ async function main() {
     } : null
   }));
 
-  const endDate = new Date('2026-06-30');
-  const startDate = new Date('2026-01-01');
+  // Local-midnight dates for consistency with the ledger's date handling
+  const endDate = new Date(2026, 5, 30);
+  const startDate = new Date(2026, 0, 1);
 
   const balanceSheet = generateBalanceSheet(mappedAccounts, mappedTransactions, endDate);
   const incomeStatement = generateIncomeStatement(mappedTransactions, startDate, endDate);
   const cashFlowStatement = generateCashFlowStatement(mappedTransactions, startDate, endDate);
 
+  // Note: report only shows AUD totals. Non-AUD accounts (e.g. USD savings) are
+  // silently excluded from this console printout.
   const audTotalsBS = balanceSheet.totals['AUD'] || { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
   const audTotalsIS = incomeStatement.totals['AUD'] || { income: [], expenses: [], totalIncome: 0, totalExpenses: 0, netIncome: 0 };
   const audTotalsCF = cashFlowStatement.totals['AUD'] || { operating: { net: 0, inflow: 0, outflow: 0 }, investing: { net: 0 }, financing: { net: 0 }, netCashFlow: 0 };
@@ -168,8 +215,8 @@ async function main() {
   console.log('=========================================');
   
   console.log('\n--- BALANCE SHEET (As of 30 Jun 2026) ---');
-  balanceSheet.accounts.forEach(acc => {
-    console.log(`  - ${acc.name} (${acc.type}): $${(acc as any).balance.toFixed(2)}`);
+  (balanceSheet.accounts as BalanceSheetAccount[]).forEach(acc => {
+    console.log(`  - ${acc.name} (${acc.type}): $${acc.balance.toFixed(2)}`);
   });
   console.log(`Total Assets:      $${audTotalsBS.totalAssets.toFixed(2)}`);
   console.log(`Total Liabilities: $${audTotalsBS.totalLiabilities.toFixed(2)}`);
@@ -183,8 +230,8 @@ async function main() {
   console.log(`Total Income:      $${audTotalsIS.totalIncome.toFixed(2)}`);
   
   console.log('Outflows (Expenses):');
-  // Sort and display top expenses
-  audTotalsIS.expenses.sort((a,b) => b.amount - a.amount).forEach(exp => {
+  // Display expenses sorted by amount (copy to avoid mutating the source array)
+  [...audTotalsIS.expenses].sort((a,b) => b.amount - a.amount).forEach(exp => {
     console.log(`  - ${exp.name}: $${exp.amount.toFixed(2)}`);
   });
   console.log(`Total Expenses:    $${audTotalsIS.totalExpenses.toFixed(2)}`);
