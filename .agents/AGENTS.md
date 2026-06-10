@@ -131,6 +131,23 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 
 > **RULE: ALL commands (npm, npx, prisma, tsc, vitest, sqlite3, etc.) MUST be run inside the container via `docker compose exec -T web <command>`. Never run them directly on the host machine.**
 
+### Common commands (always use these forms):
+
+| Host command | Docker equivalent |
+|---|---|
+| `npm install` | `docker compose exec -T web npm install` |
+| `npm run dev` | Already running in container; no action needed |
+| `npm run build` | `docker compose exec -T web npm run build` |
+| `npm run lint` | `docker compose exec -T web npm run lint` |
+| `npm run test` | `docker compose exec -T web npm run test` |
+| `npm run test:coverage` | `docker compose exec -T web npm run test:coverage` |
+| `npx prisma generate` | `docker compose exec -T web npx prisma generate` |
+| `npx prisma migrate dev` | `docker compose exec -T web npx prisma migrate dev` |
+| `npx tsc --noEmit` | `docker compose exec -T web npx tsc --noEmit` |
+| `npm install <pkg>` | Rebuild container with `docker compose build web` or run `docker compose exec -T web npm install <pkg>` |
+
+**Container must be running** (`docker compose up -d`) before executing any of these commands.
+
 ## Git Workflow
 
 > **RULE: Never run `git commit` or `git push` autonomously. Only commit when the user explicitly asks for it.**

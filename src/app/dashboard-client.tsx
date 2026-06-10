@@ -21,7 +21,6 @@ import IncomeVsExpensesChart from './dashboard-components/IncomeVsExpensesChart'
 import CashFlowMetrics from './dashboard-components/CashFlowMetrics';
 import BreakdownList from './dashboard-components/BreakdownList';
 import AccountBalancesTable from './dashboard-components/AccountBalancesTable';
-import Loading from './loading';
 
 interface Account {
   id: string;
@@ -235,12 +234,8 @@ export default function DashboardClient({
     });
   };
 
-  if (isPending) {
-    return <Loading />;
-  }
-
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}>
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
           {t('title')}
