@@ -1,11 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+const navItems = [
+  { href: '/',             labelKey: 'dashboard',    icon: BarChart3  },
+  { href: '/accounts',     labelKey: 'accounts',     icon: Wallet     },
+  { href: '/categories',   labelKey: 'categories',   icon: Tags       },
+  { href: '/transactions', labelKey: 'transactions', icon: FolderTree },
+  { href: '/import',       labelKey: 'import',       icon: Inbox      },
+  { href: '/reports',      labelKey: 'reports',      icon: TrendingUp },
+  { href: '/settings',     labelKey: 'settings',     icon: Settings   },
+] as const;
+
 export default function Sidebar() {
   const t = useTranslations('nav');
+  const pathname = usePathname();
 
   return (
     <div className="menu p-4 w-72 min-h-full bg-base-100 text-base-content flex flex-col justify-between shadow-2xl">
@@ -18,43 +30,28 @@ export default function Sidebar() {
             {t('subtitle')}
           </p>
         </div>
-        
+
         <ul className="space-y-1 mt-4">
-          <li>
-            <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <BarChart3 className="w-5 h-5 text-primary" /> {t('dashboard')}
-            </Link>
-          </li>
-          <li>
-            <Link href="/accounts" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <Wallet className="w-5 h-5 text-primary" /> {t('accounts')}
-            </Link>
-          </li>
-          <li>
-            <Link href="/transactions" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <FolderTree className="w-5 h-5 text-primary" /> {t('transactions')}
-            </Link>
-          </li>
-          <li>
-            <Link href="/categories" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <Tags className="w-5 h-5 text-primary" /> {t('categories')}
-            </Link>
-          </li>
-          <li>
-            <Link href="/reports" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <TrendingUp className="w-5 h-5 text-primary" /> {t('reports')}
-            </Link>
-          </li>
-          <li>
-            <Link href="/import" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <Inbox className="w-5 h-5 text-primary" /> {t('import')}
-            </Link>
-          </li>
-          <li>
-            <Link href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-base-200 transition-colors font-medium">
-              <Settings className="w-5 h-5 text-primary" /> {t('settings')}
-            </Link>
-          </li>
+          {navItems.map(({ href, labelKey, icon: Icon }) => {
+            const isActive =
+              href === '/' ? pathname === '/' : pathname.startsWith(href);
+            return (
+              <li key={href}>
+                <Link
+                  href={href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-base-200'
+                  }`}
+                >
+                  <Icon className="w-5 h-5 text-primary" />
+                  {t(labelKey)}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
