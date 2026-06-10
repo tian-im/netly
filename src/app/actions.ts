@@ -15,6 +15,72 @@ export async function getAccounts() {
   });
 }
 
+export async function getAccountsWithBalances() {
+  const accounts = await db.account.findMany({
+    include: {
+      _count: {
+        select: { transactions: true }
+      }
+    },
+    orderBy: { name: 'asc' }
+  });
+
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  // Group by accountId and sum transaction amounts
+  const txSums = await db.transaction.groupBy({
+    by: ['accountId'],
+    where: {
+      date: {
+        lte: lastDay
+      }
+    },
+    _sum: {
+      amount: true
+    }
+  });
+
+  const transactionSums: Record<string, number> = {};
+  for (const sum of txSums) {
+    if (sum.accountId) {
+      transactionSums[sum.accountId] = sum._sum.amount || 0;
+    }
+  }
+
+  // Query the latest transaction date per account
+  const maxTxDates = await db.transaction.groupBy({
+    by: ['accountId'],
+    _max: {
+      date: true
+    }
+  });
+
+  const lastTxDates: Record<string, string | null> = {};
+  for (const item of maxTxDates) {
+    if (item.accountId) {
+      lastTxDates[item.accountId] = item._max.date ? new Date(item._max.date).toISOString().split('T')[0] : null;
+    }
+  }
+
+  const accountsWithBalances = accounts.map((account) => {
+    return {
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      startingBalance: account.startingBalance,
+      currency: account.currency,
+      _count: account._count,
+    };
+  });
+
+  return {
+    accounts: accountsWithBalances,
+    transactionSums,
+    lastTxDates,
+  };
+}
+
 export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = 'AUD') {
   if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
   
@@ -27,7 +93,6 @@ export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', s
     }
   });
 
-  revalidatePath('/accounts');
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
@@ -39,7 +104,6 @@ export async function deleteAccount(id: string) {
   await db.account.delete({
     where: { id }
   });
-  revalidatePath('/accounts');
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
@@ -65,7 +129,6 @@ export async function updateAccount(
     }
   });
 
-  revalidatePath('/accounts');
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');

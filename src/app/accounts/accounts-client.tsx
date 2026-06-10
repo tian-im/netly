@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
-import { generateBalanceSheet } from '@/lib/reports';
+import { getCurrencySymbol } from '@/lib/currencies';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
 
@@ -16,24 +16,10 @@ interface Account {
   _count?: { transactions: number };
 }
 
-interface Transaction {
-  id: string;
-  date: Date | string;
-  amount: number;
-  accountId: string;
-  currency: string;
-  categoryId: string | null;
-  category: {
-    id: string;
-    name: string;
-    type: string;
-    cashFlowType: string;
-  } | null;
-}
-
 interface AccountsClientProps {
   initialAccounts: Account[];
-  initialTransactions: Transaction[];
+  initialTransactionSums: Record<string, number>;
+  initialLastTxDates: Record<string, string | null>;
 }
 
 interface Toast {
@@ -44,13 +30,20 @@ interface Toast {
 
 export default function AccountsClient({
   initialAccounts,
-  initialTransactions,
+  initialTransactionSums,
+  initialLastTxDates,
 }: AccountsClientProps) {
   const [accounts, setAccounts] = useState(initialAccounts);
+  const [transactionSums, setTransactionSums] = useState(initialTransactionSums);
+  const [lastTxDates, setLastTxDates] = useState(initialLastTxDates);
   const t = useTranslations('accounts');
   const tCommon = useTranslations('common');
   const tErr = useTranslations('errors');
   
+  // Search & Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'ASSET' | 'LIABILITY'>('ALL');
+
   // Create Form State
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<'ASSET' | 'LIABILITY'>('ASSET');
@@ -63,6 +56,9 @@ export default function AccountsClient({
   const [editType, setEditType] = useState<'ASSET' | 'LIABILITY'>('ASSET');
   const [editBalance, setEditBalance] = useState('');
   const [editCurrency, setEditCurrency] = useState('AUD');
+
+  // Discard changes confirm Modal State
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   // Delete Confirm State
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
@@ -88,29 +84,51 @@ export default function AccountsClient({
     }, 3500);
   };
 
-  // Compile calculations (Memoized)
-  const mappedAccounts = useMemo(() => accounts.map((a) => ({
-    id: a.id,
-    name: a.name,
-    type: a.type,
-    startingBalance: a.startingBalance,
-    currency: a.currency,
-  })), [accounts]);
-
-  const mappedTransactions = useMemo(() => initialTransactions.map((t) => ({
-    ...t,
-    date: new Date(t.date),
-  })), [initialTransactions]);
-
+  // Compile calculations (Memoized using aggregated transaction sums instead of thousands of transaction rows)
   const bs = useMemo(() => {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return generateBalanceSheet(mappedAccounts, mappedTransactions, lastDay);
-  }, [mappedAccounts, mappedTransactions]);
+    const accountBalances = accounts.map((account) => {
+      const netChange = transactionSums[account.id] || 0;
+      const rawBalance = account.startingBalance + netChange;
+      const balance = account.type === 'LIABILITY' ? -rawBalance : rawBalance;
+      return {
+        ...account,
+        balance,
+      };
+    });
+
+    const totals: Record<string, { totalAssets: number; totalLiabilities: number; netWorth: number }> = {};
+    for (const account of accountBalances) {
+      const currency = account.currency || 'AUD';
+      if (!totals[currency]) {
+        totals[currency] = { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
+      }
+      if (account.type === 'ASSET') {
+        totals[currency].totalAssets += account.balance;
+      } else if (account.type === 'LIABILITY') {
+        totals[currency].totalLiabilities += account.balance;
+      }
+    }
+    for (const currency of Object.keys(totals)) {
+      totals[currency].netWorth = totals[currency].totalAssets - totals[currency].totalLiabilities;
+    }
+    return {
+      accounts: accountBalances,
+      totals,
+    };
+  }, [accounts, transactionSums]);
+
+  // Filter accounts client-side by name search and type filter
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((a) => {
+      const matchesSearch = !searchTerm.trim() || a.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = typeFilter === 'ALL' || a.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [accounts, searchTerm, typeFilter]);
 
   // Sort logic applied to accounts
   const sortedAccounts = useMemo(() => {
-    const sorted = [...accounts];
+    const sorted = [...filteredAccounts];
     sorted.sort((a, b) => {
       let valA: any = '';
       let valB: any = '';
@@ -134,16 +152,7 @@ export default function AccountsClient({
       return 0;
     });
     return sorted;
-  }, [accounts, sortField, sortDirection, bs.accounts]);
-
-  const getCurrencySymbol = (currency: string) => {
-    switch (currency?.toUpperCase()) {
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'JPY': return '¥';
-      default: return '$';
-    }
-  };
+  }, [filteredAccounts, sortField, sortDirection, bs.accounts]);
 
   const handleSort = (field: 'name' | 'type' | 'balance' | 'transactions') => {
     if (sortField === field) {
@@ -169,6 +178,9 @@ export default function AccountsClient({
           newAccCurrency
         );
         setAccounts((prev) => [...prev, created]);
+        setTransactionSums((prev) => ({ ...prev, [created.id]: 0 }));
+        setLastTxDates((prev) => ({ ...prev, [created.id]: null }));
+        setSearchTerm('');
         setNewAccName('');
         setNewAccBalance('');
         setNewAccCurrency('AUD');
@@ -242,6 +254,33 @@ export default function AccountsClient({
     });
   };
 
+  const isEditDirty = useMemo(() => {
+    if (!editingAccount) return false;
+    return (
+      editName !== editingAccount.name ||
+      editType !== editingAccount.type ||
+      editBalance !== Math.abs(editingAccount.startingBalance).toString() ||
+      editCurrency !== editingAccount.currency
+    );
+  }, [editingAccount, editName, editType, editBalance, editCurrency]);
+
+  const handleCancelEdit = () => {
+    if (isEditDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      setEditingAccount(null);
+    }
+  };
+
+  const handleDiscardConfirm = () => {
+    setShowDiscardConfirm(false);
+    setEditingAccount(null);
+  };
+
+  const handleDiscardCancel = () => {
+    setShowDiscardConfirm(false);
+  };
+
   const SortIndicator = ({ field }: { field: typeof sortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
     return sortDirection === 'asc' ? <span className="text-primary ml-1">↑</span> : <span className="text-primary ml-1">↓</span>;
@@ -263,16 +302,47 @@ export default function AccountsClient({
       <div className="lg:col-span-2">
         <div className="card bg-base-100 shadow-xl border border-base-200">
           <div className="card-body">
-            <h2 className="card-title text-xl font-bold flex justify-between items-center text-primary">
+            <h2 className="card-title text-xl font-bold flex justify-between items-center text-primary flex-wrap gap-2">
               <span className="flex items-center gap-2">
                 <Wallet className="h-5 w-5" />
                 {t('managedAccounts')}
               </span>
+              
+              {accounts.length > 0 && (
+                <div className="flex items-center gap-2 w-full max-w-md justify-end">
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value as any)}
+                    className="select select-bordered select-sm bg-base-200/50 focus:bg-base-100 font-normal text-xs text-base-content"
+                    aria-label="Filter accounts by type"
+                  >
+                    <option value="ALL">{t('filterAllTypes')}</option>
+                    <option value="ASSET">{t('filterAsset')}</option>
+                    <option value="LIABILITY">{t('filterLiability')}</option>
+                  </select>
+                  <div className="relative w-full max-w-xs">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-base-content/40">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                    <input
+                      type="text"
+                      placeholder={tCommon('search') || 'Search accounts...'}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="input input-bordered input-sm w-full pl-9 bg-base-200/50 focus:bg-base-100 transition-colors text-base-content font-normal text-xs"
+                    />
+                  </div>
+                </div>
+              )}
             </h2>
-            
+
             {accounts.length === 0 ? (
               <div className="text-center py-8 text-base-content/50">
                 {t('noAccountsCreatedYet')}
+              </div>
+            ) : sortedAccounts.length === 0 ? (
+              <div className="text-center py-8 text-base-content/50">
+                {tCommon('noResults') || 'No results found'}
               </div>
             ) : (
               <div className="overflow-x-auto mt-4">
@@ -296,6 +366,15 @@ export default function AccountsClient({
                           aria-label="Sort by account type"
                         >
                           {t('type')} <SortIndicator field="type" />
+                        </button>
+                      </th>
+                      <th className="text-center">
+                        <button
+                          onClick={() => handleSort('transactions')}
+                          className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                          aria-label="Sort by transaction count"
+                        >
+                          {t('transactionsCountHeader')} <SortIndicator field="transactions" />
                         </button>
                       </th>
                       <th className="text-right">
@@ -326,20 +405,19 @@ export default function AccountsClient({
                                {acc.name}
                               <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
                             </div>
-                            <div className="text-xs text-base-content/50">
-                              <button
-                                onClick={() => handleSort('transactions')}
-                                className="hover:text-primary focus:outline-none cursor-pointer"
-                                aria-label={`${acc._count?.transactions || 0} transactions. Click to sort.`}
-                              >
-                                {t('transactionsCount', { count: acc._count?.transactions || 0 })}
-                              </button>
-                            </div>
                           </td>
                           <td>
                             <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-sm font-semibold`}>
                               {acc.type}
                             </span>
+                          </td>
+                          <td className="text-center font-semibold text-sm">
+                            <div>{acc._count?.transactions || 0}</div>
+                            <div className="text-[10px] text-base-content/40 font-normal mt-0.5">
+                              {lastTxDates[acc.id]
+                                ? t('lastActivity', { date: lastTxDates[acc.id] })
+                                : t('noActivity')}
+                            </div>
                           </td>
                           <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
                             {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -348,7 +426,7 @@ export default function AccountsClient({
                             <div className="flex justify-center gap-1">
                               <button
                                 onClick={() => handleOpenEdit(acc)}
-                                className="btn btn-ghost btn-xs text-info hover:bg-info/10"
+                                className="btn btn-ghost btn-sm text-info hover:bg-info/10"
                                 disabled={isPending}
                                 aria-label={`Edit ${acc.name}`}
                               >
@@ -356,7 +434,7 @@ export default function AccountsClient({
                               </button>
                               <button
                                 onClick={() => handleDeleteClick(acc)}
-                                className="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                                className="btn btn-ghost btn-sm text-error hover:bg-error/10"
                                 disabled={isPending}
                                 aria-label={`Delete ${acc.name}`}
                               >
@@ -477,6 +555,7 @@ export default function AccountsClient({
                   <option value="SGD">{tCommon('currencySgd')}</option>
                   <option value="NZD">{tCommon('currencyNzd')}</option>
                   <option value="CAD">{tCommon('currencyCad')}</option>
+                  <option value="CNY">{tCommon('currencyCny')}</option>
                 </select>
               </div>
 
@@ -577,6 +656,7 @@ export default function AccountsClient({
                   <option value="SGD">{tCommon('currencySgd')}</option>
                   <option value="NZD">{tCommon('currencyNzd')}</option>
                   <option value="CAD">{tCommon('currencyCad')}</option>
+                  <option value="CNY">{tCommon('currencyCny')}</option>
                 </select>
               </div>
 
@@ -609,7 +689,7 @@ export default function AccountsClient({
               <div className="modal-action">
                 <button
                   type="button"
-                  onClick={() => setEditingAccount(null)}
+                  onClick={handleCancelEdit}
                   className="btn btn-ghost"
                   disabled={isUpdating}
                 >
@@ -656,6 +736,37 @@ export default function AccountsClient({
                 disabled={deletingAccountId !== null}
               >
                 {deletingAccountId !== null ? t('deleting') : t('deleteAccountBtn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discard Changes Confirmation Modal */}
+      {showDiscardConfirm && (
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="discard-modal-title">
+          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
+            <h3 id="discard-modal-title" className="font-bold text-lg text-warning flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              {tCommon('confirm') || 'Confirm'}
+            </h3>
+            <p className="py-4 text-base-content/80 text-sm">
+              {tCommon('discardChangesConfirm')}
+            </p>
+            <div className="modal-action">
+              <button
+                type="button"
+                onClick={handleDiscardCancel}
+                className="btn btn-ghost btn-sm"
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardConfirm}
+                className="btn btn-warning btn-sm"
+              >
+                {tCommon('confirm')}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface AccountItem {
   id: string;
@@ -54,6 +55,7 @@ export default function AccountBalancesTable({
                   const displayBalance = calculatedBalance !== undefined
                     ? (acc.type === 'LIABILITY' ? -calculatedBalance : calculatedBalance)
                     : acc.startingBalance;
+                  const symbol = getCurrencySymbol(acc.currency);
 
                   return (
                     <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
@@ -72,7 +74,7 @@ export default function AccountBalancesTable({
                         </span>
                       </td>
                       <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                        ${displayBalance.toLocaleString(undefined, {
+                        {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(undefined, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}

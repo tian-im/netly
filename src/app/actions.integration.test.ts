@@ -29,6 +29,7 @@ vi.mock('@/lib/db', async () => {
 
 import {
   getAccounts,
+  getAccountsWithBalances,
   createAccount,
   deleteAccount,
   updateAccount,
@@ -128,6 +129,27 @@ describe('Account actions', () => {
       await seedTransaction(account.id);
       const result = await getAccounts();
       expect(result[0]._count.transactions).toBe(1);
+    });
+  });
+
+  describe('getAccountsWithBalances', () => {
+    it('returns empty lists when no accounts exist', async () => {
+      const result = await getAccountsWithBalances();
+      expect(result.accounts).toEqual([]);
+      expect(result.transactionSums).toEqual({});
+      expect(result.lastTxDates).toEqual({});
+    });
+
+    it('returns accounts with calculated balances', async () => {
+      const acc = await seedAccount({ name: 'Checking', type: 'ASSET', startingBalance: 1000 });
+      await seedTransaction(acc.id, { amount: -200 });
+      await seedTransaction(acc.id, { amount: 50 });
+
+      const result = await getAccountsWithBalances();
+      expect(result.accounts).toHaveLength(1);
+      expect(result.accounts[0].name).toBe('Checking');
+      expect(result.transactionSums[acc.id]).toBe(-150);
+      expect(result.lastTxDates[acc.id]).toBe('2026-06-01');
     });
   });
 

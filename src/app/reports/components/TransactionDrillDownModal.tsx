@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { getTransactions } from '../../actions';
 import { Search, X } from 'lucide-react';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface TransactionDrillDownModalProps {
   isOpen: boolean;
@@ -44,15 +45,6 @@ export default function TransactionDrillDownModal({
   const tCommon = useTranslations('common');
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [isPending, startTransition] = useTransition();
-
-  const getCurrencySymbol = (cur: string) => {
-    switch (cur?.toUpperCase()) {
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'JPY': return '¥';
-      default: return '$';
-    }
-  };
 
   useEffect(() => {
     if (!isOpen) return;
