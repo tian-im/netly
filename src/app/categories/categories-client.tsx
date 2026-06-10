@@ -10,7 +10,7 @@ import {
   updateCategory,
 } from '../actions';
 import { translateError } from '@/lib/translateError';
-import { Tags, Settings, Plus, Pencil, AlertTriangle, ArrowUpDown, X } from 'lucide-react';
+import { Tags, Settings, Plus, Pencil, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
 
 interface Rule {
   id: string;
@@ -71,13 +71,15 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   // Action Pending States
-  const [isPending, startTransition] = useTransition();
-  const [isCreating, setIsCreating] = useState(false);
+  const [, startTransition] = useTransition();
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isCreatingRule, setIsCreatingRule] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
 
-  // Table Sorting State
+  // Table Filtering & Sorting State
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<'name' | 'type' | 'cashFlowType' | 'usage'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -98,12 +100,25 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     }
   };
 
-  // Memoized sorted categories
+  // Memoized filtered and sorted categories
   const sortedCategories = useMemo(() => {
-    const sorted = [...categories];
-    sorted.sort((a, b) => {
-      let valA: any = '';
-      let valB: any = '';
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = categories.filter((c) => {
+      if (!query) return true;
+      const matchesRule = c.rules?.some((rule) =>
+        rule.pattern.toLowerCase().includes(query)
+      );
+      return (
+        c.name.toLowerCase().includes(query) ||
+        c.type.toLowerCase().includes(query) ||
+        c.cashFlowType.toLowerCase().includes(query) ||
+        matchesRule
+      );
+    });
+
+    filtered.sort((a, b) => {
+      let valA: string | number = '';
+      let valB: string | number = '';
 
       if (sortField === 'name') {
         valA = a.name.toLowerCase();
@@ -123,8 +138,8 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-    return sorted;
-  }, [categories, sortField, sortDirection]);
+    return filtered;
+  }, [categories, searchQuery, sortField, sortDirection]);
 
   // ─── Category handlers ────────────────────────────────────────────────────
 
@@ -132,7 +147,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     e.preventDefault();
     if (!newCatName.trim()) return;
 
-    setIsCreating(true);
+    setIsCreatingCategory(true);
     startTransition(async () => {
       try {
         const created = await createCategory(newCatName, newCatType, newCatCFType);
@@ -155,7 +170,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       } catch (err: any) {
         showToast(tErr(translateError(err)), 'error');
       } finally {
-        setIsCreating(false);
+        setIsCreatingCategory(false);
       }
     });
   };
@@ -202,6 +217,20 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     });
   };
 
+  const handleCancelEdit = () => {
+    if (!editingCategory) return;
+    const isDirty =
+      editName !== editingCategory.name ||
+      editType !== editingCategory.type ||
+      editCFType !== editingCategory.cashFlowType;
+    if (isDirty) {
+      if (!window.confirm(tCommon('discardChangesConfirm'))) {
+        return;
+      }
+    }
+    setEditingCategory(null);
+  };
+
   const handleDeleteClick = (cat: Category) => {
     const isProtected = cat.name.toLowerCase() === 'transfer';
     if (isProtected) {
@@ -237,7 +266,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     e.preventDefault();
     if (!newRulePattern.trim() || !newRuleCatId) return;
 
-    setIsCreating(true);
+    setIsCreatingRule(true);
     startTransition(async () => {
       try {
         const rule = await createCategoryRule(newRulePattern, newRuleCatId);
@@ -257,7 +286,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       } catch (err: any) {
         showToast(tErr(translateError(err)), 'error');
       } finally {
-        setIsCreating(false);
+        setIsCreatingRule(false);
       }
     });
   };
@@ -300,9 +329,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const SortIndicator = ({ field }: { field: typeof sortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
     return sortDirection === 'asc' ? (
-      <span className="text-primary ml-1">↑</span>
+      <ArrowUp className="w-3.5 h-3.5 text-primary ml-1 inline-block" />
     ) : (
-      <span className="text-primary ml-1">↓</span>
+      <ArrowDown className="w-3.5 h-3.5 text-primary ml-1 inline-block" />
     );
   };
 
@@ -354,6 +383,28 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   <Tags className="h-5 w-5" /> {t('storedCategories')}
                 </h2>
 
+                {categories.length > 0 && (
+                  <div className="form-control w-full max-w-xs mt-2 mb-4 relative">
+                    <input
+                      type="text"
+                      placeholder={t('searchPlaceholder')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="input input-bordered input-sm w-full pr-8"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content focus:outline-none"
+                        aria-label="Clear search query"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {categories.length === 0 ? (
                   <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-4">
                     <Tags className="h-12 w-12 text-base-content/30" />
@@ -364,11 +415,15 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       </p>
                     </div>
                   </div>
+                ) : sortedCategories.length === 0 ? (
+                  <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-2">
+                    <p className="font-bold text-lg text-base-content/75">{tCommon('noResults')}</p>
+                  </div>
                 ) : (
-                  <div className="overflow-x-hidden w-full mt-4">
+                  <div className="max-h-[600px] overflow-y-auto overflow-x-hidden w-full mt-4 relative">
                     <table className="table w-full table-fixed">
                       <caption className="sr-only">List of transactions categories and actions</caption>
-                      <thead>
+                      <thead className="sticky top-0 bg-base-100 z-10 shadow-xs">
                         <tr className="border-b border-base-200">
                           <th className="w-[30%]">
                             <button
@@ -447,7 +502,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                   <button
                                     onClick={() => handleOpenEdit(cat)}
                                     className="btn btn-ghost btn-xs text-info hover:bg-info/10 px-1"
-                                    disabled={isPending || isCreating || isUpdating || deletingCategoryId !== null}
+                                    disabled={isUpdating || deletingCategoryId !== null}
                                     aria-label={`Edit ${cat.name}`}
                                   >
                                     {t('edit')}
@@ -455,7 +510,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                   <button
                                     onClick={() => handleDeleteClick(cat)}
                                     className="btn btn-ghost btn-xs text-error hover:bg-error/10 px-1"
-                                    disabled={isPending || isCreating || isUpdating || deletingCategoryId !== null || isTransfer}
+                                    disabled={isUpdating || deletingCategoryId !== null || isTransfer}
                                     aria-label={`Delete ${cat.name}`}
                                   >
                                     {isDeleting ? t('deleting') : t('delete')}
@@ -493,7 +548,8 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       onChange={(e) => setNewCatName(e.target.value)}
                       className="input input-bordered w-full"
                       required
-                      disabled={isCreating}
+                      disabled={isCreatingCategory}
+                      autoFocus
                     />
                   </div>
 
@@ -506,7 +562,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       value={newCatType}
                       onChange={(e) => setNewCatType(e.target.value)}
                       className="select select-bordered w-full"
-                      disabled={isCreating}
+                      disabled={isCreatingCategory}
                     >
                       <option value="EXPENSE">{t('expenseOption')}</option>
                       <option value="INCOME">{t('incomeOption')}</option>
@@ -523,7 +579,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       value={newCatCFType}
                       onChange={(e) => setNewCatCFType(e.target.value)}
                       className="select select-bordered w-full"
-                      disabled={isCreating}
+                      disabled={isCreatingCategory}
                     >
                       <option value="OPERATING">{t('operatingOption')}</option>
                       <option value="INVESTING">{t('investingOption')}</option>
@@ -534,9 +590,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   <button
                      type="submit"
                      className="btn btn-primary w-full mt-2"
-                     disabled={isCreating || !newCatName.trim()}
+                     disabled={isCreatingCategory || !newCatName.trim()}
                   >
-                    {isCreating ? t('creating') : t('addCategory')}
+                    {isCreatingCategory ? t('creating') : t('addCategory')}
                   </button>
                 </form>
               </div>
@@ -593,7 +649,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <button
                                 onClick={() => handleDeleteRuleClick(rule.id, cat.id, rule.pattern)}
                                 className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10 flex items-center justify-center"
-                                disabled={isPending || isCreating || deletingRuleId !== null}
+                                disabled={deletingRuleId !== null}
                                 title={t('delete')}
                                 aria-label={t('ruleDeleteWarning', { pattern: rule.pattern })}
                               >
@@ -634,8 +690,12 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       onChange={(e) => setNewRulePattern(e.target.value)}
                       className="input input-bordered input-sm"
                       required
-                      disabled={isCreating || categories.length === 0}
+                      disabled={isCreatingRule || categories.length === 0}
+                      autoFocus
                     />
+                    <label className="label py-0.5">
+                      <span className="label-text-alt text-base-content/50">{t('regexHint')}</span>
+                    </label>
                   </div>
 
                   <div className="form-control">
@@ -648,7 +708,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       onChange={(e) => setNewRuleCatId(e.target.value)}
                       className="select select-bordered select-sm"
                       required
-                      disabled={isCreating || categories.length === 0}
+                      disabled={isCreatingRule || categories.length === 0}
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -661,9 +721,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   <button
                     type="submit"
                     className="btn btn-primary btn-sm w-full mt-2"
-                    disabled={isCreating || !newRulePattern.trim() || categories.length === 0}
+                    disabled={isCreatingRule || !newRulePattern.trim() || categories.length === 0}
                   >
-                    {isCreating ? t('creating') : t('createRule')}
+                    {isCreatingRule ? t('creating') : t('createRule')}
                   </button>
                 </form>
               </div>
@@ -720,6 +780,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                   className="input input-bordered w-full"
                   required
                   disabled={isUpdating}
+                  autoFocus
                 />
               </div>
 
@@ -760,7 +821,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
               <div className="modal-action">
                 <button
                   type="button"
-                  onClick={() => setEditingCategory(null)}
+                  onClick={handleCancelEdit}
                   className="btn btn-ghost"
                   disabled={isUpdating}
                 >
@@ -853,12 +914,23 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
       {/* Toasts Notification Container */}
       <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
-        {toasts.map((t) => (
+        {toasts.map((toast) => (
           <div
-            key={t.id}
-            className={`alert ${t.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg border border-white/10`}
+            key={toast.id}
+            className={`alert ${toast.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg border border-white/10`}
           >
-            <span>{t.message}</span>
+            <div className="flex justify-between items-center w-full gap-2">
+              <span>{toast.message}</span>
+              <button
+                onClick={() => {
+                  setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+                }}
+                className="btn btn-ghost btn-circle btn-xs hover:bg-white/20 text-white flex items-center justify-center focus:outline-none"
+                aria-label="Dismiss notification"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         ))}
       </div>

@@ -181,6 +181,8 @@
     "merchantKeywordPlaceholder": "例如：Uber、Coles",
     "assignCategory": "分配分类",
     "createRule": "创建规则",
+    "searchPlaceholder": "搜索分类...",
+    "regexHint": "支持正则表达式，例如 ^Netflix.*Subscription$",
     "summary": "概要数据",
     "totalRules": "规则总数",
     "categoriesWithRules": "已有规则的分类",

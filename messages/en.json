@@ -181,6 +181,8 @@
     "merchantKeywordPlaceholder": "e.g. Uber, Coles",
     "assignCategory": "Assign Category",
     "createRule": "Create Rule",
+    "searchPlaceholder": "Search categories...",
+    "regexHint": "Supports regex patterns, e.g. ^Netflix.*Subscription$",
     "summary": "Summary",
     "totalRules": "Total rules",
     "categoriesWithRules": "Categories with rules",
