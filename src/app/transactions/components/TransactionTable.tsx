@@ -4,11 +4,16 @@ import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { Transaction, Category, SortConfig } from '../types';
+import Pagination from './Pagination';
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
   categories: Category[];
   isLoading: boolean;
+  updatingTxId: string | null;
   selectedIds: string[];
   sortConfig: SortConfig;
   onSort: (field: string) => void;
@@ -16,12 +21,17 @@ interface TransactionTableProps {
   onToggleSelectAll: () => void;
   onCategoryChange: (transaction: Transaction, categoryId: string) => void;
   onRowClick: (transaction: Transaction) => void;
+  onPageChange: (page: number) => void;
 }
 
 export default function TransactionTable({
   transactions,
+  totalCount,
+  currentPage,
+  pageSize,
   categories,
   isLoading,
+  updatingTxId,
   selectedIds,
   sortConfig,
   onSort,
@@ -29,6 +39,7 @@ export default function TransactionTable({
   onToggleSelectAll,
   onCategoryChange,
   onRowClick,
+  onPageChange,
 }: TransactionTableProps) {
   const t = useTranslations('transactions');
   const format = useFormatter();
@@ -102,7 +113,7 @@ export default function TransactionTable({
             </tr>
           </thead>
           <tbody>
-            {isLoading ? (
+            {isLoading && transactions.length === 0 ? (
               // Skeleton shimmer rows
               Array.from({ length: 5 }).map((_, idx) => (
                 <tr key={`skeleton-${idx}`} className="animate-pulse border-b border-base-200">
@@ -154,6 +165,7 @@ export default function TransactionTable({
                   month: '2-digit',
                   day: '2-digit',
                 });
+                const isUpdatingThisRow = updatingTxId === tx.id;
 
                 return (
                   <tr
@@ -163,7 +175,7 @@ export default function TransactionTable({
                       isSelected ? 'bg-primary/5 hover:bg-primary/10' : ''
                     } ${
                       !tx.isReviewed ? 'border-l-4 border-l-warning' : ''
-                    }`}
+                    } ${isUpdatingThisRow ? 'opacity-70' : ''}`}
                   >
                     {/* Checkbox column */}
                     <td
@@ -175,6 +187,7 @@ export default function TransactionTable({
                         className="checkbox checkbox-sm checkbox-primary"
                         checked={isSelected}
                         onChange={() => onToggleSelect(tx.id)}
+                        disabled={isUpdatingThisRow}
                         aria-label={`Select transaction with payee ${tx.payee}`}
                       />
                     </td>
@@ -203,22 +216,27 @@ export default function TransactionTable({
 
                     {/* Category Selector */}
                     <td onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={tx.categoryId || ''}
-                        onChange={(e) => onCategoryChange(tx, e.target.value)}
-                        className={`select select-bordered select-xs w-full font-semibold ${
-                          isUncategorized ? 'select-warning text-warning-content' : ''
-                        }`}
-                        disabled={isLoading}
-                        aria-label={`Change category for transaction with payee ${tx.payee}`}
-                      >
-                        <option value="">{t('table.uncategorized')}</option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.type})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-1.5 w-full">
+                        <select
+                          value={tx.categoryId || ''}
+                          onChange={(e) => onCategoryChange(tx, e.target.value)}
+                          className={`select select-bordered select-xs w-full font-semibold ${
+                            isUncategorized ? 'select-warning text-warning-content' : ''
+                          }`}
+                          disabled={isLoading || isUpdatingThisRow}
+                          aria-label={`Change category for transaction with payee ${tx.payee}`}
+                        >
+                          <option value="">{t('table.uncategorized')}</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} ({c.type})
+                            </option>
+                          ))}
+                        </select>
+                        {isUpdatingThisRow && (
+                          <span className="loading loading-spinner loading-xs text-primary shrink-0" />
+                        )}
+                      </div>
                     </td>
 
                     {/* Amount */}
@@ -236,6 +254,14 @@ export default function TransactionTable({
           </tbody>
         </table>
       </div>
+
+      {/* Embedded Pagination Card Footer */}
+      <Pagination
+        totalCount={totalCount}
+        pageSize={pageSize}
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

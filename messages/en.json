@@ -267,6 +267,7 @@
   "transactions": {
     "pageTitle": "Transaction Ledger",
     "pageDesc": "Review transactions, categorize them, and define match rules to automate future statements.",
+    "exportCsv": "Export CSV",
     "transactionsCount": "{count} transaction{count, plural, one {} other {s}}",
     "noTransactions": "No transactions found matching the filters. Import a bank CSV to get started.",
     "uncategorizedAlert": "Uncategorized transactions pending!",
@@ -303,7 +304,10 @@
       "threeMonths": "Trailing 3 Months",
       "sixMonths": "Trailing 6 Months",
       "twelveMonths": "Trailing 12 Months",
-      "ytd": "Year to Date (YTD)"
+      "ytd": "Year to Date (YTD)",
+      "allStatus": "All Statuses",
+      "reviewed": "Reviewed Only",
+      "needsReview": "Needs Review Only"
     },
     "table": {
       "date": "Date",

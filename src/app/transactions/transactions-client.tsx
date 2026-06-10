@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { getTransactions, getAccounts, getCategories, updateTransactionCategory } from '../actions';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { updateTransactionCategory, bulkUpdateTransactionsCategory, exportAllTransactions } from '../actions';
 import { translateError } from '@/lib/translateError';
+import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
 import { Account, Category, Transaction, SortConfig } from './types';
 import FilterBar from './components/FilterBar';
 import TransactionTable from './components/TransactionTable';
-import Pagination from './components/Pagination';
 import RulePromptModal from './components/RulePromptModal';
 import TransactionDetailDrawer from './components/TransactionDetailDrawer';
 import BulkActionPanel from './components/BulkActionPanel';
+import { Upload } from 'lucide-react';
 
 interface Toast {
   id: string;
@@ -20,43 +22,25 @@ interface Toast {
 
 interface TransactionsClientProps {
   initialTransactions: Transaction[];
+  initialTotalCount: number;
   initialAccounts: Account[];
   initialCategories: Category[];
 }
 
 export default function TransactionsClient({
   initialTransactions,
+  initialTotalCount,
   initialAccounts,
   initialCategories,
 }: TransactionsClientProps) {
   const t = useTranslations('transactions');
   const tCommon = useTranslations('common');
   const tErr = useTranslations('errors');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
-  const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const tSettings = useTranslations('settings');
 
-  // Unified query parameters to avoid double-fetching
-  const [query, setQuery] = useState({
-    accountId: '',
-    categoryId: '',
-    searchTerm: '',
-    page: 1,
-    pageSize: 25,
-  });
-
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    sortBy: 'date',
-    sortOrder: 'desc',
-  });
-
-  // Bulk selection state
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  // Selected transaction detail view drawer state
-  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Preference for auto-creating rules: 'ask' | 'always' | 'never'
   const [ruleMode, setRuleMode] = useState<'ask' | 'always' | 'never'>('ask');
@@ -66,70 +50,90 @@ export default function TransactionsClient({
   const [promptTx, setPromptTx] = useState<Transaction | null>(null);
   const [promptCatId, setPromptCatId] = useState('');
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Selected transaction detail view drawer state
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+
+  // Per-row updating status
+  const [updatingTxId, setUpdatingTxId] = useState<string | null>(null);
+
   // Toast notifications state
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
   const [isPending, startTransition] = useTransition();
+
+  // Read URL search params
+  const accountId = searchParams.get('accountId') || '';
+  const categoryId = searchParams.get('categoryId') || '';
+  const searchTerm = searchParams.get('searchTerm') || '';
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const pageSize = Math.max(1, Number(searchParams.get('pageSize')) || 25);
+  const sortBy = searchParams.get('sortBy') || 'date';
+  const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+  const dateRange = searchParams.get('dateRange') || '';
+  const isReviewed = searchParams.get('isReviewed') || 'all';
+
+  const query = {
+    accountId,
+    categoryId,
+    searchTerm,
+    page,
+    pageSize,
+    dateRange,
+    isReviewed,
+  };
+
+  const sortConfig: SortConfig = {
+    sortBy,
+    sortOrder,
+  };
+
+  // Find currently selected transaction in newly fetched list to keep details updated
+  const activeTx = selectedTx ? (initialTransactions.find(t => t.id === selectedTx.id) || selectedTx) : null;
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
+      timeoutIdsRef.current = timeoutIdsRef.current.filter(t => t !== timer);
     }, 4000);
+    timeoutIdsRef.current.push(timer);
   };
 
-  const fetchTransactions = async () => {
-    setIsLoading(true);
-    try {
-      const result = await getTransactions({
-        accountId: query.accountId || undefined,
-        categoryId: query.categoryId || undefined,
-        searchTerm: query.searchTerm || undefined,
-        page: query.page,
-        pageSize: query.pageSize,
-        sortBy: sortConfig.sortBy,
-        sortOrder: sortConfig.sortOrder,
-      });
-      setTransactions(result.transactions);
-      setTotalCount(result.totalCount);
-    } catch (err: any) {
-      showToast(tErr(translateError(err)), 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial load
+  // Initial load preferences
   useEffect(() => {
-    // Read localStorage preferences
     const saved = localStorage.getItem('netly_rule_mode');
     if (saved === 'always' || saved === 'never' || saved === 'ask') {
       setRuleMode(saved);
     }
   }, []);
 
-  // Fetch transactions exactly once when any query parameter or sorting changes
+  // Cleanup timers on unmount
   useEffect(() => {
-    fetchTransactions();
-  }, [
-    query.accountId,
-    query.categoryId,
-    query.searchTerm,
-    query.page,
-    query.pageSize,
-    sortConfig.sortBy,
-    sortConfig.sortOrder,
-  ]);
+    return () => {
+      timeoutIdsRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const handleFilterChange = (updates: Partial<typeof query>) => {
-    setQuery((prev) => {
-      const newQuery = { ...prev, ...updates };
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, val]) => {
+        if (val === undefined || val === '') {
+          params.delete(key);
+        } else {
+          params.set(key, String(val));
+        }
+      });
       // Always reset page to 1 when a filter criteria (other than page itself) changes
       if (!updates.hasOwnProperty('page')) {
-        newQuery.page = 1;
+        params.set('page', '1');
       }
-      return newQuery;
+      router.push(`${pathname}?${params.toString()}`);
     });
   };
 
@@ -148,17 +152,12 @@ export default function TransactionsClient({
   };
 
   const handleSort = (field: string) => {
-    setSortConfig((prev) => {
-      if (prev.sortBy === field) {
-        return {
-          sortBy: field,
-          sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc',
-        };
-      }
-      return {
-        sortBy: field,
-        sortOrder: 'asc',
-      };
+    const newSortOrder = (sortBy === field && sortOrder === 'asc') ? 'desc' : 'asc';
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('sortBy', field);
+      params.set('sortOrder', newSortOrder);
+      router.push(`${pathname}?${params.toString()}`);
     });
   };
 
@@ -171,15 +170,14 @@ export default function TransactionsClient({
 
       startTransition(async () => {
         try {
+          setUpdatingTxId(tx.id);
           await updateTransactionCategory(tx.id, null);
           showToast(t('markedUncategorized'));
-          // Sync detail view drawer if open
-          if (selectedTx?.id === tx.id) {
-            setSelectedTx((prev) => (prev ? { ...prev, categoryId: null, category: null, isReviewed: false } : null));
-          }
-          await fetchTransactions();
+          router.refresh();
         } catch (err: any) {
           showToast(tErr(translateError(err)), 'error');
+        } finally {
+          setUpdatingTxId(null);
         }
       });
       return;
@@ -188,31 +186,30 @@ export default function TransactionsClient({
     if (ruleMode === 'always') {
       startTransition(async () => {
         try {
-          const updated = await updateTransactionCategory(tx.id, catId, true);
+          setUpdatingTxId(tx.id);
+          await updateTransactionCategory(tx.id, catId, true);
           showToast(t('assignedRule'));
-          if (selectedTx?.id === tx.id) {
-            setSelectedTx(updated);
-          }
-          await fetchTransactions();
+          router.refresh();
         } catch (err: any) {
           showToast(tErr(translateError(err)), 'error');
+        } finally {
+          setUpdatingTxId(null);
         }
       });
     } else if (ruleMode === 'never') {
       startTransition(async () => {
         try {
-          const updated = await updateTransactionCategory(tx.id, catId, false);
+          setUpdatingTxId(tx.id);
+          await updateTransactionCategory(tx.id, catId, false);
           showToast(t('assignedCategory'));
-          if (selectedTx?.id === tx.id) {
-            setSelectedTx(updated);
-          }
-          await fetchTransactions();
+          router.refresh();
         } catch (err: any) {
           showToast(tErr(translateError(err)), 'error');
+        } finally {
+          setUpdatingTxId(null);
         }
       });
     } else {
-      // ruleMode === 'ask'
       setPromptTx(tx);
       setPromptCatId(catId);
       setShowRulePrompt(true);
@@ -223,25 +220,24 @@ export default function TransactionsClient({
     if (!promptTx) return;
     startTransition(async () => {
       try {
-        const updated = await updateTransactionCategory(promptTx.id, promptCatId, createRule);
+        setUpdatingTxId(promptTx.id);
+        await updateTransactionCategory(promptTx.id, promptCatId, createRule);
         showToast(
           createRule
-            ? t('detail.ruleCreateSuccess', { pattern: promptTx.payee, category: categories.find(c => c.id === promptCatId)?.name || '' })
+            ? t('detail.ruleCreateSuccess', { pattern: promptTx.payee, category: initialCategories.find(c => c.id === promptCatId)?.name || '' })
             : t('detail.updateSuccess')
         );
         setShowRulePrompt(false);
         setPromptTx(null);
-        if (selectedTx?.id === promptTx.id) {
-          setSelectedTx(updated);
-        }
-        await fetchTransactions();
+        router.refresh();
       } catch (err: any) {
         showToast(tErr(translateError(err)), 'error');
+      } finally {
+        setUpdatingTxId(null);
       }
     });
   };
 
-  // Bulk actions
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -249,7 +245,7 @@ export default function TransactionsClient({
   };
 
   const handleToggleSelectAll = () => {
-    const allOnPageIds = transactions.map((t) => t.id);
+    const allOnPageIds = initialTransactions.map((t) => t.id);
     const areAllSelected = allOnPageIds.every((id) => selectedIds.includes(id));
 
     if (areAllSelected) {
@@ -278,30 +274,29 @@ export default function TransactionsClient({
 
     startTransition(async () => {
       try {
-        await Promise.all(
-          selectedIds.map((id) => updateTransactionCategory(id, targetCatId, false))
-        );
+        await bulkUpdateTransactionsCategory(selectedIds, targetCatId);
         showToast(t('bulkApplySuccess', { count: selectedIds.length }));
         setSelectedIds([]);
-        // Sync drawer if open and was modified
-        if (selectedTx && selectedIds.includes(selectedTx.id)) {
-          const matchedCategory = categories.find((c) => c.id === targetCatId);
-          setSelectedTx((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  categoryId: targetCatId,
-                  category: matchedCategory || null,
-                  isReviewed: targetCatId !== null,
-                }
-              : null
-          );
-        }
-        await fetchTransactions();
+        router.refresh();
       } catch (err: any) {
         showToast(tErr(translateError(err)), 'error');
       }
     });
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const txs = await exportAllTransactions();
+      if (txs.length === 0) {
+        showToast(tCommon('noResults'), 'error');
+        return;
+      }
+      const csvContent = generateLedgerCSV(txs as any);
+      downloadCSV(csvContent, `financial_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+      showToast(tSettings('exportSuccess'));
+    } catch (err: any) {
+      showToast(tSettings('exportFailed'), 'error');
+    }
   };
 
   return (
@@ -316,22 +311,32 @@ export default function TransactionsClient({
             {t('pageDesc')}
           </p>
         </div>
-        {/* Total count badge */}
-        <div className="shrink-0">
+        
+        {/* Actions header group */}
+        <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-between md:justify-end">
+          <button
+            onClick={handleExportCSV}
+            className="btn btn-outline btn-primary btn-sm gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            <span>{t('exportCsv')}</span>
+          </button>
           <span className="badge badge-neutral badge-lg font-mono font-bold py-3">
-            {t('transactionsCount', { count: totalCount })}
+            {t('transactionsCount', { count: initialTotalCount })}
           </span>
         </div>
       </div>
 
       {/* Filters Bar */}
       <FilterBar
-        accounts={accounts}
-        categories={categories}
+        accounts={initialAccounts}
+        categories={initialCategories}
         selectedAccountId={query.accountId}
         selectedCategoryId={query.categoryId}
         searchTerm={query.searchTerm}
         pageSize={query.pageSize}
+        dateRange={query.dateRange}
+        isReviewed={query.isReviewed}
         ruleMode={ruleMode}
         onFilterChange={handleFilterChange}
         onRuleModeChange={handleRuleModeChange}
@@ -339,9 +344,13 @@ export default function TransactionsClient({
 
       {/* Ledger Table */}
       <TransactionTable
-        transactions={transactions}
-        categories={categories}
-        isLoading={isLoading}
+        transactions={initialTransactions}
+        totalCount={initialTotalCount}
+        currentPage={query.page}
+        pageSize={query.pageSize}
+        categories={initialCategories}
+        isLoading={isPending}
+        updatingTxId={updatingTxId}
         selectedIds={selectedIds}
         sortConfig={sortConfig}
         onSort={handleSort}
@@ -349,14 +358,7 @@ export default function TransactionsClient({
         onToggleSelectAll={handleToggleSelectAll}
         onCategoryChange={handleCategoryChange}
         onRowClick={setSelectedTx}
-      />
-
-      {/* Pagination */}
-      <Pagination
-        totalCount={totalCount}
-        pageSize={query.pageSize}
-        currentPage={query.page}
-        onPageChange={(page) => handleFilterChange({ page })}
+        onPageChange={(p) => handleFilterChange({ page: p })}
       />
 
       {/* Automation Rule Prompt Modal */}
@@ -364,15 +366,15 @@ export default function TransactionsClient({
         isOpen={showRulePrompt}
         transaction={promptTx}
         categoryId={promptCatId}
-        categories={categories}
+        categories={initialCategories}
         isPending={isPending}
         onConfirm={executeCategorization}
       />
 
       {/* Transaction Detail View Drawer */}
       <TransactionDetailDrawer
-        transaction={selectedTx}
-        categories={categories}
+        transaction={activeTx}
+        categories={initialCategories}
         isPending={isPending}
         onClose={() => setSelectedTx(null)}
         onCategoryChange={handleCategoryChange}
@@ -381,7 +383,7 @@ export default function TransactionsClient({
       {/* Bulk Action floating controls */}
       <BulkActionPanel
         selectedCount={selectedIds.length}
-        categories={categories}
+        categories={initialCategories}
         isPending={isPending}
         onClearSelection={() => setSelectedIds([])}
         onBulkCategorize={handleBulkCategorize}

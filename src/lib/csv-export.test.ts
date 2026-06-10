@@ -122,6 +122,27 @@ describe('CSV Export Utility', () => {
 
       expect(csv).toBe(expectedLines.join('\n'));
     });
+
+    it('should handle accounts with missing createdAt date', () => {
+      const mockAccounts = [
+        {
+          id: 'acc_2',
+          name: 'Credit Card',
+          type: 'LIABILITY',
+          startingBalance: -500,
+          currency: 'AUD',
+          createdAt: null,
+        },
+      ];
+
+      const csv = generateAccountCSV(mockAccounts);
+      const expectedLines = [
+        'ID,Name,Type,Starting Balance,Currency,Created At',
+        '"acc_2","Credit Card","LIABILITY",-500,"AUD",""'
+      ];
+
+      expect(csv).toBe(expectedLines.join('\n'));
+    });
   });
 
   describe('downloadCSV', () => {

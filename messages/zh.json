@@ -267,6 +267,7 @@
   "transactions": {
     "pageTitle": "交易流水账目",
     "pageDesc": "审核交易明细、分类账目，并定义自动分类匹配规则。",
+    "exportCsv": "导出 CSV",
     "transactionsCount": "{count} 笔交易",
     "noTransactions": "没有找到符合过滤条件的交易。请导入银行 CSV 开始使用。",
     "uncategorizedAlert": "有未分类交易待处理！",
@@ -303,7 +304,10 @@
       "threeMonths": "最近 3 个月",
       "sixMonths": "最近 6 个月",
       "twelveMonths": "最近 12 个月",
-      "ytd": "今年以来 (YTD)"
+      "ytd": "今年以来 (YTD)",
+      "allStatus": "全部状态",
+      "reviewed": "仅已复核",
+      "needsReview": "仅待复核"
     },
     "table": {
       "date": "日期",

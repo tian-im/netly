@@ -47,6 +47,7 @@ import {
   vacuumDatabase,
   exportAllTransactions,
   exportAllAccounts,
+  bulkUpdateTransactionsCategory,
 } from '@/app/actions';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -713,6 +714,76 @@ describe('System settings and backup actions', () => {
       expect(accs).toHaveLength(2);
       expect(accs[0].name).toBe('Beta');
       expect(accs[1].name).toBe('Zeta');
+    });
+  });
+
+  describe('getTransactions with dateRange and isReviewed filters', () => {
+    it('filters transactions by review status', async () => {
+      const account = await seedAccount();
+      const tx1 = await db.transaction.create({
+        data: { date: new Date('2026-06-10'), payee: 'Payee 1', amount: -20, accountId: account.id, isReviewed: true }
+      });
+      const tx2 = await db.transaction.create({
+        data: { date: new Date('2026-06-09'), payee: 'Payee 2', amount: -10, accountId: account.id, isReviewed: false }
+      });
+
+      const reviewedResult = await getTransactions({ isReviewed: true });
+      expect(reviewedResult.transactions).toHaveLength(1);
+      expect(reviewedResult.transactions[0].id).toBe(tx1.id);
+
+      const unreviewedResult = await getTransactions({ isReviewed: false });
+      expect(unreviewedResult.transactions).toHaveLength(1);
+      expect(unreviewedResult.transactions[0].id).toBe(tx2.id);
+    });
+
+    it('filters transactions by dateRange (month / ytd)', async () => {
+      const account = await seedAccount();
+      const now = new Date();
+      
+      // Seed a transaction in the current month
+      const currentMonthTx = await db.transaction.create({
+        data: { date: new Date(now.getFullYear(), now.getMonth(), 5), payee: 'Current Month', amount: -5, accountId: account.id }
+      });
+
+      // Seed a transaction in the prior year
+      const lastYearTx = await db.transaction.create({
+        data: { date: new Date(now.getFullYear() - 1, 5, 15), payee: 'Last Year', amount: -15, accountId: account.id }
+      });
+
+      const monthResult = await getTransactions({ dateRange: 'month' });
+      const monthIds = monthResult.transactions.map(t => t.id);
+      expect(monthIds).toContain(currentMonthTx.id);
+      expect(monthIds).not.toContain(lastYearTx.id);
+
+      const ytdResult = await getTransactions({ dateRange: 'ytd' });
+      const ytdIds = ytdResult.transactions.map(t => t.id);
+      expect(ytdIds).toContain(currentMonthTx.id);
+      expect(ytdIds).not.toContain(lastYearTx.id);
+    });
+  });
+
+  describe('bulkUpdateTransactionsCategory', () => {
+    it('updates categories and review status for multiple transactions at once', async () => {
+      const account = await seedAccount();
+      const category = await db.category.create({
+        data: { name: 'Food', type: 'EXPENSE', cashFlowType: 'OPERATING' }
+      });
+      const tx1 = await db.transaction.create({
+        data: { date: new Date(), payee: 'Store A', amount: -20, accountId: account.id, isReviewed: false }
+      });
+      const tx2 = await db.transaction.create({
+        data: { date: new Date(), payee: 'Store B', amount: -10, accountId: account.id, isReviewed: false }
+      });
+
+      await bulkUpdateTransactionsCategory([tx1.id, tx2.id], category.id);
+
+      const updated1 = await db.transaction.findUnique({ where: { id: tx1.id } });
+      const updated2 = await db.transaction.findUnique({ where: { id: tx2.id } });
+
+      expect(updated1?.categoryId).toBe(category.id);
+      expect(updated1?.isReviewed).toBe(true);
+      expect(updated2?.categoryId).toBe(category.id);
+      expect(updated2?.isReviewed).toBe(true);
     });
   });
 });

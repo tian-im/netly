@@ -203,6 +203,8 @@ export async function getTransactions(
     pageSize?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    dateRange?: string;
+    isReviewed?: boolean;
   }
 ) {
   let accountId: string | undefined;
@@ -212,6 +214,8 @@ export async function getTransactions(
   let pageSize: number | undefined;
   let sortBy: string | undefined;
   let sortOrder: 'asc' | 'desc' | undefined;
+  let dateRange: string | undefined;
+  let isReviewed: boolean | undefined;
 
   if (typeof paramsOrAccountId === 'string') {
     accountId = paramsOrAccountId;
@@ -223,6 +227,8 @@ export async function getTransactions(
     pageSize = paramsOrAccountId.pageSize;
     sortBy = paramsOrAccountId.sortBy;
     sortOrder = paramsOrAccountId.sortOrder;
+    dateRange = paramsOrAccountId.dateRange;
+    isReviewed = paramsOrAccountId.isReviewed;
   }
 
   const where: any = {};
@@ -236,12 +242,41 @@ export async function getTransactions(
       where.categoryId = categoryId;
     }
   }
+  if (isReviewed !== undefined) {
+    where.isReviewed = isReviewed;
+  }
   if (searchTerm) {
     const cleanSearch = searchTerm.trim().toLowerCase();
     where.OR = [
       { payee: { contains: cleanSearch } },
       { description: { contains: cleanSearch } }
     ];
+  }
+  if (dateRange && dateRange !== 'allPeriods') {
+    const now = new Date();
+    let startDate: Date | undefined;
+    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    if (dateRange === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      endDate.setMonth(now.getMonth() + 1);
+      endDate.setDate(0);
+    } else if (dateRange === 'threeMonths') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate(), 0, 0, 0, 0);
+    } else if (dateRange === 'sixMonths') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate(), 0, 0, 0, 0);
+    } else if (dateRange === 'twelveMonths') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate(), 0, 0, 0, 0);
+    } else if (dateRange === 'ytd') {
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    }
+
+    if (startDate) {
+      where.date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
   }
 
   const totalCount = await db.transaction.count({ where });
@@ -309,6 +344,24 @@ export async function updateTransactionCategory(
       await createCategoryRule(pattern, categoryId);
     }
   }
+
+  revalidatePath('/transactions');
+  revalidatePath('/reports');
+  revalidatePath('/');
+  return updated;
+}
+
+export async function bulkUpdateTransactionsCategory(
+  transactionIds: string[],
+  categoryId: string | null
+) {
+  const updated = await db.transaction.updateMany({
+    where: { id: { in: transactionIds } },
+    data: {
+      categoryId,
+      isReviewed: categoryId !== null
+    }
+  });
 
   revalidatePath('/transactions');
   revalidatePath('/reports');
