@@ -69,6 +69,18 @@ DashboardClient
 - **Local State**: Currency selector, period selector, form inputs
 - **No global state**: No Redux/Zustand — server is source of truth
 
+## Navigation Conventions
+
+All internal links that require query parameters (period, account filter, category filter) **must** use the helper functions in `src/lib/links.ts` rather than hardcoding paths:
+
+| Helper | Produces | Used For |
+|--------|----------|----------|
+| `buildReportsUrl(period, now, currency?)` | `/reports?start=...&end=...&cur=...` | Stat cards, "Detailed Statements" links |
+| `buildAccountTransactionsUrl(accountId)` | `/transactions?accountId=...` | Account table rows |
+| `buildCategoryTransactionsUrl(categoryId)` | `/transactions?categoryId=...` | Income/expense breakdown lists |
+
+This ensures every link carries the correct query params and they stay consistent if param names change.
+
 ## i18n
 
 - **Library**: next-intl with `NextIntlClientProvider`

@@ -38,6 +38,7 @@ netly/
 │   │   ├── reports.ts     — BS/IS/CFS generators
 │   │   ├── rules.ts       — Auto-categorization pattern matcher
 │   │   ├── currencies.ts  — Symbols + compact format
+│   │   ├── links.ts       — URL builders for reports/transactions pages
 │   │   ├── auth-session.ts— HMAC session cookies
 │   │   ├── challenge-store.ts / webauthn.ts — PassKey auth
 │   │   └── translateError.ts
@@ -74,6 +75,11 @@ lib/reports.ts (BS/IS/CFS) ← used by:
 lib/csv.ts + lib/rules.ts ← used by:
     ├── app/api/import/route.ts
     └── mcp-server/tools/transactions.ts
+
+lib/links.ts (URL builders) ← used by:
+    ├── app/dashboard-client.tsx
+    ├── app/dashboard-components/CashFlowMetrics.tsx
+    └── app/dashboard-components/AccountBalancesTable.tsx
 ```
 
 ## Key Module Responsibilities
@@ -82,6 +88,7 @@ lib/csv.ts + lib/rules.ts ← used by:
 |--------|---------|-------------|
 | `lib/csv.ts` | `parseCSV()`, `cleanAmount()`, `parseBankDate()` | API route, MCP tools |
 | `lib/reports.ts` | `generateBalanceSheet`, `IncomeStatement`, `CashFlowStatement` | Dashboard, MCP |
+| `lib/links.ts` | `buildReportsUrl()`, `buildAccountTransactionsUrl()`, `buildCategoryTransactionsUrl()` | Navigation across all pages — **always use instead of hardcoding paths with query params** |
 | `lib/rules.ts` | `matchRule()` | CSV import, MCP tools |
 | `lib/auth-session.ts` | `createSessionCookie()`, `verifySessionCookie()` | Login/setup pages |
 | `mcp-server/tools/transactions.ts` | `import_csv`, `list_transactions`, `categorize_uncategorized` | AI agents |
