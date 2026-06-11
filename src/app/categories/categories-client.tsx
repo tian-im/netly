@@ -420,12 +420,12 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                     <p className="font-bold text-lg text-base-content/75">{tCommon('noResults')}</p>
                   </div>
                 ) : (
-                  <div className="max-h-[600px] overflow-y-auto overflow-x-hidden w-full mt-4 relative">
-                    <table className="table w-full table-fixed">
+                  <div className="max-h-[600px] overflow-y-auto overflow-x-auto w-full mt-4 relative">
+                    <table className="table w-full">
                       <caption className="sr-only">List of transactions categories and actions</caption>
                       <thead className="sticky top-0 bg-base-100 z-10 shadow-xs">
                         <tr className="border-b border-base-200">
-                          <th className="w-[30%]">
+                          <th>
                             <button
                               onClick={() => handleSort('name')}
                               className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
@@ -434,7 +434,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <span className="truncate">{t('categoryName')}</span> <SortIndicator field="name" />
                             </button>
                           </th>
-                          <th className="w-[18%]">
+                          <th>
                             <button
                               onClick={() => handleSort('type')}
                               className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
@@ -443,7 +443,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <span>{t('type')}</span> <SortIndicator field="type" />
                             </button>
                           </th>
-                          <th className="w-[27%]">
+                          <th>
                             <button
                               onClick={() => handleSort('cashFlowType')}
                               className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
@@ -452,7 +452,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <span className="truncate">{t('cashFlow')}</span> <SortIndicator field="cashFlowType" />
                             </button>
                           </th>
-                          <th className="w-[12%] text-center">
+                          <th className="text-center">
                             <button
                               onClick={() => handleSort('usage')}
                               className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
@@ -461,7 +461,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                               <span>{t('usage')}</span> <SortIndicator field="usage" />
                             </button>
                           </th>
-                          <th className="w-[13%] text-center">{t('actions')}</th>
+                          <th className="text-center">{t('actions')}</th>
                         </tr>
                       </thead>
                       <tbody>

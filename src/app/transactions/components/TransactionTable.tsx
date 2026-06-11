@@ -92,10 +92,10 @@ export default function TransactionTable({
   return (
     <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="table w-full table-zebra table-md">
+        <table className="table table-zebra table-md min-w-[800px]">
           <thead>
             <tr className="border-b border-base-200 bg-base-200/50">
-              <th className="w-12 text-center">
+              <th className="text-center">
                 <input
                   type="checkbox"
                   className="checkbox checkbox-sm checkbox-primary"
@@ -105,11 +105,11 @@ export default function TransactionTable({
                   aria-label="Select all transactions on this page"
                 />
               </th>
-              <SortHeader field="date" label={t('table.date')} className="w-28" />
-              <SortHeader field="account" label={t('table.account')} className="w-36" />
+              <SortHeader field="date" label={t('table.date')} />
+              <SortHeader field="account" label={t('table.account')} />
               <SortHeader field="payee" label={t('table.payee')} />
-              <SortHeader field="category" label={t('table.category')} className="w-48" />
-              <SortHeader field="amount" label={t('table.amount')} className="text-right w-40" />
+              <SortHeader field="category" label={t('table.category')} />
+              <SortHeader field="amount" label={t('table.amount')} className="text-right" />
             </tr>
           </thead>
           <tbody>
