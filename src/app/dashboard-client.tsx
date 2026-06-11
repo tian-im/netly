@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
+import { buildReportsUrl, buildCategoryTransactionsUrl } from '@/lib/links';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -37,6 +38,7 @@ type PeriodType = 'current' | '3m' | '6m' | 'ytd' | '12m';
 
 interface DashboardClientProps {
   accounts: Account[];
+  categories: { id: string; name: string }[];
   uncategorizedCount: number;
   uncategorizedByAccount?: Record<string, number>;
   period: PeriodType;
@@ -78,6 +80,7 @@ interface DashboardClientProps {
 
 export default function DashboardClient({
   accounts,
+  categories = [],
   uncategorizedCount,
   uncategorizedByAccount = {},
   period,
@@ -271,6 +274,13 @@ export default function DashboardClient({
     return isBurn ? liquidAssets / Math.abs(averageMonthlyCashFlow) : null;
   }, [isBurn, liquidAssets, averageMonthlyCashFlow]);
 
+  // Category name → ID lookup for building drill-down links
+  const categoryIdMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    categories.forEach((c) => { map[c.name] = c.id; });
+    return map;
+  }, [categories]);
+
   // Sort categories descending
   const sortedExpenses = useMemo(() => {
     return [...visualIS.expenses].sort((a, b) => b.amount - a.amount);
@@ -445,7 +455,7 @@ export default function DashboardClient({
         <StatCard
           title={t('netWorth')}
           icon={<DollarSign className="h-5 w-5" />}
-          href="/reports"
+          href={buildReportsUrl(period, now, currentVisualCurrency)}
           value={
             <span className={nwValues.currentNW >= 0 ? 'text-success' : 'text-error'}>
               {nwValues.currentNW >= 0 ? '' : '-'}{symbol}{Math.abs(nwValues.currentNW).toLocaleString(locale, {
@@ -472,7 +482,7 @@ export default function DashboardClient({
         <StatCard
           title={t('netIncome', { period: periodTitle })}
           icon={<Activity className="h-5 w-5" />}
-          href="/reports"
+          href={buildReportsUrl(period, now, currentVisualCurrency)}
           value={
             <span className={netIncomeValues.periodIncome >= 0 ? 'text-success' : 'text-error'}>
               {netIncomeValues.periodIncome >= 0 ? '' : '-'}{symbol}{Math.abs(netIncomeValues.periodIncome).toLocaleString(locale, {
@@ -499,7 +509,7 @@ export default function DashboardClient({
         <StatCard
           title={t('savingsRate')}
           icon={<PiggyBank className="h-5 w-5" />}
-          href="/reports"
+          href={buildReportsUrl(period, now, currentVisualCurrency)}
           value={
             <span className={savingsRate >= 0 ? 'text-success' : 'text-error'}>
               {savingsRate.toFixed(1)}%
@@ -518,7 +528,7 @@ export default function DashboardClient({
         <StatCard
           title={t('cashRunway')}
           icon={<AlertTriangle className={`h-5 w-5 ${isBurn ? 'text-error animate-pulse' : 'text-success'}`} />}
-          href="/reports"
+          href={buildReportsUrl(period, now, currentVisualCurrency)}
           value={
             isBurn && runwayMonths !== null ? (
               <span className="text-error">
@@ -624,7 +634,7 @@ export default function DashboardClient({
               titleColorClass="text-success"
               items={sortedIncome.map((item) => ({
                 ...item,
-                href: `/transactions?category=${encodeURIComponent(item.name)}`,
+                href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
               }))}
               totalAmount={visualIS.totalIncome}
               emptyMessage={t('noIncome')}
@@ -641,7 +651,7 @@ export default function DashboardClient({
               titleColorClass="text-error"
               items={sortedExpenses.map((item) => ({
                 ...item,
-                href: `/transactions?category=${encodeURIComponent(item.name)}`,
+                href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
               }))}
               totalAmount={visualIS.totalExpenses}
               emptyMessage={t('noExpense')}

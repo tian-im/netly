@@ -8,6 +8,7 @@ import { Wallet, ArrowUpDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
+import { buildAccountTransactionsUrl } from '@/lib/links';
 
 interface AccountItem {
   id: string;
@@ -120,7 +121,7 @@ export default function AccountBalancesTable({
                     >
                       <td>
                         <Link
-                          href={`/transactions?account=${acc.id}`}
+                          href={buildAccountTransactionsUrl(acc.id)}
                           className="block hover:opacity-80 transition-opacity"
                           aria-label={`${acc.name} — ${displayBalance >= 0 ? '' : '-'}${symbol}${Math.abs(displayBalance).toLocaleString(locale, { minimumFractionDigits: 2 })}`}
                         >
@@ -145,7 +146,7 @@ export default function AccountBalancesTable({
                       </td>
                       <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
                         <Link
-                          href={`/transactions?account=${acc.id}`}
+                          href={buildAccountTransactionsUrl(acc.id)}
                           className="block hover:opacity-80 transition-opacity"
                         >
                           {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(locale, {

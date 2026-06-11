@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { getAccounts } from './actions';
+import { getAccounts, getCategories } from './actions';
 import DashboardClient from './dashboard-client';
 import {
   generateBalanceSheet,
@@ -21,6 +21,7 @@ interface PageProps {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const period = (searchParams.period || 'current') as PeriodType;
   const accountsList = await getAccounts();
+  const categoriesList = await getCategories();
   const uncategorizedCount = await db.transaction.count({ where: { categoryId: null } });
 
   // Per-account uncategorized transaction counts for AccountBalancesTable badge
@@ -161,6 +162,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   return (
     <DashboardClient
       accounts={mappedAccounts}
+      categories={categoriesList.map((c) => ({ id: c.id, name: c.name }))}
       uncategorizedCount={uncategorizedCount}
       uncategorizedByAccount={uncategorizedByAccount}
       period={period}

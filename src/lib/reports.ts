@@ -114,8 +114,8 @@ export function generateIncomeStatement(
   const totals: Record<
     string,
     {
-      income: { name: string; amount: number }[];
-      expenses: { name: string; amount: number }[];
+      income: { name: string; amount: number; categoryId: string }[];
+      expenses: { name: string; amount: number; categoryId: string }[];
       totalIncome: number;
       totalExpenses: number;
       netIncome: number;
@@ -133,7 +133,8 @@ export function generateIncomeStatement(
   });
 
   // Group by currency, then by category name (excluding TRANSFER)
-  const currencyGrouped: Record<string, Record<string, { type: string; sum: number }>> = {};
+  // Track categoryId alongside sum for building drill-down links
+  const currencyGrouped: Record<string, Record<string, { type: string; sum: number; categoryId: string }>> = {};
   
   for (const tx of rangeTransactions) {
     const currency = tx.currency || 'AUD';
@@ -145,20 +146,20 @@ export function generateIncomeStatement(
     }
 
     if (!currencyGrouped[currency][category.name]) {
-      currencyGrouped[currency][category.name] = { type: category.type, sum: 0 };
+      currencyGrouped[currency][category.name] = { type: category.type, sum: 0, categoryId: category.id };
     }
     currencyGrouped[currency][category.name].sum += tx.amount;
   }
 
   for (const [currency, categorySums] of Object.entries(currencyGrouped)) {
-    const income: { name: string; amount: number }[] = [];
-    const expenses: { name: string; amount: number }[] = [];
+    const income: { name: string; amount: number; categoryId: string }[] = [];
+    const expenses: { name: string; amount: number; categoryId: string }[] = [];
 
     for (const [name, data] of Object.entries(categorySums)) {
       if (data.type === 'INCOME') {
-        income.push({ name, amount: data.sum });
+        income.push({ name, amount: data.sum, categoryId: data.categoryId });
       } else if (data.type === 'EXPENSE') {
-        expenses.push({ name, amount: -data.sum }); // reported as positive spending
+        expenses.push({ name, amount: -data.sum, categoryId: data.categoryId }); // reported as positive spending
       }
     }
 
