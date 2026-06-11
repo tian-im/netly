@@ -22,9 +22,10 @@ export default function RootLayout({
 }) {
   const cookieStore = cookies();
   const locale = cookieStore.get('netly_locale')?.value || 'en';
+  const theme = cookieStore.get('netly_theme')?.value || 'night';
 
   return (
-    <html lang={locale} data-theme="night" className="h-full" suppressHydrationWarning>
+    <html lang={locale} data-theme={theme} className="h-full" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -32,7 +33,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="h-full bg-base-300">
-        <LayoutClient ssrLocale={locale}>
+        <LayoutClient ssrLocale={locale} ssrTheme={theme}>
           {children}
         </LayoutClient>
       </body>

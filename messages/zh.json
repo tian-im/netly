@@ -48,7 +48,7 @@
     "languageToggleAriaLabel": "切换语言"
   },
   "dashboard": {
-    "title": "仪表盘概览",
+    "title": "财务概览",
     "subtitle": "查看您当前的余额、月度指标和托管账户。",
     "periodLabelMonth": "本月",
     "periodLabel3m": "3个月",
@@ -69,7 +69,7 @@
     "netWorth": "净资产",
     "netIncome": "{period}净收益",
     "savingsRate": "储蓄率",
-    "cashRunway": "现金可用时长",
+    "cashRunway": "现金跑道",
     "noAccounts": "暂无账户",
     "vsPrior": "对比上期",
     "trendUp": "上升",
@@ -88,9 +88,13 @@
     "totalExpenses": "总支出",
     "cashFlowMetrics": "现金流指标 ({currency})",
     "ocf": "经营活动现金流 (OCF)",
+    "ocfShort": "经营现金流",
     "fcf": "自由现金流 (FCF)",
+    "fcfShort": "自由现金流",
     "investingCashFlow": "投资活动净现金流",
+    "investingCashFlowShort": "投资现金流",
     "financingCashFlow": "筹资活动净现金流",
+    "financingCashFlowShort": "筹资现金流",
     "incomeBreakdown": "收入构成 ({currency})",
     "noIncome": "此期间没有录入收入。",
     "expenseBreakdown": "支出构成 ({currency})",
@@ -107,7 +111,7 @@
     "chartExpenseLabel": "支出",
     "chartTooltipNetWorth": "净资产",
     "chartTooltipAmount": "金额",
-    "dateRangeLabel": "{start} — {end}"
+    "dateRangeLabel": "{start} ～ {end}"
   },
   "accounts": {
     "title": "账户管理",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useTransition } from 'react';
+import { useState, useEffect, useMemo, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
@@ -38,6 +38,7 @@ type PeriodType = 'current' | '3m' | '6m' | 'ytd' | '12m';
 interface DashboardClientProps {
   accounts: Account[];
   uncategorizedCount: number;
+  uncategorizedByAccount?: Record<string, number>;
   period: PeriodType;
   bs: {
     accounts: { id: string; balance: number }[];
@@ -78,6 +79,7 @@ interface DashboardClientProps {
 export default function DashboardClient({
   accounts,
   uncategorizedCount,
+  uncategorizedByAccount = {},
   period,
   bs,
   is,
@@ -135,6 +137,38 @@ export default function DashboardClient({
   const symbol = getCurrencySymbol(currentVisualCurrency);
 
   const now = useMemo(() => new Date(), []);
+
+  // === Mobile-specific state ===
+  const [mobileTab, setMobileTab] = useState<'cf' | 'income' | 'expense'>('cf');
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 1024);
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // === Keyboard shortcuts for period switching ===
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not in an input/textarea
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
+      const keyMap: Record<string, PeriodType> = {
+        '1': 'current',
+        '2': '3m',
+        '3': '6m',
+        '4': 'ytd',
+        '5': '12m',
+      };
+      const mappedPeriod = keyMap[e.key];
+      if (mappedPeriod && mappedPeriod !== period) {
+        handlePeriodChange(mappedPeriod);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period]);
 
   // Translated period title for use in headers (e.g. "3 Months" / "3个月")
   const periodTitle = useMemo(() => {
@@ -282,9 +316,10 @@ export default function DashboardClient({
   };
 
   return (
-    <div className={`space-y-6 transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className="max-w-7xl mx-auto">
+      <div className={`space-y-6 transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}>
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-base-content">
           {t('title')}
         </h1>
         <p className="text-base-content/60 text-sm mt-1">
@@ -348,22 +383,23 @@ export default function DashboardClient({
             <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('analyzePeriod')}>
               {(
                 [
-                  { id: 'current', label: t('periodLabelMonth') },
-                  { id: '3m', label: t('periodLabel3m') },
-                  { id: '6m', label: t('periodLabel6m') },
-                  { id: 'ytd', label: t('periodLabelYtd') },
-                  { id: '12m', label: t('periodLabel12m') },
+                  { id: 'current', label: t('periodLabelMonth'), key: '1' },
+                  { id: '3m', label: t('periodLabel3m'), key: '2' },
+                  { id: '6m', label: t('periodLabel6m'), key: '3' },
+                  { id: 'ytd', label: t('periodLabelYtd'), key: '4' },
+                  { id: '12m', label: t('periodLabel12m'), key: '5' },
                 ] as const
               ).map((p) => (
                 <button
                   key={p.id}
                   onClick={() => handlePeriodChange(p.id)}
-                  className={`btn btn-xs rounded-md border-0 ${
+                  className={`btn btn-xs rounded-md border-0 gap-1 ${
                     period === p.id
                       ? 'btn-primary text-primary-content shadow-sm'
                       : 'bg-transparent text-base-content/70 hover:bg-base-300'
                   }`}
                   aria-pressed={period === p.id}
+                  title={`${p.label} (⌘${p.key})`}
                 >
                   {p.label}
                 </button>
@@ -402,12 +438,14 @@ export default function DashboardClient({
         )}
       </div>
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Overview Stat Cards — mobile horizontal scroll, desktop grid */}
+      <div className="flex md:grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto md:overflow-visible snap-x md:snap-none scrollbar-none -mx-4 md:mx-0 px-4 md:px-0">
         {/* Net Worth */}
+        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('netWorth')}
           icon={<DollarSign className="h-5 w-5" />}
+          href="/reports"
           value={
             <span className={nwValues.currentNW >= 0 ? 'text-success' : 'text-error'}>
               {nwValues.currentNW >= 0 ? '' : '-'}{symbol}{Math.abs(nwValues.currentNW).toLocaleString(locale, {
@@ -427,11 +465,14 @@ export default function DashboardClient({
           currency={currentVisualCurrency}
           locale={locale}
         />
+        </div>
 
         {/* Net Income */}
+        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('netIncome', { period: periodTitle })}
           icon={<Activity className="h-5 w-5" />}
+          href="/reports"
           value={
             <span className={netIncomeValues.periodIncome >= 0 ? 'text-success' : 'text-error'}>
               {netIncomeValues.periodIncome >= 0 ? '' : '-'}{symbol}{Math.abs(netIncomeValues.periodIncome).toLocaleString(locale, {
@@ -451,11 +492,14 @@ export default function DashboardClient({
           currency={currentVisualCurrency}
           locale={locale}
         />
+        </div>
 
         {/* Savings Rate */}
+        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('savingsRate')}
           icon={<PiggyBank className="h-5 w-5" />}
+          href="/reports"
           value={
             <span className={savingsRate >= 0 ? 'text-success' : 'text-error'}>
               {savingsRate.toFixed(1)}%
@@ -467,11 +511,14 @@ export default function DashboardClient({
           }}
           subtitle={t('targetSavings')}
         />
+        </div>
 
         {/* Cash runway / cash balance info */}
+        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('cashRunway')}
           icon={<AlertTriangle className={`h-5 w-5 ${isBurn ? 'text-error animate-pulse' : 'text-success'}`} />}
+          href="/reports"
           value={
             isBurn && runwayMonths !== null ? (
               <span className="text-error">
@@ -489,6 +536,7 @@ export default function DashboardClient({
           currency={currentVisualCurrency}
           locale={locale}
         />
+        </div>
       </div>
 
       {/* Main visual blocks */}
@@ -519,60 +567,99 @@ export default function DashboardClient({
         />
       </div>
 
-      {/* Cash Flow details & Category break down grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cash Flow Statement card */}
-        <CashFlowMetrics
-          title={t('cashFlowMetrics', { currency: currentVisualCurrency })}
-          ocf={ocf}
-          fcf={fcf}
-          investingNet={visualCF.investing.net}
-          financingNet={visualCF.financing.net}
-          ocfLabel={t('ocf')}
-          fcfLabel={t('fcf')}
-          investingLabel={t('investingCashFlow')}
-          financingLabel={t('financingCashFlow')}
-          detailedStatementsLabel={t('detailedStatements')}
-          currency={currentVisualCurrency}
-          locale={locale}
-        />
+      {/* Cash Flow details & Category break down grid — tabs on mobile, columns on desktop */}
+      <div>
+        {/* Mobile Tab Selector (hidden on lg+) */}
+        <div className="tabs tabs-box bg-base-100 border border-base-200 p-1 mb-4 lg:hidden" role="tablist">
+          <button
+            role="tab"
+            className={`tab tab-sm ${mobileTab === 'cf' ? 'tab-active' : ''}`}
+            onClick={() => setMobileTab('cf')}
+            aria-selected={mobileTab === 'cf'}
+          >
+            {t('cashFlowMetrics', { currency: currentVisualCurrency })}
+          </button>
+          <button
+            role="tab"
+            className={`tab tab-sm ${mobileTab === 'income' ? 'tab-active' : ''}`}
+            onClick={() => setMobileTab('income')}
+            aria-selected={mobileTab === 'income'}
+          >
+            {t('incomeBreakdown', { currency: '' }).replace(/\(.*\)/, '').trim()}
+          </button>
+          <button
+            role="tab"
+            className={`tab tab-sm ${mobileTab === 'expense' ? 'tab-active' : ''}`}
+            onClick={() => setMobileTab('expense')}
+            aria-selected={mobileTab === 'expense'}
+          >
+            {t('expenseBreakdown', { currency: '' }).replace(/\(.*\)/, '').trim()}
+          </button>
+        </div>
 
-        {/* Income Sources breakdown */}
-        <BreakdownList
-          title={t('incomeBreakdown', { currency: currentVisualCurrency })}
-          titleColorClass="text-success"
-          items={sortedIncome.map((item) => ({
-            ...item,
-            href: `/transactions?category=${encodeURIComponent(item.name)}`,
-          }))}
-          totalAmount={visualIS.totalIncome}
-          emptyMessage={t('noIncome')}
-          progressColorClass="progress-success"
-          currency={currentVisualCurrency}
-          locale={locale}
-        />
+        {/* Desktop: 3-column grid (lg+), Mobile: single active panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Cash Flow Statement card — hide on mobile unless active tab */}
+          <div className={`${isMobile && mobileTab !== 'cf' ? 'hidden' : ''} lg:block`}>
+            <CashFlowMetrics
+              title={t('cashFlowMetrics', { currency: currentVisualCurrency })}
+              ocf={ocf}
+              fcf={fcf}
+              investingNet={visualCF.investing.net}
+              financingNet={visualCF.financing.net}
+              ocfLabel={isMobile ? t('ocfShort') : t('ocf')}
+              fcfLabel={isMobile ? t('fcfShort') : t('fcf')}
+              investingLabel={isMobile ? t('investingCashFlowShort') : t('investingCashFlow')}
+              financingLabel={isMobile ? t('financingCashFlowShort') : t('financingCashFlow')}
+              detailedStatementsLabel={t('detailedStatements')}
+              currency={currentVisualCurrency}
+              locale={locale}
+            />
+          </div>
 
-        {/* Expense Categories progress bars */}
-        <BreakdownList
-          title={t('expenseBreakdown', { currency: currentVisualCurrency })}
-          titleColorClass="text-error"
-          items={sortedExpenses.map((item) => ({
-            ...item,
-            href: `/transactions?category=${encodeURIComponent(item.name)}`,
-          }))}
-          totalAmount={visualIS.totalExpenses}
-          emptyMessage={t('noExpense')}
-          progressColorClass="progress-secondary"
-          currency={currentVisualCurrency}
-          locale={locale}
-        />
+          {/* Income Sources breakdown — hide on mobile unless active tab */}
+          <div className={`${isMobile && mobileTab !== 'income' ? 'hidden' : ''} lg:block`}>
+            <BreakdownList
+              title={t('incomeBreakdown', { currency: currentVisualCurrency })}
+              titleColorClass="text-success"
+              items={sortedIncome.map((item) => ({
+                ...item,
+                href: `/transactions?category=${encodeURIComponent(item.name)}`,
+              }))}
+              totalAmount={visualIS.totalIncome}
+              emptyMessage={t('noIncome')}
+              progressColorClass="progress-success"
+              currency={currentVisualCurrency}
+              locale={locale}
+            />
+          </div>
+
+          {/* Expense Categories progress bars — hide on mobile unless active tab */}
+          <div className={`${isMobile && mobileTab !== 'expense' ? 'hidden' : ''} lg:block`}>
+            <BreakdownList
+              title={t('expenseBreakdown', { currency: currentVisualCurrency })}
+              titleColorClass="text-error"
+              items={sortedExpenses.map((item) => ({
+                ...item,
+                href: `/transactions?category=${encodeURIComponent(item.name)}`,
+              }))}
+              totalAmount={visualIS.totalExpenses}
+              emptyMessage={t('noExpense')}
+              progressColorClass="progress-secondary"
+              currency={currentVisualCurrency}
+              locale={locale}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Managed Accounts table */}
       <AccountBalancesTable
         accounts={accounts}
         calculatedBalances={calculatedBalances}
+        uncategorizedCounts={uncategorizedByAccount}
       />
+    </div>
     </div>
   );
 }

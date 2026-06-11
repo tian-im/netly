@@ -56,7 +56,8 @@ export default function NetWorthTrendChart({
             {noDataText}
           </div>
         ) : (
-          <div className="w-full h-56 mt-4" role="img" aria-label={title}>
+          <>
+          <div className="w-full h-56 mt-4" role="img" aria-label={`${title}. Chart data available in table below.`}>
             {mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
@@ -115,6 +116,26 @@ export default function NetWorthTrendChart({
               <div className="w-full h-full bg-base-200/50 animate-pulse rounded-lg" />
             )}
           </div>
+          {/* Accessible data table for screen readers (visually hidden) */}
+          {data.length > 0 && (
+            <table className="sr-only" aria-label={`${title} data table`}>
+              <thead>
+                <tr>
+                  <th scope="col">Period</th>
+                  <th scope="col">{tooltipLabel}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, i) => (
+                  <tr key={i}>
+                    <td>{row.label}</td>
+                    <td>{formatCompactNumber(row.value, locale)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          </>
         )}
       </div>
     </div>

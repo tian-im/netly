@@ -53,4 +53,32 @@ describe('formatCompactNumber', () => {
     const result = formatCompactNumber(0);
     expect(typeof result).toBe('string');
   });
+
+  it('should use Chinese 亿 for billions with zh locale', () => {
+    expect(formatCompactNumber(1_500_000_000, 'zh')).toBe('15亿');
+    expect(formatCompactNumber(2_000_000_000, 'zh')).toBe('20亿');
+    expect(formatCompactNumber(150_000_000, 'zh')).toBe('1.5亿');
+  });
+
+  it('should use Chinese 万 for ten-thousands with zh locale', () => {
+    expect(formatCompactNumber(15_000, 'zh')).toBe('1.5万');
+    expect(formatCompactNumber(100_000, 'zh')).toBe('10万');
+    expect(formatCompactNumber(9_999, 'zh')).toBe('9,999');
+  });
+
+  it('should handle negative numbers with zh locale', () => {
+    expect(formatCompactNumber(-1_500_000, 'zh')).toBe('-150万');
+    expect(formatCompactNumber(-15_000, 'zh')).toBe('-1.5万');
+  });
+
+  it('should handle zh-CN variant locale', () => {
+    expect(formatCompactNumber(1_500_000, 'zh-CN')).toBe('150万');
+    expect(formatCompactNumber(15_000, 'zh-CN')).toBe('1.5万');
+  });
+
+  it('should use default (k/m/b) for non-zh locales', () => {
+    expect(formatCompactNumber(1_500_000, 'en')).toBe('1.5m');
+    expect(formatCompactNumber(15_000, 'en')).toBe('15k');
+    expect(formatCompactNumber(1_500_000_000, 'en')).toBe('1.5b');
+  });
 });

@@ -6,8 +6,64 @@
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
+/* Safe area insets for notched mobile devices (iPhone X+) */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
 body {
   margin: 0;
   padding: 0;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
   min-height: 100vh;
+}
+
+/* Improved CJK character rendering:
+   - Use font-bold instead of font-extrabold to avoid faux-bold blur on CJK glyphs
+   - Slightly taller line-height for CJK readability
+*/
+:root:lang(zh) {
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+}
+
+:root:lang(zh) .leading-tight {
+  line-height: 1.5;
+}
+
+/* Darker progress bar track for better contrast on dark themes */
+.progress::-webkit-progress-bar {
+  background-color: oklch(0.2 0 0 / 0.15);
+}
+.progress::-moz-progress-bar {
+  background-color: oklch(0.2 0 0 / 0.15);
+}
+
+/* Smooth scroll for mobile snap containers */
+.snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.snap-start {
+  scroll-snap-align: start;
+}
+
+/* Bottom nav safe area padding */
+.btm-nav {
+  padding-bottom: var(--sab);
+}
+
+/* Hide scrollbar for mobile stat card carousel but keep scrollable */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

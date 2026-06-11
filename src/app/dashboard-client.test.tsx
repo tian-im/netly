@@ -30,6 +30,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('lucide-react', () => ({
   ArrowUpRight: () => <div data-testid="arrow-up-right" />,
   ArrowDownRight: () => <div data-testid="arrow-down-right" />,
+  ArrowUpDown: ({ className }: any) => <div data-testid="arrow-up-down" className={className} />,
   AlertTriangle: ({ className }: any) => <div data-testid="alert-triangle" className={className} />,
   PiggyBank: () => <div data-testid="piggy-bank" />,
   DollarSign: () => <div data-testid="dollar-sign" />,

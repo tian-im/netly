@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings } from 'lucide-react';
+import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Sun, Moon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useThemeContext } from '@/app/providers';
 
 const navItems = [
   { href: '/',             labelKey: 'dashboard',    icon: BarChart3  },
@@ -23,6 +24,7 @@ function closeDrawer() {
 export default function Sidebar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
+  const { theme, toggleTheme } = useThemeContext();
 
   return (
     <div className="menu p-4 w-72 min-h-full bg-base-100 text-base-content flex flex-col justify-between shadow-2xl">
@@ -62,6 +64,18 @@ export default function Sidebar() {
       </div>
 
       <div className="space-y-4">
+        {/* Theme Toggle */}
+        <div className="px-4 py-3 bg-base-200/30 rounded-xl flex items-center justify-between">
+          <span className="text-xs font-semibold opacity-60">{theme === 'night' ? 'Night' : 'Light'}</span>
+          <button
+            onClick={toggleTheme}
+            className="btn btn-ghost btn-xs btn-square"
+            aria-label={theme === 'night' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'night' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        </div>
+
         <div className="px-4 py-4 bg-base-200/50 rounded-xl">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-success rounded-full animate-pulse"></span>

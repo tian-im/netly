@@ -1,7 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Wallet } from 'lucide-react';
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
+import { Wallet, ArrowUpDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
@@ -18,14 +21,65 @@ interface AccountItem {
 interface AccountBalancesTableProps {
   accounts: AccountItem[];
   calculatedBalances: Record<string, number>;
+  /** Optional map of account id → uncategorized transaction count */
+  uncategorizedCounts?: Record<string, number>;
 }
+
+type SortField = 'name' | 'balance' | 'transactions';
+type SortDir = 'asc' | 'desc';
 
 export default function AccountBalancesTable({
   accounts,
   calculatedBalances,
+  uncategorizedCounts = {},
 }: AccountBalancesTableProps) {
   const t = useTranslations('dashboard');
   const { locale } = useLocaleContext();
+
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedAccounts = useMemo(() => {
+    return [...accounts].sort((a, b) => {
+      const sign = sortDir === 'asc' ? 1 : -1;
+      if (sortField === 'name') return sign * a.name.localeCompare(b.name);
+      if (sortField === 'transactions') {
+        return sign * ((a._count?.transactions || 0) - (b._count?.transactions || 0));
+      }
+      // balance sort
+      const balA = calculatedBalances[a.id] !== undefined
+        ? (a.type === 'LIABILITY' ? -calculatedBalances[a.id] : calculatedBalances[a.id])
+        : a.startingBalance;
+      const balB = calculatedBalances[b.id] !== undefined
+        ? (b.type === 'LIABILITY' ? -calculatedBalances[b.id] : calculatedBalances[b.id])
+        : b.startingBalance;
+      return sign * (balA - balB);
+    });
+  }, [accounts, calculatedBalances, sortField, sortDir]);
+
+  const SortHeader = ({ field, label, className = '' }: { field: SortField; label: string; className?: string }) => (
+    <th
+      className={`cursor-pointer hover:text-primary transition-colors select-none ${className}`}
+      onClick={() => toggleSort(field)}
+      aria-sort={sortField === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <div className={`flex items-center gap-1 ${className.includes('text-right') ? 'justify-end' : ''}`}>
+        {label}
+        {sortField === field && (
+          <ArrowUpDown className={`h-3 w-3 transition-transform ${sortDir === 'desc' ? 'rotate-180' : ''}`} />
+        )}
+      </div>
+    </th>
+  );
 
   return (
     <div className="card bg-base-100 shadow-lg border border-base-200">
@@ -43,42 +97,62 @@ export default function AccountBalancesTable({
           </div>
         ) : (
           <div className="overflow-x-auto mt-2">
-            <table className="table w-full">
+            <table className="table w-full" role="table" aria-label={t('accountBalances')}>
               <thead>
                 <tr className="border-b border-base-200">
-                  <th>{t('accountName')}</th>
-                  <th className="text-right">{t('accountBalance')}</th>
+                  <SortHeader field="name" label={t('accountName')} />
+                  <SortHeader field="balance" label={t('accountBalance')} className="text-right" />
                 </tr>
               </thead>
               <tbody>
-                {accounts.map((acc) => {
+                {sortedAccounts.map((acc) => {
                   const calculatedBalance = calculatedBalances[acc.id];
                   const displayBalance = calculatedBalance !== undefined
                     ? (acc.type === 'LIABILITY' ? -calculatedBalance : calculatedBalance)
                     : acc.startingBalance;
                   const symbol = getCurrencySymbol(acc.currency);
+                  const uncatCount = uncategorizedCounts[acc.id] || 0;
 
                   return (
-                    <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
+                    <tr
+                      key={acc.id}
+                      className="hover:bg-base-200/50 border-b border-base-200 transition-colors"
+                    >
                       <td>
-                        <div className="font-bold text-sm sm:text-base text-base-content">
-                          {acc.name}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
-                          <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-xs font-semibold`}>
-                            {acc.type === 'ASSET' ? t('accountTypeAsset') : t('accountTypeLiability')}
-                          </span>
-                          <span className="text-xs text-base-content/40 font-normal">
-                            • {t('transactionsCount', { count: acc._count?.transactions || 0 })}
-                          </span>
-                        </div>
+                        <Link
+                          href={`/transactions?account=${acc.id}`}
+                          className="block hover:opacity-80 transition-opacity"
+                          aria-label={`${acc.name} — ${displayBalance >= 0 ? '' : '-'}${symbol}${Math.abs(displayBalance).toLocaleString(locale, { minimumFractionDigits: 2 })}`}
+                        >
+                          <div className="font-bold text-sm sm:text-base text-base-content">
+                            {acc.name}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
+                            <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-xs font-semibold`}>
+                              {acc.type === 'ASSET' ? t('accountTypeAsset') : t('accountTypeLiability')}
+                            </span>
+                            <span className="text-xs text-base-content/40 font-normal">
+                              • {t('transactionsCount', { count: acc._count?.transactions || 0 })}
+                            </span>
+                            {uncatCount > 0 && (
+                              <span className="badge badge-warning badge-xs gap-1 font-semibold">
+                                {uncatCount} uncat
+                              </span>
+                            )}
+                          </div>
+                        </Link>
                       </td>
                       <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                        {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(locale, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        <Link
+                          href={`/transactions?account=${acc.id}`}
+                          className="block hover:opacity-80 transition-opacity"
+                        >
+                          {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(locale, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </Link>
                       </td>
                     </tr>
                   );

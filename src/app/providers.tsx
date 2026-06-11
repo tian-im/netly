@@ -1,21 +1,40 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import en from '../../messages/en.json';
 import zh from '../../messages/zh.json';
 
 type Locale = 'en' | 'zh';
+type Theme = 'night' | 'light';
 const messages: Record<Locale, any> = { en, zh };
 const LOCALE_COOKIE = 'netly_locale';
+const THEME_COOKIE = 'netly_theme';
 
 const LocaleContext = createContext<{
   locale: Locale;
   setLocale: (locale: Locale) => void;
 }>({ locale: 'en', setLocale: () => {} });
 
-export function LocaleProvider({ children, ssrLocale = 'en' }: { children: ReactNode; ssrLocale?: string }) {
+const ThemeContext = createContext<{
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+}>({ theme: 'night', setTheme: () => {}, toggleTheme: () => {} });
+
+export function LocaleProvider({ children, ssrLocale = 'en', ssrTheme = 'night' }: { children: ReactNode; ssrLocale?: string; ssrTheme?: string }) {
   const [locale, setLocale] = useState<Locale>(ssrLocale as Locale);
+  const [theme, setThemeState] = useState<Theme>(ssrTheme as Theme);
+  const [mounted, setMounted] = useState(false);
+
+  // Initialize theme from cookie / localStorage on mount
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem(THEME_COOKIE);
+    const initialTheme = (stored === 'light' || stored === 'night') ? stored : (ssrTheme === 'light' ? 'light' : 'night') as Theme;
+    setThemeState(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
+  }, [ssrTheme]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -32,13 +51,32 @@ export function LocaleProvider({ children, ssrLocale = 'en' }: { children: React
     document.cookie = `${LOCALE_COOKIE}=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
   };
 
+  const setAndPersistTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem(THEME_COOKIE, newTheme);
+    document.cookie = `${THEME_COOKIE}=${newTheme};path=/;max-age=31536000;SameSite=Lax`;
+    document.documentElement.setAttribute('data-theme', newTheme);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setAndPersistTheme(theme === 'night' ? 'light' : 'night');
+  }, [theme, setAndPersistTheme]);
+
+  // Apply theme on mount to prevent flash
+  if (!mounted) {
+    // Render children with default theme — hydration will correct
+  }
+
   return (
-    <LocaleContext.Provider value={{ locale, setLocale: setAndPersist }}>
-      <NextIntlClientProvider locale={locale} messages={messages[locale]} timeZone="UTC">
-        {children}
-      </NextIntlClientProvider>
-    </LocaleContext.Provider>
+    <ThemeContext.Provider value={{ theme, setTheme: setAndPersistTheme, toggleTheme }}>
+      <LocaleContext.Provider value={{ locale, setLocale: setAndPersist }}>
+        <NextIntlClientProvider locale={locale} messages={messages[locale]} timeZone="UTC">
+          {children}
+        </NextIntlClientProvider>
+      </LocaleContext.Provider>
+    </ThemeContext.Provider>
   );
 }
 
 export const useLocaleContext = () => useContext(LocaleContext);
+export const useThemeContext = () => useContext(ThemeContext);

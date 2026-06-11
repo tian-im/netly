@@ -23,6 +23,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const accountsList = await getAccounts();
   const uncategorizedCount = await db.transaction.count({ where: { categoryId: null } });
 
+  // Per-account uncategorized transaction counts for AccountBalancesTable badge
+  const uncategorizedByAccount: Record<string, number> = {};
+  const uncatTxByAccount = await db.transaction.groupBy({
+    by: ['accountId'],
+    where: { categoryId: null },
+    _count: { id: true },
+  });
+  uncatTxByAccount.forEach((g) => {
+    uncategorizedByAccount[g.accountId] = g._count.id;
+  });
+
   const mappedAccounts = accountsList.map((a) => ({
     id: a.id,
     name: a.name,
@@ -113,21 +124,28 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   // Since trend calculations might need historical net worth, compute balance sheets for end dates
-  // activeCurrencies is used in client, but let's pre-aggregate netWorthTrend values per currency
+  // Pre-generate trend data — only for the most common/default currency to save SSR time
   const activeCurrencies = Array.from(new Set(mappedAccounts.map((a) => a.currency || 'AUD')));
+  const defaultCurrency = (() => {
+    if (mappedAccounts.length === 0) return 'AUD';
+    const counts: Record<string, number> = {};
+    mappedAccounts.forEach((a) => {
+      const c = a.currency || 'AUD';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  })();
   
-  // Pre-generate trend data for each currency
   const netWorthTrendByCurrency: Record<string, { date: string; value: number }[]> = {};
   
-  activeCurrencies.forEach((currency) => {
-    netWorthTrendByCurrency[currency] = trendMonths.map((m) => {
-      const tempBS = generateBalanceSheet(mappedAccounts, mappedTransactions, m.end);
-      const value = tempBS.totals[currency]?.netWorth ?? 0;
-      return {
-        date: m.date,
-        value,
-      };
-    });
+  // Only pre-compute for the default currency; others are fetched on-demand
+  netWorthTrendByCurrency[defaultCurrency] = trendMonths.map((m) => {
+    const tempBS = generateBalanceSheet(mappedAccounts, mappedTransactions, m.end);
+    const value = tempBS.totals[defaultCurrency]?.netWorth ?? 0;
+    return {
+      date: m.date,
+      value,
+    };
   });
 
   // Format serializable statements
@@ -144,6 +162,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     <DashboardClient
       accounts={mappedAccounts}
       uncategorizedCount={uncategorizedCount}
+      uncategorizedByAccount={uncategorizedByAccount}
       period={period}
       bs={serializedBS}
       is={is}
