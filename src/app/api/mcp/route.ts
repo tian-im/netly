@@ -61,8 +61,15 @@ class WebSSETransport implements Transport {
   }
 }
 
-// Global active sessions map
-const activeSessions = new Map<string, WebSSETransport>();
+declare global {
+  var __activeMcpSessions: Map<string, WebSSETransport> | undefined;
+}
+
+// Global active sessions map, persisted across HMR in dev
+const activeSessions = globalThis.__activeMcpSessions ?? new Map<string, WebSSETransport>();
+if (process.env.NODE_ENV !== "production") {
+  globalThis.__activeMcpSessions = activeSessions;
+}
 
 function createMcpServer(): McpServer {
   const mcpServer = new McpServer({

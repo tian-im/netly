@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tag } from 'lucide-react';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface BreakdownItem {
   name: string;
@@ -13,6 +14,7 @@ interface BreakdownListProps {
   totalAmount: number;
   emptyMessage: string;
   progressColorClass: string;
+  currency?: string;
 }
 
 export default function BreakdownList({
@@ -22,7 +24,9 @@ export default function BreakdownList({
   totalAmount,
   emptyMessage,
   progressColorClass,
+  currency = 'USD',
 }: BreakdownListProps) {
+  const symbol = getCurrencySymbol(currency);
   return (
     <div className="card bg-base-100 shadow-lg border border-base-200">
       <div className="card-body p-6">
@@ -41,7 +45,7 @@ export default function BreakdownList({
                   <div className="flex justify-between text-xs font-semibold">
                     <span>{item.name}</span>
                     <span>
-                      ${item.amount.toLocaleString(undefined, {
+                      {symbol}{item.amount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}{' '}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowDownRight, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface CashFlowMetricsProps {
   title: string;
@@ -13,6 +14,7 @@ interface CashFlowMetricsProps {
   investingLabel: string;
   financingLabel: string;
   detailedStatementsLabel: string;
+  currency?: string;
 }
 
 export default function CashFlowMetrics({
@@ -26,10 +28,12 @@ export default function CashFlowMetrics({
   investingLabel,
   financingLabel,
   detailedStatementsLabel,
+  currency = 'USD',
 }: CashFlowMetricsProps) {
+  const symbol = getCurrencySymbol(currency);
   const formatValue = (val: number) => {
     const isPositive = val >= 0;
-    return `${isPositive ? '+' : '-'}$${Math.abs(val).toLocaleString(undefined, {
+    return `${isPositive ? '+' : '-'}${symbol}${Math.abs(val).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;

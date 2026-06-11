@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -125,6 +126,7 @@ export default function DashboardClient({
       ? selectedVisualCurrency
       : (activeCurrencies[0] || 'AUD');
   }, [activeCurrencies, selectedVisualCurrency]);
+  const symbol = getCurrencySymbol(currentVisualCurrency);
 
   const now = useMemo(() => new Date(), []);
 
@@ -290,9 +292,9 @@ export default function DashboardClient({
       {/* Selector Options Header Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-base-100 p-4 rounded-2xl shadow-sm border border-base-200">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <span className="font-bold text-sm text-base-content/70">{t('analyzePeriod')}</span>
+          <div className="flex flex-wrap items-center gap-2 gap-y-3">
+            <Calendar className="h-5 w-5 text-primary shrink-0" />
+            <span className="font-bold text-sm text-base-content/70 shrink-0">{t('analyzePeriod')}</span>
             <div className="join bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('analyzePeriod')}>
               {(
                 [
@@ -361,7 +363,7 @@ export default function DashboardClient({
               <span className="text-sm opacity-50 font-normal">{t('noAccounts')}</span>
             ) : (
               <span className={nwValues.currentNW >= 0 ? 'text-success' : 'text-error'}>
-                {nwValues.currentNW >= 0 ? '' : '-'}${Math.abs(nwValues.currentNW).toLocaleString(undefined, {
+                {nwValues.currentNW >= 0 ? '' : '-'}{symbol}{Math.abs(nwValues.currentNW).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -378,6 +380,7 @@ export default function DashboardClient({
                   vsLabel: t('vsPrior'),
                 }
           }
+          currency={currentVisualCurrency}
         />
 
         {/* Net Income */}
@@ -389,7 +392,7 @@ export default function DashboardClient({
               <span className="text-sm opacity-50 font-normal">{t('noAccounts')}</span>
             ) : (
               <span className={netIncomeValues.periodIncome >= 0 ? 'text-success' : 'text-error'}>
-                {netIncomeValues.periodIncome >= 0 ? '' : '-'}${Math.abs(netIncomeValues.periodIncome).toLocaleString(undefined, {
+                {netIncomeValues.periodIncome >= 0 ? '' : '-'}{symbol}{Math.abs(netIncomeValues.periodIncome).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -406,6 +409,7 @@ export default function DashboardClient({
                   vsLabel: t('vsPrior'),
                 }
           }
+          currency={currentVisualCurrency}
         />
 
         {/* Savings Rate */}
@@ -442,6 +446,7 @@ export default function DashboardClient({
               ? t('burnRate', { amount: Math.abs(averageMonthlyCashFlow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })
               : t('netCashFlow', { amount: averageMonthlyCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })
           }
+          currency={currentVisualCurrency}
         />
       </div>
 
@@ -465,6 +470,7 @@ export default function DashboardClient({
           expenseLabel={t('totalExpenses')}
           chartIncomeLabel={t('chartIncomeLabel')}
           chartExpenseLabel={t('chartExpenseLabel')}
+          currency={currentVisualCurrency}
         />
       </div>
 
@@ -482,6 +488,7 @@ export default function DashboardClient({
           investingLabel={t('investingCashFlow')}
           financingLabel={t('financingCashFlow')}
           detailedStatementsLabel={t('detailedStatements')}
+          currency={currentVisualCurrency}
         />
 
         {/* Income Sources breakdown */}
@@ -492,6 +499,7 @@ export default function DashboardClient({
           totalAmount={visualIS.totalIncome}
           emptyMessage={t('noIncome')}
           progressColorClass="progress-success"
+          currency={currentVisualCurrency}
         />
 
         {/* Expense Categories progress bars */}
@@ -502,6 +510,7 @@ export default function DashboardClient({
           totalAmount={visualIS.totalExpenses}
           emptyMessage={t('noExpense')}
           progressColorClass="progress-secondary"
+          currency={currentVisualCurrency}
         />
       </div>
 

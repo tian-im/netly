@@ -1,10 +1,12 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { getCurrencySymbol } from '@/lib/currencies';
 
 interface StatCardProps {
   title: string;
   icon: React.ReactNode;
   value: React.ReactNode;
+  currency?: string;
   valueClass?: string;
   trend?: {
     delta: number;
@@ -23,6 +25,7 @@ export default function StatCard({
   title,
   icon,
   value,
+  currency = 'USD',
   valueClass = '',
   trend,
   progress,
@@ -56,7 +59,7 @@ export default function StatCard({
                 </>
               )}
               <span className={trend.isPositive ? 'text-success font-semibold' : 'text-error font-semibold'}>
-                {trend.isPositive ? '+' : '-'}${Math.abs(trend.delta).toLocaleString(undefined, {
+                {trend.isPositive ? '+' : '-'}{getCurrencySymbol(currency)}{Math.abs(trend.delta).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}{' '}

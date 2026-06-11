@@ -73,6 +73,15 @@ describe('MCP Tools Integration Tests', () => {
 
   // Test accounts tools
   describe('Account Tools', () => {
+    it('list_accounts: returns empty array when no accounts exist', async () => {
+      const handler = tools.get('list_accounts')?.handler;
+      expect(handler).toBeDefined();
+
+      const result = await handler({ includeBalances: false });
+      const data = JSON.parse(result.content[0].text);
+      expect(data.accounts).toEqual([]);
+    });
+
     it('list_accounts: list all accounts', async () => {
       await seedAccount({ name: 'Savings', currency: 'USD' });
       await seedAccount({ name: 'Checking', currency: 'AUD' });

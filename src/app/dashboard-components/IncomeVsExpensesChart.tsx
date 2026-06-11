@@ -11,6 +11,7 @@ import {
   Tooltip,
   Cell,
 } from 'recharts';
+import { getCurrencySymbol, formatCompactNumber } from '@/lib/currencies';
 
 interface IncomeVsExpensesChartProps {
   title: string;
@@ -21,6 +22,7 @@ interface IncomeVsExpensesChartProps {
   expenseLabel: string;
   chartIncomeLabel: string;
   chartExpenseLabel: string;
+  currency?: string;
 }
 
 export default function IncomeVsExpensesChart({
@@ -32,12 +34,15 @@ export default function IncomeVsExpensesChart({
   expenseLabel,
   chartIncomeLabel,
   chartExpenseLabel,
+  currency = 'USD',
 }: IncomeVsExpensesChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const symbol = getCurrencySymbol(currency);
 
   const data = [
     { name: chartIncomeLabel, amount: totalIncome, isIncome: true },
@@ -55,10 +60,10 @@ export default function IncomeVsExpensesChart({
           <p className="text-xs opacity-50 mb-4">{subtitle}</p>
         </div>
 
-        <div className="w-full h-32" role="img" aria-label={`${title}: ${incomeLabel} $${totalIncome}, ${expenseLabel} $${totalExpenses}`}>
+        <div className="w-full h-32" role="img" aria-label={`${title}: ${incomeLabel} ${symbol}${totalIncome}, ${expenseLabel} ${symbol}${totalExpenses}`}>
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <XAxis
                   dataKey="name"
                   stroke="hsl(var(--bc) / 0.6)"
@@ -71,7 +76,8 @@ export default function IncomeVsExpensesChart({
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => `$${val.toLocaleString()}`}
+                  tickFormatter={(val) => formatCompactNumber(val)}
+                  width={65}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
@@ -83,10 +89,7 @@ export default function IncomeVsExpensesChart({
                     fontSize: '12px',
                   }}
                   formatter={(value: any) => [
-                    `$${Number(value).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`,
+                    formatCompactNumber(Number(value)),
                     'Amount',
                   ]}
                 />
@@ -109,13 +112,13 @@ export default function IncomeVsExpensesChart({
           <div className="flex flex-col">
             <span className="text-success/70 text-[10px] uppercase opacity-85">{incomeLabel}</span>
             <span className="text-sm font-extrabold text-success">
-              +${totalIncome.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              +{symbol}{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </span>
           </div>
           <div className="flex flex-col border-l border-base-200 pl-3">
             <span className="text-error/70 text-[10px] uppercase opacity-85">{expenseLabel}</span>
             <span className="text-sm font-extrabold text-error">
-              -${totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              -{symbol}{totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>
