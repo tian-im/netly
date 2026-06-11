@@ -15,6 +15,11 @@ const navItems = [
   { href: '/settings',     labelKey: 'settings',     icon: Settings   },
 ] as const;
 
+function closeDrawer() {
+  const checkbox = document.getElementById('nav-drawer') as HTMLInputElement | null;
+  if (checkbox) checkbox.checked = false;
+}
+
 export default function Sidebar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
@@ -39,6 +44,7 @@ export default function Sidebar() {
               <li key={href}>
                 <Link
                   href={href}
+                  onClick={closeDrawer}
                   aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
                     isActive
