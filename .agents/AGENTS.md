@@ -110,16 +110,18 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 
 ## Development Workflow
 
+0. **Context load** — On session start, read `docs/CODEMAPS/*.md` to quickly understand the codebase architecture without re-exploring. If codemaps are missing or stale, regenerate them via the `doc-updater` agent.
 1. **Plan** — Use planner agent, identify dependencies and risks, break into phases
 2. **TDD** — Use tdd-guide agent, write tests first, implement, refactor
 3. **Review** — Use code-reviewer agent immediately, address CRITICAL/HIGH issues
-4. **Capture knowledge in the right place**
+4. **Capture knowledge in the right place
    - Personal debugging notes, preferences, and temporary context → auto memory
    - Team/project knowledge (architecture decisions, API changes, runbooks) → the project's existing docs structure
    - If the current task already produces the relevant docs or code comments, do not duplicate the same information elsewhere
    - If there is no obvious project doc location, ask before creating a new top-level file
-5. **Verify** — Run tests (`docker compose exec -T web npm run test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
-6. **Commit** — ONLY commit when the user explicitly requests it. Never auto-commit after completing work.
+5. **Codemaps** — After any significant feature addition, refactoring, or structural change, update `docs/CODEMAPS/*.md` using the `doc-updater` agent. This keeps the token-lean architecture docs fresh for future sessions.
+6. **Verify** — Run tests (`docker compose exec -T web npm run test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
+7. **Commit** — ONLY commit when the user explicitly requests it. Never auto-commit after completing work.
 
 ## Workflow Surface Policy
 
