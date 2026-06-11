@@ -61,15 +61,17 @@ export default function AccountBalancesTable({
                   return (
                     <tr key={acc.id} className="hover:bg-base-200/50 border-b border-base-200">
                       <td>
-                        <div className="font-bold flex flex-wrap items-center gap-2">
-                          <span>{acc.name}</span>
+                        <div className="font-bold text-sm sm:text-base text-base-content">
+                          {acc.name}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
                           <span className="badge badge-sm badge-ghost font-bold">{acc.currency}</span>
                           <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-xs font-semibold`}>
                             {acc.type === 'ASSET' ? t('accountTypeAsset') : t('accountTypeLiability')}
                           </span>
-                        </div>
-                        <div className="text-xs text-base-content/50">
-                          {t('transactionsCount', { count: acc._count?.transactions || 0 })}
+                          <span className="text-xs text-base-content/40 font-normal">
+                            • {t('transactionsCount', { count: acc._count?.transactions || 0 })}
+                          </span>
                         </div>
                       </td>
                       <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
