@@ -61,37 +61,39 @@ export default function NetWorthTrendChart({
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={data}
-                  margin={{ top: 10, right: 10, left: 15, bottom: 0 }}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
                   <defs>
                     <linearGradient id="netWorthGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--p))" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="hsl(var(--p))" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--p)" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="var(--p)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--bc) / 0.1)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--bc)" strokeOpacity={0.1} />
                   <XAxis
                     dataKey="label"
-                    stroke="hsl(var(--bc) / 0.6)"
+                    stroke="var(--bc)"
+                    strokeOpacity={0.6}
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
                     dy={10}
                   />
                   <YAxis
-                    stroke="hsl(var(--bc) / 0.6)"
+                    stroke="var(--bc)"
+                    strokeOpacity={0.6}
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(val) => formatCompactNumber(val, locale)}
-                    width={65}
+                    width={40}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--b1))',
-                      borderColor: 'hsl(var(--bc) / 0.1)',
+                      backgroundColor: 'var(--b1)',
+                      borderColor: 'color-mix(in srgb, var(--bc) 10%, transparent)',
                       borderRadius: '12px',
-                      color: 'hsl(var(--bc))',
+                      color: 'var(--bc)',
                       fontSize: '12px',
                     }}
                     formatter={(value: any) => [
@@ -102,7 +104,7 @@ export default function NetWorthTrendChart({
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke="hsl(var(--p))"
+                    stroke="var(--p)"
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#netWorthGrad)"

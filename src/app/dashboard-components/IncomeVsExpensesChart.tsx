@@ -67,29 +67,31 @@ export default function IncomeVsExpensesChart({
         <div className="w-full h-40" role="img" aria-label={`${title}: ${incomeLabel} ${symbol}${totalIncome}, ${expenseLabel} ${symbol}${totalExpenses}`}>
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <XAxis
                   dataKey="name"
-                  stroke="hsl(var(--bc) / 0.6)"
+                  stroke="var(--bc)"
+                  strokeOpacity={0.6}
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  stroke="hsl(var(--bc) / 0.6)"
+                  stroke="var(--bc)"
+                  strokeOpacity={0.6}
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => formatCompactNumber(val, locale)}
-                  width={65}
+                  width={40}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--b1))',
-                    borderColor: 'hsl(var(--bc) / 0.1)',
+                    backgroundColor: 'var(--b1)',
+                    borderColor: 'color-mix(in srgb, var(--bc) 10%, transparent)',
                     borderRadius: '12px',
-                    color: 'hsl(var(--bc))',
+                    color: 'var(--bc)',
                     fontSize: '12px',
                   }}
                   formatter={(value: any) => [
@@ -101,7 +103,7 @@ export default function IncomeVsExpensesChart({
                   {data.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.isIncome ? 'hsl(var(--su))' : 'hsl(var(--er))'}
+                      fill={entry.isIncome ? 'var(--su)' : 'var(--er)'}
                     />
                   ))}
                 </Bar>
