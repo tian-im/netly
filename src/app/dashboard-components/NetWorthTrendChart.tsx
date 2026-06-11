@@ -23,6 +23,8 @@ interface NetWorthTrendChartProps {
   data: TrendDataItem[];
   noDataText: string;
   isEmpty: boolean;
+  locale?: string;
+  tooltipLabel?: string;
 }
 
 export default function NetWorthTrendChart({
@@ -30,6 +32,8 @@ export default function NetWorthTrendChart({
   data,
   noDataText,
   isEmpty,
+  locale,
+  tooltipLabel = 'Net Worth',
 }: NetWorthTrendChartProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -79,7 +83,7 @@ export default function NetWorthTrendChart({
                     fontSize={10}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(val) => formatCompactNumber(val)}
+                    tickFormatter={(val) => formatCompactNumber(val, locale)}
                     width={65}
                   />
                   <Tooltip
@@ -91,8 +95,8 @@ export default function NetWorthTrendChart({
                       fontSize: '12px',
                     }}
                     formatter={(value: any) => [
-                      formatCompactNumber(Number(value)),
-                      'Net Worth',
+                      formatCompactNumber(Number(value), locale),
+                      tooltipLabel,
                     ]}
                   />
                   <Area

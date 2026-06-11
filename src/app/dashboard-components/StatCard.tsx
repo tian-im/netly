@@ -8,11 +8,14 @@ interface StatCardProps {
   value: React.ReactNode;
   currency?: string;
   valueClass?: string;
+  locale?: string;
   trend?: {
     delta: number;
     pct: number;
     isPositive: boolean;
     vsLabel: string;
+    upLabel?: string;
+    downLabel?: string;
   };
   progress?: {
     percentage: number;
@@ -27,12 +30,13 @@ export default function StatCard({
   value,
   currency = 'USD',
   valueClass = '',
+  locale,
   trend,
   progress,
   subtitle,
 }: StatCardProps) {
   return (
-    <div className="card bg-base-100 shadow-md border border-base-200">
+    <div className="card bg-base-100 shadow-lg border border-base-200">
       <div className="card-body p-5">
         <div className="flex justify-between items-start">
           <span className="text-sm font-bold opacity-60 uppercase tracking-wider">{title}</span>
@@ -50,16 +54,16 @@ export default function StatCard({
               {trend.isPositive ? (
                 <>
                   <ArrowUpRight className="h-3.5 w-3.5 text-success" />
-                  <span className="sr-only">Up</span>
+                  <span className="sr-only">{trend.upLabel || 'Up'}</span>
                 </>
               ) : (
                 <>
                   <ArrowDownRight className="h-3.5 w-3.5 text-error" />
-                  <span className="sr-only">Down</span>
+                  <span className="sr-only">{trend.downLabel || 'Down'}</span>
                 </>
               )}
               <span className={trend.isPositive ? 'text-success font-semibold' : 'text-error font-semibold'}>
-                {trend.isPositive ? '+' : '-'}{getCurrencySymbol(currency)}{Math.abs(trend.delta).toLocaleString(undefined, {
+                {trend.isPositive ? '+' : '-'}{getCurrencySymbol(currency)}{Math.abs(trend.delta).toLocaleString(locale, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}{' '}

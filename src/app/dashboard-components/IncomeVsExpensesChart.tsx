@@ -23,6 +23,8 @@ interface IncomeVsExpensesChartProps {
   chartIncomeLabel: string;
   chartExpenseLabel: string;
   currency?: string;
+  locale?: string;
+  tooltipLabel?: string;
 }
 
 export default function IncomeVsExpensesChart({
@@ -35,6 +37,8 @@ export default function IncomeVsExpensesChart({
   chartIncomeLabel,
   chartExpenseLabel,
   currency = 'USD',
+  locale,
+  tooltipLabel = 'Amount',
 }: IncomeVsExpensesChartProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -60,7 +64,7 @@ export default function IncomeVsExpensesChart({
           <p className="text-xs opacity-50 mb-4">{subtitle}</p>
         </div>
 
-        <div className="w-full h-32" role="img" aria-label={`${title}: ${incomeLabel} ${symbol}${totalIncome}, ${expenseLabel} ${symbol}${totalExpenses}`}>
+        <div className="w-full h-40" role="img" aria-label={`${title}: ${incomeLabel} ${symbol}${totalIncome}, ${expenseLabel} ${symbol}${totalExpenses}`}>
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
@@ -76,7 +80,7 @@ export default function IncomeVsExpensesChart({
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => formatCompactNumber(val)}
+                  tickFormatter={(val) => formatCompactNumber(val, locale)}
                   width={65}
                 />
                 <Tooltip
@@ -89,9 +93,9 @@ export default function IncomeVsExpensesChart({
                     fontSize: '12px',
                   }}
                   formatter={(value: any) => [
-                    formatCompactNumber(Number(value)),
-                    'Amount',
-                  ]}
+                      formatCompactNumber(Number(value), locale),
+                      tooltipLabel,
+                    ]}
                 />
                 <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                   {data.map((entry, index) => (
@@ -112,13 +116,13 @@ export default function IncomeVsExpensesChart({
           <div className="flex flex-col">
             <span className="text-success/70 text-[10px] uppercase opacity-85">{incomeLabel}</span>
             <span className="text-sm font-extrabold text-success">
-              +{symbol}{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              +{symbol}{totalIncome.toLocaleString(locale, { maximumFractionDigits: 2 })}
             </span>
           </div>
           <div className="flex flex-col border-l border-base-200 pl-3">
             <span className="text-error/70 text-[10px] uppercase opacity-85">{expenseLabel}</span>
             <span className="text-sm font-extrabold text-error">
-              -{symbol}{totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              -{symbol}{totalExpenses.toLocaleString(locale, { maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>

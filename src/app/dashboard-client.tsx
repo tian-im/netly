@@ -14,6 +14,7 @@ import {
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { getCurrencySymbol } from '@/lib/currencies';
+import { useLocaleContext } from '@/app/providers';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -88,8 +89,13 @@ export default function DashboardClient({
   const t = useTranslations('dashboard');
   const tAccounts = useTranslations('accounts');
   const format = useFormatter();
+  const { locale } = useLocaleContext();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Unified set of all active currencies across accounts
   const activeCurrencies = useMemo(() => {
@@ -129,6 +135,45 @@ export default function DashboardClient({
   const symbol = getCurrencySymbol(currentVisualCurrency);
 
   const now = useMemo(() => new Date(), []);
+
+  // Translated period title for use in headers (e.g. "3 Months" / "3个月")
+  const periodTitle = useMemo(() => {
+    const map: Record<string, string> = {
+      current: t('periodTitleMonth'),
+      '3m': t('periodTitle3m'),
+      '6m': t('periodTitle6m'),
+      ytd: t('periodTitleYtd'),
+      '12m': t('periodTitle12m'),
+    };
+    return map[period] || period.toUpperCase();
+  }, [period, t]);
+
+  // Computed date range for display
+  const dateRange = useMemo(() => {
+    const end = now;
+    let start: Date;
+    switch (period) {
+      case '3m':
+        start = new Date(end.getFullYear(), end.getMonth() - 3, 1);
+        break;
+      case '6m':
+        start = new Date(end.getFullYear(), end.getMonth() - 6, 1);
+        break;
+      case '12m':
+        start = new Date(end.getFullYear(), end.getMonth() - 12, 1);
+        break;
+      case 'ytd':
+        start = new Date(end.getFullYear(), 0, 1);
+        break;
+      default:
+        start = new Date(end.getFullYear(), end.getMonth(), 1);
+        break;
+    }
+    return {
+      start: format.dateTime(start, { month: 'short', day: 'numeric', year: 'numeric' }),
+      end: format.dateTime(end, { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
+  }, [period, now, format]);
 
   // Net worth trend data for the selected currency
   const netWorthTrend = useMemo(() => {
@@ -245,11 +290,16 @@ export default function DashboardClient({
         <p className="text-base-content/60 text-sm mt-1">
           {t('subtitle')}
         </p>
+        {accounts.length > 0 && (
+          <p className="text-xs text-base-content/40 mt-1">
+            {t('dateRangeLabel', { start: dateRange.start, end: dateRange.end })}
+          </p>
+        )}
       </div>
 
       {/* Empty State / CTA Callout */}
       {accounts.length === 0 && (
-        <div className="card bg-base-200 border border-base-300 p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm rounded-3xl">
+        <div className="card bg-base-200 border border-base-300 p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg rounded-3xl">
           <div className="flex items-center gap-4 text-left">
             <div className="bg-primary/10 p-3 rounded-2xl text-primary">
               <Wallet className="h-8 w-8" />
@@ -270,7 +320,7 @@ export default function DashboardClient({
 
       {/* Review Queue Alert banner */}
       {uncategorizedCount > 0 && (
-        <div className="alert alert-warning shadow-md border-l-4 border-warning flex justify-between items-center bg-warning/10 text-warning-content">
+        <div className="alert alert-warning shadow-lg border-l-4 border-warning flex justify-between items-center bg-warning/10 text-warning-content">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
             <div>
@@ -295,7 +345,7 @@ export default function DashboardClient({
           <div className="flex flex-wrap items-center gap-2 gap-y-3">
             <Calendar className="h-5 w-5 text-primary shrink-0" />
             <span className="font-bold text-sm text-base-content/70 shrink-0">{t('analyzePeriod')}</span>
-            <div className="join bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('analyzePeriod')}>
+            <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('analyzePeriod')}>
               {(
                 [
                   { id: 'current', label: t('periodLabelMonth') },
@@ -308,7 +358,7 @@ export default function DashboardClient({
                 <button
                   key={p.id}
                   onClick={() => handlePeriodChange(p.id)}
-                  className={`btn btn-xs join-item rounded-md border-0 ${
+                  className={`btn btn-xs rounded-md border-0 ${
                     period === p.id
                       ? 'btn-primary text-primary-content shadow-sm'
                       : 'bg-transparent text-base-content/70 hover:bg-base-300'
@@ -332,12 +382,12 @@ export default function DashboardClient({
         {activeCurrencies.length > 1 && (
           <div className="flex items-center gap-2 justify-end">
             <span className="text-xs font-bold opacity-60">{t('currencyLabel')}</span>
-            <div className="join bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('currencyLabel')}>
+            <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('currencyLabel')}>
               {activeCurrencies.map((cur) => (
                 <button
                   key={cur}
                   onClick={() => setSelectedVisualCurrency(cur)}
-                  className={`btn btn-xs join-item rounded-md border-0 ${
+                  className={`btn btn-xs rounded-md border-0 ${
                     currentVisualCurrency === cur
                       ? 'btn-primary text-primary-content shadow-sm'
                       : 'bg-transparent text-base-content/70 hover:bg-base-300'
@@ -359,57 +409,47 @@ export default function DashboardClient({
           title={t('netWorth')}
           icon={<DollarSign className="h-5 w-5" />}
           value={
-            accounts.length === 0 ? (
-              <span className="text-sm opacity-50 font-normal">{t('noAccounts')}</span>
-            ) : (
-              <span className={nwValues.currentNW >= 0 ? 'text-success' : 'text-error'}>
-                {nwValues.currentNW >= 0 ? '' : '-'}{symbol}{Math.abs(nwValues.currentNW).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            )
+            <span className={nwValues.currentNW >= 0 ? 'text-success' : 'text-error'}>
+              {nwValues.currentNW >= 0 ? '' : '-'}{symbol}{Math.abs(nwValues.currentNW).toLocaleString(locale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           }
-          trend={
-            accounts.length === 0
-              ? undefined
-              : {
-                  delta: nwValues.nwDelta,
-                  pct: nwValues.nwPct,
-                  isPositive: nwValues.nwDelta >= 0,
-                  vsLabel: t('vsPrior'),
-                }
-          }
+          trend={{
+            delta: nwValues.nwDelta,
+            pct: nwValues.nwPct,
+            isPositive: nwValues.nwDelta >= 0,
+            vsLabel: t('vsPrior'),
+            upLabel: t('trendUp'),
+            downLabel: t('trendDown'),
+          }}
           currency={currentVisualCurrency}
+          locale={locale}
         />
 
         {/* Net Income */}
         <StatCard
-          title={t('netIncome', { period: period === 'current' ? t('periodLabelMonth') : period.toUpperCase() })}
+          title={t('netIncome', { period: periodTitle })}
           icon={<Activity className="h-5 w-5" />}
           value={
-            accounts.length === 0 ? (
-              <span className="text-sm opacity-50 font-normal">{t('noAccounts')}</span>
-            ) : (
-              <span className={netIncomeValues.periodIncome >= 0 ? 'text-success' : 'text-error'}>
-                {netIncomeValues.periodIncome >= 0 ? '' : '-'}{symbol}{Math.abs(netIncomeValues.periodIncome).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            )
+            <span className={netIncomeValues.periodIncome >= 0 ? 'text-success' : 'text-error'}>
+              {netIncomeValues.periodIncome >= 0 ? '' : '-'}{symbol}{Math.abs(netIncomeValues.periodIncome).toLocaleString(locale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           }
-          trend={
-            accounts.length === 0
-              ? undefined
-              : {
-                  delta: netIncomeValues.incomeDelta,
-                  pct: netIncomeValues.incomePct,
-                  isPositive: netIncomeValues.incomeDelta >= 0,
-                  vsLabel: t('vsPrior'),
-                }
-          }
+          trend={{
+            delta: netIncomeValues.incomeDelta,
+            pct: netIncomeValues.incomePct,
+            isPositive: netIncomeValues.incomeDelta >= 0,
+            vsLabel: t('vsPrior'),
+            upLabel: t('trendUp'),
+            downLabel: t('trendDown'),
+          }}
           currency={currentVisualCurrency}
+          locale={locale}
         />
 
         {/* Savings Rate */}
@@ -443,10 +483,11 @@ export default function DashboardClient({
           }
           subtitle={
             isBurn && runwayMonths !== null
-              ? t('burnRate', { amount: Math.abs(averageMonthlyCashFlow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })
-              : t('netCashFlow', { amount: averageMonthlyCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })
+              ? t('burnRate', { symbol, amount: Math.abs(averageMonthlyCashFlow).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })
+              : t('netCashFlow', { symbol, amount: averageMonthlyCashFlow.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })
           }
           currency={currentVisualCurrency}
+          locale={locale}
         />
       </div>
 
@@ -454,10 +495,12 @@ export default function DashboardClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Net Worth Trend (Line Chart) */}
         <NetWorthTrendChart
-          title={t('netWorthTrend', { period: period.toUpperCase(), currency: currentVisualCurrency })}
+          title={t('netWorthTrend', { period: periodTitle, currency: currentVisualCurrency })}
           data={netWorthTrend}
           noDataText={t('noDataAccounts')}
           isEmpty={accounts.length === 0}
+          locale={locale}
+          tooltipLabel={t('chartTooltipNetWorth')}
         />
 
         {/* Income vs Expenses Summary */}
@@ -471,6 +514,8 @@ export default function DashboardClient({
           chartIncomeLabel={t('chartIncomeLabel')}
           chartExpenseLabel={t('chartExpenseLabel')}
           currency={currentVisualCurrency}
+          locale={locale}
+          tooltipLabel={t('chartTooltipAmount')}
         />
       </div>
 
@@ -489,28 +534,37 @@ export default function DashboardClient({
           financingLabel={t('financingCashFlow')}
           detailedStatementsLabel={t('detailedStatements')}
           currency={currentVisualCurrency}
+          locale={locale}
         />
 
         {/* Income Sources breakdown */}
         <BreakdownList
           title={t('incomeBreakdown', { currency: currentVisualCurrency })}
           titleColorClass="text-success"
-          items={sortedIncome}
+          items={sortedIncome.map((item) => ({
+            ...item,
+            href: `/transactions?category=${encodeURIComponent(item.name)}`,
+          }))}
           totalAmount={visualIS.totalIncome}
           emptyMessage={t('noIncome')}
           progressColorClass="progress-success"
           currency={currentVisualCurrency}
+          locale={locale}
         />
 
         {/* Expense Categories progress bars */}
         <BreakdownList
           title={t('expenseBreakdown', { currency: currentVisualCurrency })}
           titleColorClass="text-error"
-          items={sortedExpenses}
+          items={sortedExpenses.map((item) => ({
+            ...item,
+            href: `/transactions?category=${encodeURIComponent(item.name)}`,
+          }))}
           totalAmount={visualIS.totalExpenses}
           emptyMessage={t('noExpense')}
           progressColorClass="progress-secondary"
           currency={currentVisualCurrency}
+          locale={locale}
         />
       </div>
 

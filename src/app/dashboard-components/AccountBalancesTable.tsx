@@ -4,6 +4,7 @@ import React from 'react';
 import { Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { getCurrencySymbol } from '@/lib/currencies';
+import { useLocaleContext } from '@/app/providers';
 
 interface AccountItem {
   id: string;
@@ -24,6 +25,7 @@ export default function AccountBalancesTable({
   calculatedBalances,
 }: AccountBalancesTableProps) {
   const t = useTranslations('dashboard');
+  const { locale } = useLocaleContext();
 
   return (
     <div className="card bg-base-100 shadow-lg border border-base-200">
@@ -70,11 +72,11 @@ export default function AccountBalancesTable({
                       </td>
                       <td>
                         <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-sm font-semibold`}>
-                          {acc.type}
+                          {acc.type === 'ASSET' ? t('accountTypeAsset') : t('accountTypeLiability')}
                         </span>
                       </td>
                       <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                        {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(undefined, {
+                        {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(locale, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}

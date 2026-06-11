@@ -14,7 +14,7 @@ export function getCurrencySymbol(currency: string): string {
 /**
  * Format a number with compact notation (e.g. 1.5m, 2.3b).
  */
-export function formatCompactNumber(n: number): string {
+export function formatCompactNumber(n: number, locale?: string): string {
   if (Math.abs(n) >= 1_000_000_000) {
     return `${Math.round((n / 1_000_000_000) * 10) / 10}b`;
   }
@@ -24,5 +24,5 @@ export function formatCompactNumber(n: number): string {
   if (Math.abs(n) >= 1_000) {
     return `${Math.round((n / 1_000) * 10) / 10}k`;
   }
-  return n.toLocaleString();
+  return n.toLocaleString(locale);
 }

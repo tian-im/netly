@@ -71,12 +71,16 @@ describe('MCP Tools Integration Tests', () => {
     });
   }
 
+  function getHandler(name: string): Function {
+    const entry = tools.get(name);
+    if (!entry) throw new Error(`Tool "${name}" not registered`);
+    return entry.handler;
+  }
+
   // Test accounts tools
   describe('Account Tools', () => {
     it('list_accounts: returns empty array when no accounts exist', async () => {
-      const handler = tools.get('list_accounts')?.handler;
-      expect(handler).toBeDefined();
-
+      const handler = getHandler('list_accounts');
       const result = await handler({ includeBalances: false });
       const data = JSON.parse(result.content[0].text);
       expect(data.accounts).toEqual([]);
@@ -86,9 +90,7 @@ describe('MCP Tools Integration Tests', () => {
       await seedAccount({ name: 'Savings', currency: 'USD' });
       await seedAccount({ name: 'Checking', currency: 'AUD' });
 
-      const handler = tools.get('list_accounts')?.handler;
-      expect(handler).toBeDefined();
-
+      const handler = getHandler('list_accounts');
       const result = await handler({ includeBalances: false });
       const data = JSON.parse(result.content[0].text);
       expect(data.accounts).toHaveLength(2);
@@ -100,7 +102,7 @@ describe('MCP Tools Integration Tests', () => {
       await seedAccount({ name: 'Savings', currency: 'USD' });
       await seedAccount({ name: 'Checking', currency: 'AUD' });
 
-      const handler = tools.get('list_accounts')?.handler;
+      const handler = getHandler('list_accounts');
       const result = await handler({ includeBalances: false, currency: 'USD' });
       const data = JSON.parse(result.content[0].text);
       expect(data.accounts).toHaveLength(1);
@@ -111,7 +113,7 @@ describe('MCP Tools Integration Tests', () => {
       const acc = await seedAccount({ startingBalance: 200, currency: 'AUD' });
       await seedTransaction(acc.id, { amount: -50 });
 
-      const handler = tools.get('list_accounts')?.handler;
+      const handler = getHandler('list_accounts');
       const result = await handler({ includeBalances: true });
       const data = JSON.parse(result.content[0].text);
       expect(data.accounts).toHaveLength(1);
@@ -120,9 +122,7 @@ describe('MCP Tools Integration Tests', () => {
     });
 
     it('create_account: creates an account successfully', async () => {
-      const handler = tools.get('create_account')?.handler;
-      expect(handler).toBeDefined();
-
+      const handler = getHandler('create_account');
       const result = await handler({
         name: 'Savings Account',
         type: 'ASSET',
@@ -143,7 +143,7 @@ describe('MCP Tools Integration Tests', () => {
     });
 
     it('create_account: rejects invalid currency', async () => {
-      const handler = tools.get('create_account')?.handler;
+      const handler = getHandler('create_account');
       const result = await handler({
         name: 'Bad Currency',
         type: 'ASSET',
@@ -154,7 +154,7 @@ describe('MCP Tools Integration Tests', () => {
     });
 
     it('create_account: rejects empty name', async () => {
-      const handler = tools.get('create_account')?.handler;
+      const handler = getHandler('create_account');
       const result = await handler({
         name: '   ',
         type: 'ASSET',
@@ -164,7 +164,7 @@ describe('MCP Tools Integration Tests', () => {
     });
 
     it('create_account: uses defaults for balance and currency', async () => {
-      const handler = tools.get('create_account')?.handler;
+      const handler = getHandler('create_account');
       const result = await handler({
         name: 'Default Account',
         type: 'LIABILITY',
@@ -178,7 +178,7 @@ describe('MCP Tools Integration Tests', () => {
     });
 
     it('create_account: rejects duplicate account name', async () => {
-      const handler = tools.get('create_account')?.handler;
+      const handler = getHandler('create_account');
       // Create first
       const first = await handler({ name: 'Duplicate Test', type: 'ASSET' });
       expect(first.isError).toBeFalsy();
@@ -196,16 +196,14 @@ describe('MCP Tools Integration Tests', () => {
       await seedCategory({ name: 'Salary', type: 'INCOME' });
       await seedCategory({ name: 'Rent', type: 'EXPENSE' });
 
-      const handler = tools.get('list_categories')?.handler;
+      const handler = getHandler('list_categories');
       const result = await handler({});
       const data = JSON.parse(result.content[0].text);
       expect(data.categories).toHaveLength(2);
     });
 
     it('create_category: creates a category successfully', async () => {
-      const handler = tools.get('create_category')?.handler;
-      expect(handler).toBeDefined();
-
+      const handler = getHandler('create_category');
       const result = await handler({
         name: 'Dining Out',
         type: 'EXPENSE',
@@ -225,7 +223,7 @@ describe('MCP Tools Integration Tests', () => {
       const cat = await seedCategory({ name: 'Food' });
       const tx = await seedTransaction(acc.id, { payee: 'Woolworths Metro', categoryId: null });
 
-      const handler = tools.get('create_category_rule')?.handler;
+      const handler = getHandler('create_category_rule');
       const result = await handler({ pattern: 'woolworths', categoryId: cat.id });
       const data = JSON.parse(result.content[0].text);
 
@@ -243,7 +241,7 @@ describe('MCP Tools Integration Tests', () => {
       const acc = await seedAccount();
       const csvContent = `Date,Payee,Amount\n01/06/2026,Netflix,-15.99\n02/06/2026,Salary,2500.00`;
       
-      const handler = tools.get('import_csv')?.handler;
+      const handler = getHandler('import_csv');
       const result = await handler({
         csvContent,
         accountId: acc.id,
@@ -262,7 +260,7 @@ describe('MCP Tools Integration Tests', () => {
       const acc = await seedAccount();
       const csvContent = `01/06/2026,Netflix,-15.99\n02/06/2026,Salary,2500.00`;
       
-      const handler = tools.get('import_csv')?.handler;
+      const handler = getHandler('import_csv');
       const result = await handler({
         csvContent,
         accountId: acc.id,
@@ -285,7 +283,7 @@ describe('MCP Tools Integration Tests', () => {
       const acc = await seedAccount();
       const csvContent = `01/06/2026,Uber,15.50,\n02/06/2026,Salary,,2500.00`;
       
-      const handler = tools.get('import_csv')?.handler;
+      const handler = getHandler('import_csv');
       const result = await handler({
         csvContent,
         accountId: acc.id,
@@ -312,7 +310,7 @@ describe('MCP Tools Integration Tests', () => {
       await seedTransaction(acc.id, { payee: 'Target Spend', categoryId: cat.id });
       await seedTransaction(acc.id, { payee: 'Other Spend', categoryId: null });
 
-      const handler = tools.get('list_transactions')?.handler;
+      const handler = getHandler('list_transactions');
       const result = await handler({ categoryId: 'uncategorized' });
       if (result.isError) {
         console.error('list_transactions error:', result.content[0].text);
@@ -328,7 +326,7 @@ describe('MCP Tools Integration Tests', () => {
       const tx1 = await seedTransaction(acc.id);
       const tx2 = await seedTransaction(acc.id);
 
-      const handler = tools.get('update_transaction_category')?.handler;
+      const handler = getHandler('update_transaction_category');
       const result = await handler({
         transactionIds: [tx1.id, tx2.id],
         categoryId: cat.id,
@@ -348,7 +346,7 @@ describe('MCP Tools Integration Tests', () => {
       const cat = await seedCategory();
       const tx = await seedTransaction(acc.id, { payee: 'Uber Ride 1234', categoryId: null });
 
-      const handler = tools.get('categorize_uncategorized')?.handler;
+      const handler = getHandler('categorize_uncategorized');
       const result = await handler({
         pattern: 'Uber',
         categoryId: cat.id,
@@ -376,7 +374,7 @@ describe('MCP Tools Integration Tests', () => {
       await seedTransaction(acc.id, { amount: 3000, categoryId: catIncome.id, date: new Date(now.getFullYear(), now.getMonth(), 10) });
       await seedTransaction(acc.id, { amount: -1000, categoryId: catExpense.id, date: new Date(now.getFullYear(), now.getMonth(), 15) });
 
-      const handler = tools.get('get_dashboard_summary')?.handler;
+      const handler = getHandler('get_dashboard_summary');
       const result = await handler({ currency: 'AUD' });
       const data = JSON.parse(result.content[0].text);
 
@@ -393,7 +391,7 @@ describe('MCP Tools Integration Tests', () => {
       // Prior period: 2026-05-01 to 2026-05-31
       await seedTransaction(acc.id, { amount: 1500, categoryId: cat.id, date: new Date('2026-05-15') });
 
-      const handler = tools.get('get_financial_reports')?.handler;
+      const handler = getHandler('get_financial_reports');
       const result = await handler({
         startDate: '2026-06-01',
         endDate: '2026-06-30',
@@ -408,7 +406,7 @@ describe('MCP Tools Integration Tests', () => {
 
     it('get_net_worth_trend: computes lookup trend points', async () => {
       const acc = await seedAccount({ startingBalance: 1000 });
-      const handler = tools.get('get_net_worth_trend')?.handler;
+      const handler = getHandler('get_net_worth_trend');
       const result = await handler({ months: 3 });
       if (result.isError) {
         console.error('get_net_worth_trend error:', result.content[0].text);
@@ -423,7 +421,7 @@ describe('MCP Tools Integration Tests', () => {
       const cat = await seedCategory({ name: 'Dining', type: 'EXPENSE' });
       await seedTransaction(acc.id, { amount: -50, categoryId: cat.id });
 
-      const handler = tools.get('get_income_expense_breakdown')?.handler;
+      const handler = getHandler('get_income_expense_breakdown');
       const result = await handler({
         startDate: '2026-05-01',
         endDate: '2026-07-01',
@@ -446,7 +444,7 @@ describe('MCP Tools Integration Tests', () => {
       await seedTransaction(acc.id, { payee: 'Netflix', amount: -15.99, date: new Date('2026-06-02') });
       await seedTransaction(acc.id, { payee: 'Netflix', amount: -15.99, date: new Date('2026-06-03') });
 
-      const handler = tools.get('detect_duplicates')?.handler;
+      const handler = getHandler('detect_duplicates');
       
       // Without limit
       const resultAll = await handler({ accountId: acc.id });
@@ -469,7 +467,7 @@ describe('MCP Tools Integration Tests', () => {
       await seedTransaction(acc.id, { payee: 'Netflix Inc', amount: -15.99, categoryId: cat.id, date: new Date('2026-05-01') });
       await seedTransaction(acc.id, { payee: 'Netflix Inc', amount: -15.99, categoryId: cat.id, date: new Date('2026-06-01') });
 
-      const handler = tools.get('identify_recurring_transactions')?.handler;
+      const handler = getHandler('identify_recurring_transactions');
       const result = await handler({ months: 6 });
       const data = JSON.parse(result.content[0].text);
 

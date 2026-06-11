@@ -1,10 +1,12 @@
 import React from 'react';
+import Link from 'next/link';
 import { Tag } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
 
-interface BreakdownItem {
+export interface BreakdownItem {
   name: string;
   amount: number;
+  href?: string;
 }
 
 interface BreakdownListProps {
@@ -15,6 +17,7 @@ interface BreakdownListProps {
   emptyMessage: string;
   progressColorClass: string;
   currency?: string;
+  locale?: string;
 }
 
 export default function BreakdownList({
@@ -25,6 +28,7 @@ export default function BreakdownList({
   emptyMessage,
   progressColorClass,
   currency = 'USD',
+  locale,
 }: BreakdownListProps) {
   const symbol = getCurrencySymbol(currency);
   return (
@@ -34,7 +38,7 @@ export default function BreakdownList({
           <Tag className="h-5 w-5" aria-hidden="true" />
           {title}
         </h3>
-        <div className="space-y-3 mt-4 max-h-[190px] overflow-y-auto pr-1">
+        <div className="space-y-3 mt-4 max-h-[280px] sm:max-h-[340px] overflow-y-auto pr-1">
           {items.length === 0 ? (
             <p className="text-xs text-base-content/50 py-4 text-center">{emptyMessage}</p>
           ) : (
@@ -43,9 +47,15 @@ export default function BreakdownList({
               return (
                 <div key={item.name} className="space-y-1">
                   <div className="flex justify-between text-xs font-semibold">
-                    <span>{item.name}</span>
+                    {item.href ? (
+                      <Link href={item.href} className="hover:text-primary transition-colors">
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <span>{item.name}</span>
+                    )}
                     <span>
-                      {symbol}{item.amount.toLocaleString(undefined, {
+                      {symbol}{item.amount.toLocaleString(locale, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}{' '}
@@ -56,6 +66,7 @@ export default function BreakdownList({
                     className={`progress ${progressColorClass} w-full`}
                     value={percentage}
                     max="100"
+                    aria-label={`${item.name}: ${percentage}%`}
                   ></progress>
                 </div>
               );

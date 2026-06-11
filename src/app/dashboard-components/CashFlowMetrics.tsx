@@ -15,6 +15,7 @@ interface CashFlowMetricsProps {
   financingLabel: string;
   detailedStatementsLabel: string;
   currency?: string;
+  locale?: string;
 }
 
 export default function CashFlowMetrics({
@@ -29,11 +30,12 @@ export default function CashFlowMetrics({
   financingLabel,
   detailedStatementsLabel,
   currency = 'USD',
+  locale,
 }: CashFlowMetricsProps) {
   const symbol = getCurrencySymbol(currency);
   const formatValue = (val: number) => {
     const isPositive = val >= 0;
-    return `${isPositive ? '+' : '-'}${symbol}${Math.abs(val).toLocaleString(undefined, {
+    return `${isPositive ? '+' : '-'}${symbol}${Math.abs(val).toLocaleString(locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;

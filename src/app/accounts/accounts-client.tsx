@@ -414,8 +414,8 @@ export default function AccountsClient({
                           <td className="text-center font-semibold text-sm">
                             <div>{acc._count?.transactions || 0}</div>
                             <div className="text-[10px] text-base-content/40 font-normal mt-0.5">
-                              {lastTxDates[acc.id]
-                                ? t('lastActivity', { date: lastTxDates[acc.id] })
+                              {lastTxDates[acc.id] != null
+                                ? t('lastActivity', { date: lastTxDates[acc.id]! })
                                 : t('noActivity')}
                             </div>
                           </td>
