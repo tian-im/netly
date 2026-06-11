@@ -14,6 +14,7 @@ interface CashFlowMetricsProps {
   investingLabel: string;
   financingLabel: string;
   detailedStatementsLabel: string;
+  detailedStatementsHref?: string;
   currency?: string;
   locale?: string;
 }
@@ -29,6 +30,7 @@ export default function CashFlowMetrics({
   investingLabel,
   financingLabel,
   detailedStatementsLabel,
+  detailedStatementsHref = '/reports',
   currency = 'USD',
   locale,
 }: CashFlowMetricsProps) {
@@ -80,7 +82,7 @@ export default function CashFlowMetrics({
 
         <div className="mt-6 pt-3 border-t border-base-200 flex justify-end">
           <Link
-            href="/reports"
+            href={detailedStatementsHref}
             className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
           >
             {detailedStatementsLabel} <ArrowRight className="h-3 w-3" />

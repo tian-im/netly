@@ -418,7 +418,7 @@ export default function DashboardClient({
           </div>
 
           <Link
-            href="/reports"
+            href={buildReportsUrl(period, now, currentVisualCurrency)}
             className="btn btn-outline btn-xs gap-1 text-primary border-primary/20 hover:border-primary/50 hover:bg-primary/5"
           >
             {t('detailedStatements')} <ArrowRight className="h-3 w-3" />
@@ -622,6 +622,7 @@ export default function DashboardClient({
               investingLabel={isMobile ? t('investingCashFlowShort') : t('investingCashFlow')}
               financingLabel={isMobile ? t('financingCashFlowShort') : t('financingCashFlow')}
               detailedStatementsLabel={t('detailedStatements')}
+              detailedStatementsHref={buildReportsUrl(period, now, currentVisualCurrency)}
               currency={currentVisualCurrency}
               locale={locale}
             />
