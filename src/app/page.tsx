@@ -7,10 +7,10 @@ import {
   generateCashFlowStatement,
   mapTransactionForClient,
 } from '@/lib/reports';
+import { getPeriodDates } from '@/lib/links';
+import type { PeriodType } from '@/lib/links';
 
 export const revalidate = 0; // Disable caching so dashboard is always up-to-date
-
-type PeriodType = 'current' | '3m' | '6m' | 'ytd' | '12m';
 
 interface PageProps {
   searchParams: {
@@ -45,40 +45,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }));
 
   const now = new Date();
-
-  // Determine current period date boundaries
-  let firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  if (period === '3m') {
-    firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  } else if (period === '6m') {
-    firstDay = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  } else if (period === 'ytd') {
-    firstDay = new Date(now.getFullYear(), 0, 1);
-  } else if (period === '12m') {
-    firstDay = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-  }
-
-  // Dynamic Prior Period Date Ranges for comparative delta arrows
-  let prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  let prevPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-
-  if (period === '3m') {
-    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    prevPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 2, 0);
-  } else if (period === '6m') {
-    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    prevPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 5, 0);
-  } else if (period === '12m') {
-    prevPeriodStart = new Date(now.getFullYear(), now.getMonth() - 23, 1);
-    prevPeriodEnd = new Date(now.getFullYear(), now.getMonth() - 11, 0);
-  } else if (period === 'ytd') {
-    prevPeriodStart = new Date(now.getFullYear() - 1, 0, 1);
-    const lastDayOfPrevYearMonth = new Date(now.getFullYear() - 1, now.getMonth() + 1, 0).getDate();
-    const safeDay = Math.min(now.getDate(), lastDayOfPrevYearMonth);
-    prevPeriodEnd = new Date(now.getFullYear() - 1, now.getMonth(), safeDay);
-  }
+  const { firstDay, lastDay, prevPeriodStart, prevPeriodEnd } = getPeriodDates(period, now);
 
   // Calculate maximum end date needed for any of the trends / balances (up to lastDay or prevPeriodEnd)
   const maxEndDate = lastDay > prevPeriodEnd ? lastDay : prevPeriodEnd;

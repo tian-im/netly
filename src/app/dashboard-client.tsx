@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
-import { buildReportsUrl, buildCategoryTransactionsUrl } from '@/lib/links';
+import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl } from '@/lib/links';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -140,6 +140,10 @@ export default function DashboardClient({
   const symbol = getCurrencySymbol(currentVisualCurrency);
 
   const now = useMemo(() => new Date(), []);
+  const { firstDay: displayFirstDay, lastDay: displayLastDay } = useMemo(
+    () => getPeriodDates(period, now),
+    [period, now],
+  );
 
   // === Mobile-specific state ===
   const [mobileTab, setMobileTab] = useState<'cf' | 'income' | 'expense'>('cf');
@@ -185,32 +189,22 @@ export default function DashboardClient({
     return map[period] || period.toUpperCase();
   }, [period, t]);
 
-  // Computed date range for display
-  const dateRange = useMemo(() => {
-    const end = now;
-    let start: Date;
-    switch (period) {
-      case '3m':
-        start = new Date(end.getFullYear(), end.getMonth() - 3, 1);
-        break;
-      case '6m':
-        start = new Date(end.getFullYear(), end.getMonth() - 6, 1);
-        break;
-      case '12m':
-        start = new Date(end.getFullYear(), end.getMonth() - 12, 1);
-        break;
-      case 'ytd':
-        start = new Date(end.getFullYear(), 0, 1);
-        break;
-      default:
-        start = new Date(end.getFullYear(), end.getMonth(), 1);
-        break;
-    }
-    return {
-      start: format.dateTime(start, { month: 'short', day: 'numeric', year: 'numeric' }),
-      end: format.dateTime(end, { month: 'short', day: 'numeric', year: 'numeric' }),
-    };
-  }, [period, now, format]);
+  // Computed date range for display (uses centralized period math)
+  const dateRange = useMemo(
+    () => ({
+      start: format.dateTime(displayFirstDay, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      end: format.dateTime(displayLastDay, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    }),
+    [displayFirstDay, displayLastDay, format],
+  );
 
   // Net worth trend data for the selected currency
   const netWorthTrend = useMemo(() => {

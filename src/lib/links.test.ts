@@ -1,5 +1,76 @@
 import { describe, it, expect } from 'vitest';
-import { getPeriodDateRange, buildReportsUrl, buildAccountTransactionsUrl, buildCategoryTransactionsUrl } from './links';
+import {
+  getPeriodDateRange,
+  getPeriodDates,
+  buildReportsUrl,
+  buildAccountTransactionsUrl,
+  buildCategoryTransactionsUrl,
+} from './links';
+
+describe('getPeriodDates', () => {
+  const now = new Date('2026-06-15T12:00:00.000Z');
+
+  it('should return current month boundaries', () => {
+    const d = getPeriodDates('current', now);
+    expect(d.firstDay).toEqual(new Date('2026-06-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-06-30T00:00:00.000Z'));
+    // prior period: previous month
+    expect(d.prevPeriodStart).toEqual(new Date('2026-05-01T00:00:00.000Z'));
+    expect(d.prevPeriodEnd).toEqual(new Date('2026-05-31T00:00:00.000Z'));
+  });
+
+  it('should return trailing 3-month boundaries', () => {
+    const d = getPeriodDates('3m', now);
+    expect(d.firstDay).toEqual(new Date('2026-04-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-06-30T00:00:00.000Z'));
+    // prior period: 3 months before firstDay → Jan 1 – Mar 31
+    expect(d.prevPeriodStart).toEqual(new Date('2026-01-01T00:00:00.000Z'));
+    expect(d.prevPeriodEnd).toEqual(new Date('2026-03-31T00:00:00.000Z'));
+  });
+
+  it('should return trailing 6-month boundaries', () => {
+    const d = getPeriodDates('6m', now);
+    expect(d.firstDay).toEqual(new Date('2026-01-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-06-30T00:00:00.000Z'));
+    // prior period: 6 months before firstDay → July 1 – Dec 31, 2025
+    expect(d.prevPeriodStart).toEqual(new Date('2025-07-01T00:00:00.000Z'));
+    expect(d.prevPeriodEnd).toEqual(new Date('2025-12-31T00:00:00.000Z'));
+  });
+
+  it('should return YTD boundaries', () => {
+    const d = getPeriodDates('ytd', now);
+    expect(d.firstDay).toEqual(new Date('2026-01-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-06-30T00:00:00.000Z'));
+    // prior period: same window in previous year
+    expect(d.prevPeriodStart).toEqual(new Date('2025-01-01T00:00:00.000Z'));
+    expect(d.prevPeriodEnd).toEqual(new Date('2025-06-15T00:00:00.000Z'));
+  });
+
+  it('should return trailing 12-month boundaries', () => {
+    const d = getPeriodDates('12m', now);
+    expect(d.firstDay).toEqual(new Date('2025-07-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-06-30T00:00:00.000Z'));
+    // prior period: 12 months before firstDay → July 1, 2024 – June 30, 2025
+    expect(d.prevPeriodStart).toEqual(new Date('2024-07-01T00:00:00.000Z'));
+    expect(d.prevPeriodEnd).toEqual(new Date('2025-06-30T00:00:00.000Z'));
+  });
+
+  it('should handle January current month', () => {
+    const janNow = new Date('2026-01-10T00:00:00.000Z');
+    const d = getPeriodDates('current', janNow);
+    expect(d.firstDay).toEqual(new Date('2026-01-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-01-31T00:00:00.000Z'));
+    expect(d.prevPeriodStart).toEqual(new Date('2025-12-01T00:00:00.000Z'));
+    expect(d.prevPeriodEnd).toEqual(new Date('2025-12-31T00:00:00.000Z'));
+  });
+
+  it('should handle year boundary for trailing 12 months', () => {
+    const febNow = new Date('2026-02-10T00:00:00.000Z');
+    const d = getPeriodDates('12m', febNow);
+    expect(d.firstDay).toEqual(new Date('2025-03-01T00:00:00.000Z'));
+    expect(d.lastDay).toEqual(new Date('2026-02-28T00:00:00.000Z'));
+  });
+});
 
 describe('getPeriodDateRange', () => {
   const now = new Date('2026-06-15T00:00:00.000Z');
@@ -32,20 +103,6 @@ describe('getPeriodDateRange', () => {
     const range = getPeriodDateRange('12m', now);
     expect(range.start).toBe('2025-07-01');
     expect(range.end).toBe('2026-06-30');
-  });
-
-  it('should handle January current month correctly', () => {
-    const janNow = new Date('2026-01-10T00:00:00.000Z');
-    const range = getPeriodDateRange('current', janNow);
-    expect(range.start).toBe('2026-01-01');
-    expect(range.end).toBe('2026-01-31');
-  });
-
-  it('should handle year boundary for trailing 12 months', () => {
-    const febNow = new Date('2026-02-10T00:00:00.000Z');
-    const range = getPeriodDateRange('12m', febNow);
-    expect(range.start).toBe('2025-03-01');
-    expect(range.end).toBe('2026-02-28');
   });
 });
 

@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from '@/lib/reports';
+import { Prisma } from '@prisma/client';
 
 export async function getAccounts() {
   return db.account.findMany({
@@ -249,7 +250,7 @@ export async function getTransactions(
     cashFlowType = paramsOrAccountId.cashFlowType;
   }
 
-  const where: any = {};
+  const where: Prisma.TransactionWhereInput = {};
   if (accountId) {
     where.accountId = accountId;
   }
@@ -304,8 +305,8 @@ export async function getTransactions(
 
   if (currency) {
     where.account = {
-      ...(where.account || {}),
-      currency: currency.toUpperCase()
+      ...((where.account ?? {}) as Prisma.AccountWhereInput),
+      currency: currency.toUpperCase(),
     };
   }
 
@@ -314,19 +315,19 @@ export async function getTransactions(
       where.categoryId = null;
     } else {
       where.category = {
-        ...(where.category || {}),
-        name: categoryName
+        ...((where.category ?? {}) as Prisma.CategoryWhereInput),
+        name: categoryName,
       };
     }
   }
 
   if (cashFlowSection) {
     where.category = {
-      ...(where.category || {}),
+      ...((where.category ?? {}) as Prisma.CategoryWhereInput),
       cashFlowType: cashFlowSection.toUpperCase(),
       NOT: {
-        type: 'TRANSFER'
-      }
+        type: 'TRANSFER',
+      },
     };
     if (cashFlowType === 'inflow') {
       where.amount = { gt: 0 };
@@ -337,7 +338,7 @@ export async function getTransactions(
 
   const totalCount = await db.transaction.count({ where });
 
-  let orderBy: any = { date: 'desc' };
+  let orderBy: Prisma.TransactionOrderByWithRelationInput = { date: 'desc' };
   if (sortBy && sortOrder) {
     if (sortBy === 'account') {
       orderBy = { account: { name: sortOrder } };

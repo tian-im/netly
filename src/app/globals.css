@@ -54,11 +54,6 @@ body {
   scroll-snap-align: start;
 }
 
-/* Bottom nav safe area padding */
-.btm-nav {
-  padding-bottom: var(--sab);
-}
-
 /* Hide scrollbar for mobile stat card carousel but keep scrollable */
 .scrollbar-none {
   scrollbar-width: none;
