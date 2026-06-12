@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { Transaction, Category, SortConfig } from '../types';
+import { useLocaleContext } from '@/app/providers';
 import Pagination from './Pagination';
 
 interface TransactionTableProps {
@@ -43,6 +44,26 @@ export default function TransactionTable({
 }: TransactionTableProps) {
   const t = useTranslations('transactions');
   const format = useFormatter();
+  const { locale } = useLocaleContext();
+
+  const COLUMN_COUNT = 6; // checkbox + date + account + payee + category + amount
+
+  const translateCategoryType = (type: string) => {
+    switch (type) {
+      case 'INCOME': return t('table.income');
+      case 'EXPENSE': return t('table.expense');
+      case 'TRANSFER': return t('table.transfer');
+      default: return type;
+    }
+  };
+
+  const translateAccountType = (type: string) => {
+    switch (type) {
+      case 'ASSET': return t('table.asset');
+      case 'LIABILITY': return t('table.liability');
+      default: return type;
+    }
+  };
 
   const isAllSelected =
     transactions.length > 0 &&
@@ -82,7 +103,7 @@ export default function TransactionTable({
   };
 
   const formatAmount = (tx: Transaction) => {
-    const formatted = new Intl.NumberFormat(undefined, {
+    const formatted = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: tx.account.currency || 'AUD',
     }).format(Math.abs(tx.amount));
@@ -142,7 +163,7 @@ export default function TransactionTable({
               ))
             ) : transactions.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-20 text-base-content/40">
+                <td colSpan={COLUMN_COUNT} className="text-center py-20 text-base-content/40">
                   <div className="flex flex-col items-center justify-center gap-4">
                     <div className="bg-base-200 p-4 rounded-full border border-base-300">
                       <Upload className="w-8 h-8 text-base-content/50" />
@@ -229,7 +250,7 @@ export default function TransactionTable({
                           <option value="">{t('table.uncategorized')}</option>
                           {categories.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.name} ({c.type})
+                              {c.name} ({translateCategoryType(c.type)})
                             </option>
                           ))}
                         </select>

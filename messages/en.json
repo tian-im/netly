@@ -329,7 +329,12 @@
       "account": "Account",
       "category": "Category",
       "amount": "Amount",
-      "uncategorized": "Uncategorized"
+      "uncategorized": "Uncategorized",
+      "asset": "Asset",
+      "liability": "Liability",
+      "income": "Income",
+      "expense": "Expense",
+      "transfer": "Transfer"
     },
     "detail": {
       "title": "Transaction Details",
@@ -337,6 +342,7 @@
       "amount": "Amount",
       "account": "Account",
       "payee": "Payee/Description",
+      "description": "Memo / Description",
       "category": "Category",
       "selectCategory": "Select Category",
       "cashFlowType": "Cash Flow Type",

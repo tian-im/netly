@@ -3,6 +3,7 @@
 import { useTranslations, useFormatter } from 'next-intl';
 import { X, Calendar, Landmark, Tag, DollarSign, Info } from 'lucide-react';
 import { Transaction, Category } from '../types';
+import { useLocaleContext } from '@/app/providers';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -21,10 +22,28 @@ export default function TransactionDetailDrawer({
 }: TransactionDetailDrawerProps) {
   const t = useTranslations('transactions');
   const format = useFormatter();
+  const { locale } = useLocaleContext();
+
+  const translateCategoryType = (type: string) => {
+    switch (type) {
+      case 'INCOME': return t('table.income');
+      case 'EXPENSE': return t('table.expense');
+      case 'TRANSFER': return t('table.transfer');
+      default: return type;
+    }
+  };
+
+  const translateAccountType = (type: string) => {
+    switch (type) {
+      case 'ASSET': return t('table.asset');
+      case 'LIABILITY': return t('table.liability');
+      default: return type;
+    }
+  };
 
   if (!transaction) return null;
 
-  const formattedAmount = new Intl.NumberFormat(undefined, {
+  const formattedAmount = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: transaction.account.currency || 'AUD',
   }).format(Math.abs(transaction.amount));
@@ -84,10 +103,10 @@ export default function TransactionDetailDrawer({
                     <div className="text-base font-bold text-base-content mt-1 break-words">{transaction.payee}</div>
                   </div>
 
-                  {/* Memo */}
+                  {/* Memo / Description */}
                   {transaction.description && (
                     <div>
-                      <label className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('table.payee')}</label>
+                      <label className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('detail.description')}</label>
                       <div className="text-sm text-base-content/75 mt-1 bg-base-200/50 p-3 rounded-lg border border-base-200/60 break-words font-mono">
                         {transaction.description}
                       </div>
@@ -110,7 +129,7 @@ export default function TransactionDetailDrawer({
                       <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('detail.account')}</span>
                       <span className="text-sm font-medium text-base-content">
                         {transaction.account.name}{' '}
-                        <span className="text-xs opacity-60">({transaction.account.type})</span>
+                        <span className="text-xs opacity-60">({translateAccountType(transaction.account.type)})</span>
                       </span>
                     </div>
                   </div>
@@ -131,7 +150,7 @@ export default function TransactionDetailDrawer({
                         <option value="">{t('table.uncategorized')}</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.name} ({c.type})
+                            {c.name} ({translateCategoryType(c.type)})
                           </option>
                         ))}
                       </select>

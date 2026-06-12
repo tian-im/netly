@@ -3,6 +3,15 @@ import TransactionsClient from './transactions-client';
 
 export const revalidate = 0; // Always fresh
 
+/**
+ * Safely serialize server data for client component transport.
+ * Prisma returns Date objects and other non-serializable types
+ * that Next.js cannot pass across the server/client boundary.
+ */
+function serializeForClient<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 interface PageProps {
   searchParams: {
     accountId?: string;
@@ -44,9 +53,9 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
   const categories = await getCategories();
 
   // Safely serialize Dates to ISO string format for Next.js Client Component compatibility
-  const serializedTransactions = JSON.parse(JSON.stringify(transactions));
-  const serializedAccounts = JSON.parse(JSON.stringify(accounts));
-  const serializedCategories = JSON.parse(JSON.stringify(categories));
+  const serializedTransactions = serializeForClient(transactions);
+  const serializedAccounts = serializeForClient(accounts);
+  const serializedCategories = serializeForClient(categories);
 
   return (
     <TransactionsClient

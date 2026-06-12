@@ -42,11 +42,25 @@ export default function FilterBar({
   onRuleModeChange,
 }: FilterBarProps) {
   const t = useTranslations('transactions');
+
+  const translateCategoryType = (type: string) => {
+    switch (type) {
+      case 'INCOME': return t('table.income');
+      case 'EXPENSE': return t('table.expense');
+      case 'TRANSFER': return t('table.transfer');
+      default: return type;
+    }
+  };
+
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync local search state with external search term
+  // Sync local search state with external search term & clear pending debounce
   useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
     setLocalSearch(searchTerm);
   }, [searchTerm]);
 
@@ -197,7 +211,7 @@ export default function FilterBar({
               <option value="UNCATEGORIZED">⚠ {t('filter.uncategorizedOnly')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.type})
+                  {c.name} ({translateCategoryType(c.type)})
                 </option>
               ))}
             </select>

@@ -21,6 +21,15 @@ export default function BulkActionPanel({
 }: BulkActionPanelProps) {
   const t = useTranslations('transactions');
 
+  const translateCategoryType = (type: string) => {
+    switch (type) {
+      case 'INCOME': return t('table.income');
+      case 'EXPENSE': return t('table.expense');
+      case 'TRANSFER': return t('table.transfer');
+      default: return type;
+    }
+  };
+
   if (selectedCount === 0) return null;
 
   return (
@@ -58,7 +67,7 @@ export default function BulkActionPanel({
             <option value="UNCATEGORIZED">{t('table.uncategorized')}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({c.type})
+                {c.name} ({translateCategoryType(c.type)})
               </option>
             ))}
           </select>

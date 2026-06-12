@@ -130,7 +130,7 @@ export default function TransactionsClient({
         }
       });
       // Always reset page to 1 when a filter criteria (other than page itself) changes
-      if (!updates.hasOwnProperty('page')) {
+      if (!Object.hasOwn(updates, 'page')) {
         params.set('page', '1');
       }
       router.push(`${pathname}?${params.toString()}`);

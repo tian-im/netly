@@ -310,20 +310,20 @@ export async function getTransactions(
   }
   if (searchTerm) {
     const cleanSearch = searchTerm.trim().toLowerCase();
-    where.OR = [
-      { payee: { contains: cleanSearch } },
-      { description: { contains: cleanSearch } }
-    ];
+    // SQLite: Prisma's `contains` is case-sensitive; use raw SQL with LOWER() for case-insensitive matching
+    const matchingIds = await db.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`SELECT id FROM "Transaction" WHERE LOWER("payee") LIKE ${'%' + cleanSearch + '%'} OR (description IS NOT NULL AND LOWER("description") LIKE ${'%' + cleanSearch + '%'})`
+    );
+    where.id = { in: matchingIds.map(t => t.id) };
   }
   if (dateRange && dateRange !== 'allPeriods') {
     const now = new Date();
     let startDate: Date | undefined;
-    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     
     if (dateRange === 'month') {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      endDate.setMonth(now.getMonth() + 1);
-      endDate.setDate(0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
     } else if (dateRange === 'threeMonths') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate(), 0, 0, 0, 0);
     } else if (dateRange === 'sixMonths') {
@@ -382,15 +382,20 @@ export async function getTransactions(
 
   const totalCount = await db.transaction.count({ where });
 
+  const VALID_SORT_FIELDS = ['date', 'payee', 'amount'];
+  const VALID_SORT_RELATIONS = ['account', 'category'];
+
   let orderBy: Prisma.TransactionOrderByWithRelationInput = { date: 'desc' };
-  if (sortBy && sortOrder) {
+  const validSortOrder = sortOrder === 'asc' || sortOrder === 'desc' ? sortOrder : undefined;
+  if (sortBy && validSortOrder) {
     if (sortBy === 'account') {
-      orderBy = { account: { name: sortOrder } };
+      orderBy = { account: { name: validSortOrder } };
     } else if (sortBy === 'category') {
-      orderBy = { category: { name: sortOrder } };
-    } else {
-      orderBy = { [sortBy]: sortOrder };
+      orderBy = { category: { name: validSortOrder } };
+    } else if (VALID_SORT_FIELDS.includes(sortBy)) {
+      orderBy = { [sortBy]: validSortOrder };
     }
+    // Invalid sortBy or sortOrder falls through to default { date: 'desc' }
   }
 
   const transactions = await db.transaction.findMany({
