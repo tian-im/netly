@@ -170,6 +170,27 @@ export async function getCategories() {
 export async function createCategoryRule(pattern: string, categoryId: string) {
   if (!pattern.trim()) throw new Error('ERR_PATTERN_REQUIRED');
 
+  // Validate the category exists
+  const category = await db.category.findUnique({ where: { id: categoryId } });
+  if (!category) throw new Error('ERR_CATEGORY_NOT_FOUND');
+
+  const lowerPattern = pattern.trim().toLowerCase();
+
+  // Check for duplicate patterns within the same category
+  const sameCategoryRule = await db.categoryRule.findFirst({
+    where: { pattern: lowerPattern, categoryId }
+  });
+  if (sameCategoryRule) throw new Error('ERR_DUPLICATE_RULE_PATTERN');
+
+  // Check for same pattern in a different category (first-match-wins ambiguity)
+  const conflictingRule = await db.categoryRule.findFirst({
+    where: { pattern: lowerPattern, NOT: { categoryId } },
+    include: { category: { select: { name: true } } },
+  });
+  if (conflictingRule) {
+    throw new Error(`ERR_DUPLICATE_RULE_PATTERN_GLOBAL:::${conflictingRule.category.name}`);
+  }
+
   const rule = await db.categoryRule.create({
     data: {
       pattern: pattern.trim().toLowerCase(),
@@ -182,7 +203,6 @@ export async function createCategoryRule(pattern: string, categoryId: string) {
     where: { categoryId: null }
   });
 
-  const lowerPattern = pattern.trim().toLowerCase();
   const matchedTxIds = transactions
     .filter((tx) => {
       const cleanPayee = tx.payee.toLowerCase();
@@ -208,6 +228,9 @@ export async function createCategoryRule(pattern: string, categoryId: string) {
 }
 
 export async function deleteCategoryRule(id: string) {
+  const rule = await db.categoryRule.findUnique({ where: { id } });
+  if (!rule) throw new Error('ERR_CATEGORY_RULE_NOT_FOUND');
+
   await db.categoryRule.delete({
     where: { id }
   });
@@ -583,7 +606,7 @@ export async function deleteCategory(id: string) {
   });
   if (!category) throw new Error('ERR_CATEGORY_NOT_FOUND');
   
-  if (category.name.toLowerCase() === 'transfer') {
+  if (category.type === 'TRANSFER') {
     throw new Error('ERR_TRANSFER_CATEGORY_PROTECTED');
   }
 
@@ -608,12 +631,12 @@ export async function updateCategory(id: string, name: string, type: string, cas
   });
   if (existing) throw new Error('ERR_CATEGORY_NAME_EXISTS');
 
-  // Protect Transfer category from being renamed
+  // Protect Transfer category from modification
   const category = await db.category.findUnique({
     where: { id }
   });
   if (!category) throw new Error('ERR_CATEGORY_NOT_FOUND');
-  if (category.name.toLowerCase() === 'transfer' && name.trim().toLowerCase() !== 'transfer') {
+  if (category.type === 'TRANSFER') {
     throw new Error('ERR_TRANSFER_CATEGORY_PROTECTED');
   }
 

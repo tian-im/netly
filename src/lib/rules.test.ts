@@ -39,11 +39,11 @@ describe('Auto-Categorization Rules Engine', () => {
     expect(matchRule('Uber Trip', null, [])).toBeNull();
   });
 
-  it('should catch invalid regex syntax and fall back to substring match', () => {
+  it('should skip rules with invalid regex syntax and not fall back to substring match', () => {
     const invalidRegexRules: RuleMock[] = [
       { id: '6', pattern: '[a-z', categoryId: 'cat_invalid' }, // missing closing bracket
     ];
-    // should not crash, should fall back to substring check
-    expect(matchRule('some [a-z text', null, invalidRegexRules)).toBe('cat_invalid');
+    // should not crash, invalid regex should return no match
+    expect(matchRule('some [a-z text', null, invalidRegexRules)).toBeNull();
   });
 });

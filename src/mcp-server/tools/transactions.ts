@@ -236,6 +236,17 @@ export function registerTransactionTools(server: McpServer) {
     },
     async ({ transactionIds, categoryId, createRule }) => {
       try {
+        // Validate the category exists (only if assigning to a category, not nullifying)
+        if (categoryId !== null) {
+          const category = await db.category.findUnique({ where: { id: categoryId } });
+          if (!category) {
+            return {
+              isError: true,
+              content: [{ type: "text", text: "Category not found." }],
+            };
+          }
+        }
+
         await db.transaction.updateMany({
           where: { id: { in: transactionIds } },
           data: {
@@ -286,6 +297,15 @@ export function registerTransactionTools(server: McpServer) {
     async ({ pattern, categoryId, createRule }) => {
       try {
         const lowerPattern = pattern.trim().toLowerCase();
+
+        // Validate the category exists
+        const category = await db.category.findUnique({ where: { id: categoryId } });
+        if (!category) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: "Category not found." }],
+          };
+        }
 
         // 1. Find all matching uncategorized transactions
         const matchedTransactions = await db.transaction.findMany({

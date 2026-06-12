@@ -17,6 +17,9 @@ const KNOWN_ERROR_CODES = new Set([
   'ERR_CATEGORY_NAME_EXISTS',
   'ERR_CATEGORY_NOT_FOUND',
   'ERR_TRANSFER_CATEGORY_PROTECTED',
+  'ERR_DUPLICATE_RULE_PATTERN',
+  'ERR_DUPLICATE_RULE_PATTERN_GLOBAL',
+  'ERR_CATEGORY_RULE_NOT_FOUND',
   'ERR_CHALLENGE_EXPIRED_OR_INVALID',
   'ERR_CREDENTIAL_NOT_FOUND',
   'ERR_REGISTRATION_VERIFICATION_FAILED',
@@ -33,5 +36,7 @@ const KNOWN_ERROR_CODES = new Set([
 
 export function translateError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
-  return KNOWN_ERROR_CODES.has(msg) ? msg : 'ERR_UNKNOWN';
+  // Support augmented error codes with payload: ERR_CODE:::payload
+  const baseCode = msg.includes(':::') ? msg.split(':::')[0] : msg;
+  return KNOWN_ERROR_CODES.has(baseCode) ? baseCode : 'ERR_UNKNOWN';
 }

@@ -30,13 +30,14 @@ export function matchRule(
           return rule.categoryId;
         }
       } catch (e) {
-        // Fallback to substring matching if regex is invalid
+        // Invalid regex — skip this rule; don't fall through to substring matching
+        continue;
       }
-    }
-
-    // Standard substring matching (case-insensitive)
-    if (cleanPayee.includes(lowerPattern) || cleanDesc.includes(lowerPattern)) {
-      return rule.categoryId;
+    } else {
+      // Standard substring matching (case-insensitive)
+      if (cleanPayee.includes(lowerPattern) || cleanDesc.includes(lowerPattern)) {
+        return rule.categoryId;
+      }
     }
   }
 

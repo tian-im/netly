@@ -80,7 +80,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
   // Table Filtering & Sorting State
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<'name' | 'type' | 'cashFlowType' | 'usage'>('name');
+  const [sortField, setSortField] = useState<'name' | 'type' | 'cashFlowType' | 'usage' | 'rules'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -91,7 +91,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     }, 3500);
   };
 
-  const handleSort = (field: 'name' | 'type' | 'cashFlowType' | 'usage') => {
+  const handleSort = (field: 'name' | 'type' | 'cashFlowType' | 'usage' | 'rules') => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -132,6 +132,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       } else if (sortField === 'usage') {
         valA = a.transactionsCount;
         valB = b.transactionsCount;
+      } else if (sortField === 'rules') {
+        valA = a.rulesCount;
+        valB = b.rulesCount;
       }
 
       if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
@@ -232,7 +235,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   };
 
   const handleDeleteClick = (cat: Category) => {
-    const isProtected = cat.name.toLowerCase() === 'transfer';
+    const isProtected = cat.type === 'TRANSFER';
     if (isProtected) {
       showToast(t('transferProtected'), 'error');
       return;
@@ -326,7 +329,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
   const totalRules = categories.reduce((acc, c) => acc + (c.rules?.length ?? 0), 0);
 
-  const SortIndicator = ({ field }: { field: typeof sortField }) => {
+  const SortIndicator = ({ field }: { field: 'name' | 'type' | 'cashFlowType' | 'usage' | 'rules' }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
     return sortDirection === 'asc' ? (
       <ArrowUp className="w-3.5 h-3.5 text-primary ml-1 inline-block" />
@@ -454,6 +457,15 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                           </th>
                           <th className="text-center">
                             <button
+                              onClick={() => handleSort('rules')}
+                              className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                              aria-label="Sort by match rules count"
+                            >
+                              <span>{t('matchRules')}</span> <SortIndicator field="rules" />
+                            </button>
+                          </th>
+                          <th className="text-center">
+                            <button
                               onClick={() => handleSort('usage')}
                               className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
                               aria-label="Sort by transaction usage count"
@@ -466,15 +478,12 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                       </thead>
                       <tbody>
                         {sortedCategories.map((cat) => {
-                          const isTransfer = cat.name.toLowerCase() === 'transfer';
+                          const isTransfer = cat.type === 'TRANSFER';
                           const isDeleting = deletingCategoryId === cat.id;
                           return (
                             <tr key={cat.id} className="hover:bg-base-200/50 border-b border-base-200">
                               <td className="whitespace-normal break-words">
                                 <div className="font-bold">{cat.name}</div>
-                                <div className="text-xs text-base-content/50 truncate">
-                                  {t('rulesCount', { count: cat.rulesCount || 0 })}
-                                </div>
                               </td>
                               <td className="whitespace-normal">
                                 <span
@@ -493,6 +502,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
                                 <span className="badge badge-outline badge-sm font-bold opacity-75 block w-fit truncate">
                                   {cat.cashFlowType}
                                 </span>
+                              </td>
+                              <td className="text-center font-mono font-bold text-sm whitespace-normal">
+                                {t('rulesCount', { count: cat.rulesCount || 0 })}
                               </td>
                               <td className="text-center font-mono font-bold text-sm whitespace-normal">
                                 {t('txCount', { count: cat.transactionsCount })}
