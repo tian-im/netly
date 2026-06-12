@@ -145,15 +145,27 @@ export default function DashboardClient({
     [period, now],
   );
 
-  // === Mobile-specific state ===
-  const [mobileTab, setMobileTab] = useState<'cf' | 'income' | 'expense'>('cf');
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 1024);
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  /*
+   * DESIGN DECISION (2026-06-12): No mobile tab switching for the bottom panel trio.
+   *
+   * On mobile, the Cash Flow Metrics, Income Breakdown, and Expense Breakdown panels
+   * are all stacked vertically rather than hidden behind tabs. Rationale:
+   *
+   *   1. A dashboard is an at-a-glance overview. Tabs hide 2 of 3 panels, forcing
+   *      extra taps and breaking the comparison flow between cash flow, income, and
+   *      expenses — which are co-equal peer metrics.
+   *
+   *   2. With only 3 items, vertical scrolling is entirely reasonable. The extra scroll
+   *      to reach the accounts table below is marginal.
+   *
+   *   3. The desktop layout already proves the point — it shows all three side-by-side
+   *      in a 3-column grid because comparison matters. The mobile layout should
+   *      preserve the same information hierarchy, just stacked.
+   *
+   * The previous implementation used a mobileTab state and tabs-box to switch between
+   * panels. Do NOT revert to tabs without a clear user-research justification showing
+   * that the vertical-space savings outweigh the loss of at-a-glance overview.
+   */
 
   // === Keyboard shortcuts for period switching ===
   useEffect(() => {
@@ -442,10 +454,16 @@ export default function DashboardClient({
         )}
       </div>
 
-      {/* Overview Stat Cards — mobile horizontal scroll, desktop grid */}
-      <div className="flex md:grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto md:overflow-visible snap-x md:snap-none scrollbar-none -mx-4 md:mx-0 px-4 md:px-0">
+      {/* 
+        Overview Stat Cards — 2×2 quadrant grid on mobile, 4-column single row on desktop.
+        DESIGN DECISION (2026-06-12): We use a 2×2 grid on mobile to show all four KPI cards 
+        at a glance without horizontal scrolling. The previous implementation used a horizontal 
+        scroll layout (flex + overflow-x-auto) which hid 3 of 4 cards off-screen, requiring 
+        users to swipe left/right — a poor UX for key financial metrics.
+        Do NOT revert to horizontal scrolling without consulting the team.
+      */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Net Worth */}
-        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('netWorth')}
           icon={<DollarSign className="h-5 w-5" />}
@@ -469,10 +487,8 @@ export default function DashboardClient({
           currency={currentVisualCurrency}
           locale={locale}
         />
-        </div>
 
         {/* Net Income */}
-        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('netIncome', { period: periodTitle })}
           icon={<Activity className="h-5 w-5" />}
@@ -496,10 +512,8 @@ export default function DashboardClient({
           currency={currentVisualCurrency}
           locale={locale}
         />
-        </div>
 
         {/* Savings Rate */}
-        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('savingsRate')}
           icon={<PiggyBank className="h-5 w-5" />}
@@ -515,10 +529,8 @@ export default function DashboardClient({
           }}
           subtitle={t('targetSavings')}
         />
-        </div>
 
         {/* Cash runway / cash balance info */}
-        <div className="min-w-[280px] md:min-w-0 snap-start shrink-0">
         <StatCard
           title={t('cashRunway')}
           icon={<AlertTriangle className={`h-5 w-5 ${isBurn ? 'text-error animate-pulse' : 'text-success'}`} />}
@@ -540,7 +552,6 @@ export default function DashboardClient({
           currency={currentVisualCurrency}
           locale={locale}
         />
-        </div>
       </div>
 
       {/* Main visual blocks */}
@@ -571,90 +582,66 @@ export default function DashboardClient({
         />
       </div>
 
-      {/* Cash Flow details & Category break down grid — tabs on mobile, columns on desktop */}
-      <div>
-        {/* Mobile Tab Selector (hidden on lg+) */}
-        <div className="tabs tabs-box bg-base-100 border border-base-200 p-1 mb-4 lg:hidden" role="tablist">
-          <button
-            role="tab"
-            className={`tab tab-sm ${mobileTab === 'cf' ? 'tab-active' : ''}`}
-            onClick={() => setMobileTab('cf')}
-            aria-selected={mobileTab === 'cf'}
-          >
-            {t('cashFlowMetrics', { currency: currentVisualCurrency })}
-          </button>
-          <button
-            role="tab"
-            className={`tab tab-sm ${mobileTab === 'income' ? 'tab-active' : ''}`}
-            onClick={() => setMobileTab('income')}
-            aria-selected={mobileTab === 'income'}
-          >
-            {t('incomeBreakdown', { currency: '' }).replace(/\(.*\)/, '').trim()}
-          </button>
-          <button
-            role="tab"
-            className={`tab tab-sm ${mobileTab === 'expense' ? 'tab-active' : ''}`}
-            onClick={() => setMobileTab('expense')}
-            aria-selected={mobileTab === 'expense'}
-          >
-            {t('expenseBreakdown', { currency: '' }).replace(/\(.*\)/, '').trim()}
-          </button>
+      {/* Cash Flow details & Category breakdown — stacked on mobile, 3-column on desktop */}
+      {/*
+       * DESIGN DECISION (2026-06-12): All three panels are always visible (stacked on mobile,
+       * side-by-side on desktop). The previous implementation used tabs on mobile, but
+       * the at-a-glance nature of a dashboard makes hiding 2 of 3 panels behind tabs
+       * counterproductive. See the comment by the state declarations above for the full
+       * rationale. Do NOT revert to tabs without user-research justification.
+       */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Cash Flow Statement card */}
+        <div className="lg:block">
+          <CashFlowMetrics
+            title={t('cashFlowMetrics', { currency: currentVisualCurrency })}
+            ocf={ocf}
+            fcf={fcf}
+            investingNet={visualCF.investing.net}
+            financingNet={visualCF.financing.net}
+            ocfLabel={t('ocf')}
+            fcfLabel={t('fcf')}
+            investingLabel={t('investingCashFlow')}
+            financingLabel={t('financingCashFlow')}
+            detailedStatementsLabel={t('detailedStatements')}
+            detailedStatementsHref={buildReportsUrl(period, now, currentVisualCurrency)}
+            currency={currentVisualCurrency}
+            locale={locale}
+          />
         </div>
 
-        {/* Desktop: 3-column grid (lg+), Mobile: single active panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Cash Flow Statement card — hide on mobile unless active tab */}
-          <div className={`${isMobile && mobileTab !== 'cf' ? 'hidden' : ''} lg:block`}>
-            <CashFlowMetrics
-              title={t('cashFlowMetrics', { currency: currentVisualCurrency })}
-              ocf={ocf}
-              fcf={fcf}
-              investingNet={visualCF.investing.net}
-              financingNet={visualCF.financing.net}
-              ocfLabel={isMobile ? t('ocfShort') : t('ocf')}
-              fcfLabel={isMobile ? t('fcfShort') : t('fcf')}
-              investingLabel={isMobile ? t('investingCashFlowShort') : t('investingCashFlow')}
-              financingLabel={isMobile ? t('financingCashFlowShort') : t('financingCashFlow')}
-              detailedStatementsLabel={t('detailedStatements')}
-              detailedStatementsHref={buildReportsUrl(period, now, currentVisualCurrency)}
-              currency={currentVisualCurrency}
-              locale={locale}
-            />
-          </div>
+        {/* Income Sources breakdown */}
+        <div className="lg:block">
+          <BreakdownList
+            title={t('incomeBreakdown', { currency: currentVisualCurrency })}
+            titleColorClass="text-success"
+            items={sortedIncome.map((item) => ({
+              ...item,
+              href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
+            }))}
+            totalAmount={visualIS.totalIncome}
+            emptyMessage={t('noIncome')}
+            progressColorClass="progress-success"
+            currency={currentVisualCurrency}
+            locale={locale}
+          />
+        </div>
 
-          {/* Income Sources breakdown — hide on mobile unless active tab */}
-          <div className={`${isMobile && mobileTab !== 'income' ? 'hidden' : ''} lg:block`}>
-            <BreakdownList
-              title={t('incomeBreakdown', { currency: currentVisualCurrency })}
-              titleColorClass="text-success"
-              items={sortedIncome.map((item) => ({
-                ...item,
-                href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
-              }))}
-              totalAmount={visualIS.totalIncome}
-              emptyMessage={t('noIncome')}
-              progressColorClass="progress-success"
-              currency={currentVisualCurrency}
-              locale={locale}
-            />
-          </div>
-
-          {/* Expense Categories progress bars — hide on mobile unless active tab */}
-          <div className={`${isMobile && mobileTab !== 'expense' ? 'hidden' : ''} lg:block`}>
-            <BreakdownList
-              title={t('expenseBreakdown', { currency: currentVisualCurrency })}
-              titleColorClass="text-error"
-              items={sortedExpenses.map((item) => ({
-                ...item,
-                href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
-              }))}
-              totalAmount={visualIS.totalExpenses}
-              emptyMessage={t('noExpense')}
-              progressColorClass="progress-secondary"
-              currency={currentVisualCurrency}
-              locale={locale}
-            />
-          </div>
+        {/* Expense Categories progress bars */}
+        <div className="lg:block">
+          <BreakdownList
+            title={t('expenseBreakdown', { currency: currentVisualCurrency })}
+            titleColorClass="text-error"
+            items={sortedExpenses.map((item) => ({
+              ...item,
+              href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
+            }))}
+            totalAmount={visualIS.totalExpenses}
+            emptyMessage={t('noExpense')}
+            progressColorClass="progress-secondary"
+            currency={currentVisualCurrency}
+            locale={locale}
+          />
         </div>
       </div>
 
