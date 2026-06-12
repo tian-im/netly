@@ -62,6 +62,7 @@
     "periodTitle12m": "12个月",
     "uncategorizedPending": "有未分类交易待处理！",
     "uncategorizedDesc": "您有 {count} 笔交易没有分类。财务报表和指标将会不完整。",
+    "uncategorizedBadge": "{count} 未分类",
     "categorizeNow": "立即分类",
     "analyzePeriod": "分析周期：",
     "detailedStatements": "详细报表",

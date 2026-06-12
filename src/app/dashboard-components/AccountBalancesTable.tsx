@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Wallet, ArrowUpDown } from 'lucide-react';
@@ -138,7 +136,7 @@ export default function AccountBalancesTable({
                             </span>
                             {uncatCount > 0 && (
                               <span className="badge badge-warning badge-xs gap-1 font-semibold">
-                                {uncatCount} uncat
+                                {t('uncategorizedBadge', { count: uncatCount })}
                               </span>
                             )}
                           </div>

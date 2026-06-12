@@ -76,6 +76,8 @@ interface DashboardClientProps {
     }>;
   };
   netWorthTrendByCurrency: Record<string, { date: string; value: number }[]>;
+  /** Server-computed default currency (most common across accounts). */
+  defaultCurrency: string;
 }
 
 export default function DashboardClient({
@@ -90,6 +92,7 @@ export default function DashboardClient({
   prevBS,
   prevIS,
   netWorthTrendByCurrency,
+  defaultCurrency: serverDefaultCurrency,
 }: DashboardClientProps) {
   const t = useTranslations('dashboard');
   const tAccounts = useTranslations('accounts');
@@ -107,24 +110,9 @@ export default function DashboardClient({
     return Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
   }, [accounts]);
 
-  // Derive most common account currency
-  const defaultCurrency = useMemo(() => {
-    if (accounts.length === 0) return 'AUD';
-    const counts: Record<string, number> = {};
-    accounts.forEach((a) => {
-      const c = a.currency || 'AUD';
-      counts[c] = (counts[c] || 0) + 1;
-    });
-    let maxCurrency = 'AUD';
-    let maxCount = 0;
-    Object.entries(counts).forEach(([curr, cnt]) => {
-      if (cnt > maxCount) {
-        maxCount = cnt;
-        maxCurrency = curr;
-      }
-    });
-    return maxCurrency;
-  }, [accounts]);
+  // Use the server-computed default currency (most common across accounts).
+  // This eliminates a duplicate computation that was fragile and could drift (Fix #4).
+  const defaultCurrency = serverDefaultCurrency;
 
   const [selectedVisualCurrency, setSelectedVisualCurrency] = useState(defaultCurrency);
 
@@ -268,7 +256,13 @@ export default function DashboardClient({
     if (period === '6m') return 6;
     if (period === 'ytd') return now.getMonth() + 1;
     if (period === '12m') return 12;
-    return 1;
+    // For 'current' period, prorate by days elapsed in the month (Fix #3).
+    // Future-dated transactions don't exist, so the effective data range is
+    // [firstDay, today], not [firstDay, lastDay]. Dividing by 1 month would
+    // understate the monthly burn/income rate early in the month.
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysElapsed = Math.min(now.getDate(), daysInMonth);
+    return daysElapsed / daysInMonth; // e.g., 12/30 = 0.4
   }, [period, now]);
 
   const averageMonthlyCashFlow = useMemo(() => {
@@ -617,7 +611,7 @@ export default function DashboardClient({
             titleColorClass="text-success"
             items={sortedIncome.map((item) => ({
               ...item,
-              href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
+              href: categoryIdMap[item.name] ? buildCategoryTransactionsUrl(categoryIdMap[item.name]) : undefined,
             }))}
             totalAmount={visualIS.totalIncome}
             emptyMessage={t('noIncome')}
@@ -634,7 +628,7 @@ export default function DashboardClient({
             titleColorClass="text-error"
             items={sortedExpenses.map((item) => ({
               ...item,
-              href: buildCategoryTransactionsUrl(categoryIdMap[item.name] || item.name),
+              href: categoryIdMap[item.name] ? buildCategoryTransactionsUrl(categoryIdMap[item.name]) : undefined,
             }))}
             totalAmount={visualIS.totalExpenses}
             emptyMessage={t('noExpense')}

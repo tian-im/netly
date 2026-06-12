@@ -3,7 +3,8 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { NextIntlClientProvider } from 'next-intl';
 import DashboardClient from './dashboard-client';
-import messages from '../../messages/en.json';
+import enMessages from '../../messages/en.json';
+import zhMessages from '../../messages/zh.json';
 import {
   generateBalanceSheet,
   generateIncomeStatement,
@@ -97,6 +98,17 @@ describe('DashboardClient Component', () => {
     },
   ];
 
+  // Helper to determine default currency (mirrors server logic in page.tsx)
+  const getDefaultCurrency = (accounts: any[]): string => {
+    if (accounts.length === 0) return 'AUD';
+    const counts: Record<string, number> = {};
+    accounts.forEach((a: any) => {
+      const c = a.currency || 'AUD';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  };
+
   // Helper to construct props like the page component does
   const getHelperProps = (accounts: any[], transactions: any[]) => {
     const lastDay = new Date('2026-06-30T00:00:00.000Z');
@@ -145,11 +157,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
           <DashboardClient
             accounts={mockAccounts}
+            categories={[]}
             uncategorizedCount={0}
             period="current"
+            defaultCurrency={getDefaultCurrency(mockAccounts)}
             {...helperProps}
           />
         </NextIntlClientProvider>
@@ -178,11 +192,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
           <DashboardClient
             accounts={mockAccounts}
+            categories={[]}
             uncategorizedCount={3}
             period="current"
+            defaultCurrency={getDefaultCurrency(mockAccounts)}
             {...helperProps}
           />
         </NextIntlClientProvider>
@@ -204,11 +220,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
           <DashboardClient
             accounts={[]}
+            categories={[]}
             uncategorizedCount={0}
             period="current"
+            defaultCurrency={getDefaultCurrency([])}
             {...helperProps}
           />
         </NextIntlClientProvider>
@@ -241,11 +259,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
           <DashboardClient
             accounts={mockAccounts}
+            categories={[]}
             uncategorizedCount={0}
             period="current"
+            defaultCurrency={getDefaultCurrency(mockAccounts)}
             {...helperProps}
           />
         </NextIntlClientProvider>
@@ -278,11 +298,13 @@ describe('DashboardClient Component', () => {
     await act(async () => {
       const root = createRoot(container);
       root.render(
-        <NextIntlClientProvider locale="en" messages={messages} timeZone="UTC">
+        <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
           <DashboardClient
             accounts={mockMultiCurrencyAccounts}
+            categories={[]}
             uncategorizedCount={0}
             period="current"
+            defaultCurrency={getDefaultCurrency(mockMultiCurrencyAccounts)}
             {...helperProps}
           />
         </NextIntlClientProvider>
@@ -300,6 +322,40 @@ describe('DashboardClient Component', () => {
     });
 
     expect(usdButton?.className).toContain('btn-primary');
+
+    document.body.removeChild(container);
+  });
+
+  it('renders Chinese locale translations correctly', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const helperProps = getHelperProps(mockAccounts, mockTransactions);
+
+    await act(async () => {
+      const root = createRoot(container);
+      root.render(
+        <NextIntlClientProvider locale="zh" messages={zhMessages} timeZone="UTC">
+          <DashboardClient
+            accounts={mockAccounts}
+            categories={[]}
+            uncategorizedCount={0}
+            period="current"
+            defaultCurrency={getDefaultCurrency(mockAccounts)}
+            {...helperProps}
+          />
+        </NextIntlClientProvider>
+      );
+    });
+
+    // Verify key Chinese translations are rendering
+    expect(container.textContent).toContain('财务概览');
+    expect(container.textContent).toContain('净资产');
+    expect(container.textContent).toContain('储蓄率');
+    expect(container.textContent).toContain('现金跑道');
+    expect(container.textContent).toContain('本月');
+    expect(container.textContent).toContain('资产');
+    expect(container.textContent).toContain('负债');
 
     document.body.removeChild(container);
   });

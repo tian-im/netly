@@ -25,6 +25,16 @@ export interface TransactionLike {
 
 /**
  * Generates the Balance Sheet up to a specified end date.
+ *
+ * NOTE — Liability balance sign convention (Issue #10):
+ *   The pipeline uses a triple-sign-flip that is internally consistent:
+ *   1. Raw balance:  raw = startingBalance + netChange
+ *      (LIABILITY startingBalance is stored as NEGATIVE; e.g. -200 for $200 credit debt)
+ *   2. BS output:     balance = -(raw)
+ *      (now positive: higher positive = more debt)
+ *   3. UI display:    displayBalance = -(balance)
+ *      (back to negative: shown as red/down indicating debt)
+ *   Do NOT change one flip without updating all three.
  */
 export function generateBalanceSheet(
   accounts: AccountLike[],

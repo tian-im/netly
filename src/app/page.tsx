@@ -91,8 +91,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     };
   });
 
-  // Since trend calculations might need historical net worth, compute balance sheets for end dates
-  // Pre-generate trend data — only for the most common/default currency to save SSR time
+  // Compute default currency (most common) so the client doesn't duplicate this logic
   const activeCurrencies = Array.from(new Set(mappedAccounts.map((a) => a.currency || 'AUD')));
   const defaultCurrency = (() => {
     if (mappedAccounts.length === 0) return 'AUD';
@@ -103,18 +102,61 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
   })();
-  
+
+  // Pre-compute net worth trend data for ALL active currencies (Fix #1).
+  // Uses an incremental approach: sort transactions once, then process each
+  // monthly boundary sequentially, accumulating running balances (Fix #6).
+  // This replaces the O(N×M) pattern of calling generateBalanceSheet per month.
   const netWorthTrendByCurrency: Record<string, { date: string; value: number }[]> = {};
-  
-  // Only pre-compute for the default currency; others are fetched on-demand
-  netWorthTrendByCurrency[defaultCurrency] = trendMonths.map((m) => {
-    const tempBS = generateBalanceSheet(mappedAccounts, mappedTransactions, m.end);
-    const value = tempBS.totals[defaultCurrency]?.netWorth ?? 0;
-    return {
-      date: m.date,
-      value,
-    };
-  });
+  if (activeCurrencies.length > 0 && trendMonths.length > 0) {
+    // Initialize per-currency arrays
+    for (const currency of activeCurrencies) {
+      netWorthTrendByCurrency[currency] = [];
+    }
+
+    // Sort transactions once, oldest first
+    const sortedTxs = [...mappedTransactions].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
+
+    // Initialize running balances per account with their starting balance
+    const runningBalances: Record<string, number> = {};
+    for (const acct of mappedAccounts) {
+      runningBalances[acct.id] = acct.startingBalance;
+    }
+
+    // Sort trend months chronologically (they are already from `map` above, oldest first)
+    let txIdx = 0;
+    for (const m of trendMonths) {
+      const endMs = m.end.getTime();
+      // Process all transactions up to this month-end boundary
+      while (txIdx < sortedTxs.length && new Date(sortedTxs[txIdx].date).getTime() <= endMs) {
+        const tx = sortedTxs[txIdx];
+        runningBalances[tx.accountId] = (runningBalances[tx.accountId] || 0) + tx.amount;
+        txIdx++;
+      }
+
+      // Compute net worth for each currency at this boundary
+      for (const currency of activeCurrencies) {
+        let totalAssets = 0;
+        let totalLiabilities = 0;
+        for (const acct of mappedAccounts) {
+          if ((acct.currency || 'AUD') !== currency) continue;
+          const rawBalance = runningBalances[acct.id] ?? acct.startingBalance;
+          const balance = acct.type === 'LIABILITY' ? -rawBalance : rawBalance;
+          if (acct.type === 'ASSET') {
+            totalAssets += balance;
+          } else {
+            totalLiabilities += balance;
+          }
+        }
+        netWorthTrendByCurrency[currency].push({
+          date: m.date,
+          value: totalAssets - totalLiabilities,
+        });
+      }
+    }
+  }
 
   // Format serializable statements
   const serializedBS = {
@@ -139,6 +181,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       prevBS={serializedPrevBS}
       prevIS={prevIS}
       netWorthTrendByCurrency={netWorthTrendByCurrency}
+      defaultCurrency={defaultCurrency}
     />
   );
 }

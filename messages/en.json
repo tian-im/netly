@@ -62,6 +62,7 @@
     "periodTitle12m": "12 Months",
     "uncategorizedPending": "Uncategorized transactions pending!",
     "uncategorizedDesc": "You have {count} transaction{count, plural, one {} other {s}} without a category. Financial reports and metrics will be incomplete.",
+    "uncategorizedBadge": "{count} uncat",
     "categorizeNow": "Categorize Now",
     "analyzePeriod": "Analyze Period:",
     "detailedStatements": "Detailed Statements",
