@@ -1,5 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { getCurrencySymbol, formatCompactNumber } from './currencies';
+import { getCurrencySymbol, formatCompactNumber, SUPPORTED_CURRENCIES, CURRENCY_OPTIONS } from './currencies';
+
+describe('SUPPORTED_CURRENCIES', () => {
+  it('includes all currencies available in the UI', () => {
+    expect(SUPPORTED_CURRENCIES.has('AUD')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('USD')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('EUR')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('GBP')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('SGD')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('NZD')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('CAD')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('CNY')).toBe(true);
+  });
+
+  it('rejects unsupported currencies', () => {
+    expect(SUPPORTED_CURRENCIES.has('JPY')).toBe(false);
+    expect(SUPPORTED_CURRENCIES.has('INR')).toBe(false);
+    expect(SUPPORTED_CURRENCIES.has('')).toBe(false);
+  });
+
+  it('is case-sensitive and expects uppercase', () => {
+    expect(SUPPORTED_CURRENCIES.has('aud')).toBe(false);
+    expect(SUPPORTED_CURRENCIES.has('aud'.toUpperCase())).toBe(true);
+  });
+});
+
+describe('CURRENCY_OPTIONS', () => {
+  it('has entries matching SUPPORTED_CURRENCIES', () => {
+    const keys = new Set(CURRENCY_OPTIONS.map((c) => c.key));
+    expect(keys).toEqual(SUPPORTED_CURRENCIES);
+  });
+
+  it('each entry has key and i18nKey', () => {
+    for (const opt of CURRENCY_OPTIONS) {
+      expect(opt.key).toBeTruthy();
+      expect(opt.i18nKey).toBeTruthy();
+      expect(opt.i18nKey).toMatch(/^currency[A-Z]/);
+    }
+  });
+
+  it('pairs match known i18n common keys', () => {
+    const aud = CURRENCY_OPTIONS.find((c) => c.key === 'AUD');
+    expect(aud?.i18nKey).toBe('currencyAud');
+    const cny = CURRENCY_OPTIONS.find((c) => c.key === 'CNY');
+    expect(cny?.i18nKey).toBe('currencyCny');
+  });
+});
 
 describe('getCurrencySymbol', () => {
   it('should return € for EUR', () => {

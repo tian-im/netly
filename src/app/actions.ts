@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from '@/lib/reports';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import { Prisma } from '@prisma/client';
 
 export async function getAccounts() {
@@ -84,16 +85,22 @@ export async function getAccountsWithBalances() {
 
 export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = 'AUD') {
   if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
-  
+
+  const normalizedCurrency = currency.trim().toUpperCase();
+  if (!normalizedCurrency || !SUPPORTED_CURRENCIES.has(normalizedCurrency)) {
+    throw new Error('ERR_INVALID_CURRENCY');
+  }
+
   const account = await db.account.create({
     data: {
       name: name.trim(),
       type,
       startingBalance,
-      currency: currency.trim().toUpperCase(),
+      currency: normalizedCurrency,
     }
   });
 
+  revalidatePath('/accounts');
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
@@ -102,9 +109,11 @@ export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', s
 }
 
 export async function deleteAccount(id: string) {
-  await db.account.delete({
-    where: { id }
-  });
+  const existing = await db.account.findUnique({ where: { id } });
+  if (!existing) throw new Error('ERR_ACCOUNT_NOT_FOUND');
+
+  await db.account.delete({ where: { id } });
+  revalidatePath('/accounts');
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
@@ -120,16 +129,28 @@ export async function updateAccount(
 ) {
   if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
 
+  const existing = await db.account.findUnique({ where: { id } });
+  if (!existing) throw new Error('ERR_ACCOUNT_NOT_FOUND');
+
+  const normalizedCurrency = currency.trim().toUpperCase();
+  if (!normalizedCurrency || !SUPPORTED_CURRENCIES.has(normalizedCurrency)) {
+    throw new Error('ERR_INVALID_CURRENCY');
+  }
+
   const account = await db.account.update({
     where: { id },
     data: {
       name: name.trim(),
       type,
       startingBalance,
-      currency: currency.trim().toUpperCase(),
-    }
+      currency: normalizedCurrency,
+    },
+    include: {
+      _count: { select: { transactions: true } },
+    },
   });
 
+  revalidatePath('/accounts');
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');

@@ -228,6 +228,49 @@ describe('Account actions', () => {
       const foundTx = await db.transaction.findUnique({ where: { id: tx.id } });
       expect(foundTx).toBeNull();
     });
+
+    it('throws ERR_ACCOUNT_NOT_FOUND when deleting non-existent account', async () => {
+      const fakeId = '00000000-0000-0000-0000-000000000000';
+      await expect(deleteAccount(fakeId)).rejects.toThrow('ERR_ACCOUNT_NOT_FOUND');
+    });
+  });
+
+  describe('updateAccount error paths', () => {
+    it('throws ERR_ACCOUNT_NOT_FOUND when updating non-existent account', async () => {
+      const fakeId = '00000000-0000-0000-0000-000000000000';
+      await expect(updateAccount(fakeId, 'New Name', 'ASSET', 0)).rejects.toThrow('ERR_ACCOUNT_NOT_FOUND');
+    });
+
+    it('throws error for invalid currency', async () => {
+      const account = await seedAccount();
+      await expect(
+        updateAccount(account.id, 'New Name', 'ASSET', 0, 'INVALID')
+      ).rejects.toThrow('ERR_INVALID_CURRENCY');
+    });
+  });
+
+  describe('createAccount error paths', () => {
+    it('throws error for invalid currency', async () => {
+      await expect(
+        createAccount('Test', 'ASSET', 0, 'INVALID')
+      ).rejects.toThrow('ERR_INVALID_CURRENCY');
+    });
+
+    it('throws error for empty currency string', async () => {
+      await expect(
+        createAccount('Test', 'ASSET', 0, '')
+      ).rejects.toThrow('ERR_INVALID_CURRENCY');
+    });
+  });
+
+  describe('updateAccount _count preservation', () => {
+    it('includes _count in update response', async () => {
+      const account = await seedAccount();
+      await seedTransaction(account.id);
+      const updated = await updateAccount(account.id, 'Updated Name', 'ASSET', 0);
+      expect(updated._count).toBeDefined();
+      expect(updated._count?.transactions).toBe(1);
+    });
   });
 });
 

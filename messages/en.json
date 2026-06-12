@@ -119,7 +119,6 @@
     "type": "Type",
     "balance": "Balance",
     "actions": "Actions",
-    "transactionsCount": "{count} transaction(s)",
     "transactionsCountHeader": "Transactions",
     "lastActivity": "Last active: {date}",
     "noActivity": "No activity",
@@ -584,6 +583,8 @@
   },
   "errors": {
     "ERR_ACCOUNT_NAME_REQUIRED": "Account name is required.",
+    "ERR_ACCOUNT_NOT_FOUND": "Account not found.",
+    "ERR_INVALID_CURRENCY": "Invalid or unsupported currency code.",
     "ERR_PATTERN_REQUIRED": "Pattern is required.",
     "ERR_TRANSACTION_NOT_FOUND": "Transaction not found.",
     "ERR_CATEGORY_NAME_REQUIRED": "Category name is required.",

@@ -119,7 +119,6 @@
     "type": "类型",
     "balance": "余额",
     "actions": "操作",
-    "transactionsCount": "{count} 笔交易",
     "transactionsCountHeader": "交易数",
     "lastActivity": "最后交易：{date}",
     "noActivity": "无交易流水",
@@ -584,6 +583,8 @@
   },
   "errors": {
     "ERR_ACCOUNT_NAME_REQUIRED": "账户名称不能为空。",
+    "ERR_ACCOUNT_NOT_FOUND": "未找到该账户。",
+    "ERR_INVALID_CURRENCY": "无效或不支持的货币代码。",
     "ERR_PATTERN_REQUIRED": "关键字不能为空。",
     "ERR_TRANSACTION_NOT_FOUND": "交易记录未找到。",
     "ERR_CATEGORY_NAME_REQUIRED": "分类名称不能为空。",

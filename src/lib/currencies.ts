@@ -1,4 +1,26 @@
 /**
+ * Set of currency codes supported by the application.
+ * Used for server-side validation and UI dropdown options.
+ */
+export const SUPPORTED_CURRENCIES = new Set(['AUD', 'USD', 'EUR', 'GBP', 'SGD', 'NZD', 'CAD', 'CNY']);
+
+/**
+ * Currency option entries for UI dropdowns (create form, edit form).
+ * The `key` matches SUPPORTED_CURRENCIES entries and the `i18nKey` is
+ * the `common.*` translation key for the display label.
+ */
+export const CURRENCY_OPTIONS: { key: string; i18nKey: string }[] = [
+  { key: 'AUD', i18nKey: 'currencyAud' },
+  { key: 'USD', i18nKey: 'currencyUsd' },
+  { key: 'EUR', i18nKey: 'currencyEur' },
+  { key: 'GBP', i18nKey: 'currencyGbp' },
+  { key: 'SGD', i18nKey: 'currencySgd' },
+  { key: 'NZD', i18nKey: 'currencyNzd' },
+  { key: 'CAD', i18nKey: 'currencyCad' },
+  { key: 'CNY', i18nKey: 'currencyCny' },
+];
+
+/**
  * Shared utility to get the symbol for a given currency code.
  */
 export function getCurrencySymbol(currency: string): string {

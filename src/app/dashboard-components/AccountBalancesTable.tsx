@@ -54,13 +54,9 @@ export default function AccountBalancesTable({
       if (sortField === 'transactions') {
         return sign * ((a._count?.transactions || 0) - (b._count?.transactions || 0));
       }
-      // balance sort
-      const balA = calculatedBalances[a.id] !== undefined
-        ? (a.type === 'LIABILITY' ? -calculatedBalances[a.id] : calculatedBalances[a.id])
-        : a.startingBalance;
-      const balB = calculatedBalances[b.id] !== undefined
-        ? (b.type === 'LIABILITY' ? -calculatedBalances[b.id] : calculatedBalances[b.id])
-        : b.startingBalance;
+      // balance sort — calculatedBalances[id] is a positive magnitude (asset value or liability owed)
+      const balA = calculatedBalances[a.id] ?? a.startingBalance;
+      const balB = calculatedBalances[b.id] ?? b.startingBalance;
       return sign * (balA - balB);
     });
   }, [accounts, calculatedBalances, sortField, sortDir]);
@@ -105,10 +101,11 @@ export default function AccountBalancesTable({
               </thead>
               <tbody>
                 {sortedAccounts.map((acc) => {
-                  const calculatedBalance = calculatedBalances[acc.id];
-                  const displayBalance = calculatedBalance !== undefined
-                    ? (acc.type === 'LIABILITY' ? -calculatedBalance : calculatedBalance)
-                    : acc.startingBalance;
+                  const calculatedBalance = calculatedBalances[acc.id] ?? acc.startingBalance;
+                  const isDebt = acc.type === 'LIABILITY';
+                  // calculatedBalance is a positive magnitude for both types:
+                  //   Asset: how much money you hold; Liability: the amount you owe
+                  const displayBalance = calculatedBalance;
                   const symbol = getCurrencySymbol(acc.currency);
                   const uncatCount = uncategorizedCounts[acc.id] || 0;
 
@@ -121,7 +118,7 @@ export default function AccountBalancesTable({
                         <Link
                           href={buildAccountTransactionsUrl(acc.id)}
                           className="block hover:opacity-80 transition-opacity"
-                          aria-label={`${acc.name} — ${displayBalance >= 0 ? '' : '-'}${symbol}${Math.abs(displayBalance).toLocaleString(locale, { minimumFractionDigits: 2 })}`}
+                          aria-label={`${acc.name} — ${isDebt ? '' : (displayBalance < 0 ? '-' : '')}${symbol}${Math.abs(displayBalance).toLocaleString(locale, { minimumFractionDigits: 2 })}`}
                         >
                           <div className="font-bold text-sm sm:text-base text-base-content">
                             {acc.name}
@@ -142,12 +139,12 @@ export default function AccountBalancesTable({
                           </div>
                         </Link>
                       </td>
-                      <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
+                      <td className={`text-right font-mono font-bold ${isDebt ? 'text-error' : (displayBalance >= 0 ? 'text-success' : 'text-error')}`}>
                         <Link
                           href={buildAccountTransactionsUrl(acc.id)}
                           className="block hover:opacity-80 transition-opacity"
                         >
-                          {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(locale, {
+                          {isDebt ? '' : (displayBalance < 0 ? '-' : '')}{symbol}{Math.abs(displayBalance).toLocaleString(locale, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}

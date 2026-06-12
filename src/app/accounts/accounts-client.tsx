@@ -2,8 +2,9 @@
 
 import { useState, useTransition, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLocaleContext } from '@/app/providers';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, CURRENCY_OPTIONS } from '@/lib/currencies';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
 
@@ -39,6 +40,15 @@ export default function AccountsClient({
   const t = useTranslations('accounts');
   const tCommon = useTranslations('common');
   const tErr = useTranslations('errors');
+  const { locale } = useLocaleContext();
+
+  const formatDate = (isoDate: string) => {
+    try {
+      return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(isoDate));
+    } catch {
+      return isoDate;
+    }
+  };
   
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,10 +95,21 @@ export default function AccountsClient({
   };
 
   // Compile calculations (Memoized using aggregated transaction sums instead of thousands of transaction rows)
+  //
+  // Sign convention:
+  //   - LIABILITY startingBalance is stored as negative (the amount you owe).
+  //   - Transaction amounts on liabilities: negative = spending (more debt),
+  //     positive = payments (less debt).
+  //   - The `balance` field below is always a positive magnitude:
+  //       Asset:  how much money you hold (may be negative if overdrawn)
+  //       Liability: the outstanding amount you owe
+  //
   const bs = useMemo(() => {
     const accountBalances = accounts.map((account) => {
       const netChange = transactionSums[account.id] || 0;
       const rawBalance = account.startingBalance + netChange;
+      // For liabilities: rawBalance is negative (debt), so -rawBalance
+      // converts it to a positive outstanding amount.
       const balance = account.type === 'LIABILITY' ? -rawBalance : rawBalance;
       return {
         ...account,
@@ -105,10 +126,12 @@ export default function AccountsClient({
       if (account.type === 'ASSET') {
         totals[currency].totalAssets += account.balance;
       } else if (account.type === 'LIABILITY') {
+        // account.balance is a positive magnitude (amount owed)
         totals[currency].totalLiabilities += account.balance;
       }
     }
     for (const currency of Object.keys(totals)) {
+      // Both totals are positive, so net worth = assets - liabilities
       totals[currency].netWorth = totals[currency].totalAssets - totals[currency].totalLiabilities;
     }
     return {
@@ -392,9 +415,11 @@ export default function AccountsClient({
                   <tbody>
                     {sortedAccounts.map((acc) => {
                       const calculatedBalance = bs.accounts.find((a) => a.id === acc.id)?.balance;
-                      const displayBalance = calculatedBalance !== undefined
-                        ? (acc.type === 'LIABILITY' ? -calculatedBalance : calculatedBalance)
-                        : acc.startingBalance;
+                      // calculatedBalance is a positive magnitude for both types:
+                      //   Asset:  how much money you hold (may be negative if overdrawn)
+                      //   Liability: the outstanding amount you owe (always positive)
+                      const displayBalance = calculatedBalance ?? acc.startingBalance;
+                      const isDebt = acc.type === 'LIABILITY';
                       const symbol = getCurrencySymbol(acc.currency);
                       const isDeleting = deletingAccountId === acc.id;
                       
@@ -415,12 +440,12 @@ export default function AccountsClient({
                             <div>{acc._count?.transactions || 0}</div>
                             <div className="text-[10px] text-base-content/40 font-normal mt-0.5">
                               {lastTxDates[acc.id] != null
-                                ? t('lastActivity', { date: lastTxDates[acc.id]! })
+                                ? t('lastActivity', { date: formatDate(lastTxDates[acc.id]!) })
                                 : t('noActivity')}
                             </div>
                           </td>
-                          <td className={`text-right font-mono font-bold ${displayBalance >= 0 ? 'text-success' : 'text-error'}`}>
-                            {displayBalance < 0 ? '-' : ''}{symbol}{Math.abs(displayBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <td className={`text-right font-mono font-bold ${isDebt ? 'text-error' : (displayBalance >= 0 ? 'text-success' : 'text-error')}`}>
+                            {isDebt ? '' : (displayBalance < 0 ? '-' : '')}{symbol}{Math.abs(displayBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="text-center">
                             <div className="flex justify-center gap-1">
@@ -548,14 +573,9 @@ export default function AccountsClient({
                   className="select select-bordered w-full"
                   disabled={isCreating}
                 >
-                  <option value="AUD">{tCommon('currencyAud')}</option>
-                  <option value="USD">{tCommon('currencyUsd')}</option>
-                  <option value="EUR">{tCommon('currencyEur')}</option>
-                  <option value="GBP">{tCommon('currencyGbp')}</option>
-                  <option value="SGD">{tCommon('currencySgd')}</option>
-                  <option value="NZD">{tCommon('currencyNzd')}</option>
-                  <option value="CAD">{tCommon('currencyCad')}</option>
-                  <option value="CNY">{tCommon('currencyCny')}</option>
+                  {CURRENCY_OPTIONS.map((c) => (
+                    <option key={c.key} value={c.key}>{tCommon(c.i18nKey)}</option>
+                  ))}
                 </select>
               </div>
 
@@ -649,14 +669,9 @@ export default function AccountsClient({
                   className="select select-bordered w-full"
                   disabled={isUpdating}
                 >
-                  <option value="AUD">{tCommon('currencyAud')}</option>
-                  <option value="USD">{tCommon('currencyUsd')}</option>
-                  <option value="EUR">{tCommon('currencyEur')}</option>
-                  <option value="GBP">{tCommon('currencyGbp')}</option>
-                  <option value="SGD">{tCommon('currencySgd')}</option>
-                  <option value="NZD">{tCommon('currencyNzd')}</option>
-                  <option value="CAD">{tCommon('currencyCad')}</option>
-                  <option value="CNY">{tCommon('currencyCny')}</option>
+                  {CURRENCY_OPTIONS.map((c) => (
+                    <option key={c.key} value={c.key}>{tCommon(c.i18nKey)}</option>
+                  ))}
                 </select>
               </div>
 
