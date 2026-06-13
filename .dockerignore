@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+
+# Coverage reports
+coverage
+
+# Version control
+.git
+.gitignore
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# CSV data files
+*.csv
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Session secret (auto-generated, should not be in build context)
+.session-secret
+
+# Documentation
+README.md

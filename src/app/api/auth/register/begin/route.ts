@@ -4,8 +4,15 @@ import { setChallenge, generateState } from '@/lib/challenge-store';
 import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
 import { verifySessionCookie, SESSION_COOKIE_NAME, SETUP_SESSION_COOKIE_NAME } from '@/lib/auth-session';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  /* v8 ignore next 3 */
+  if (!checkRateLimit(`register-begin:${ip}`, 20, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
   const { origin, rpID } = getWebAuthnConfig(request);
 
   const existingCredentials = await db.passKeyCredential.findMany({

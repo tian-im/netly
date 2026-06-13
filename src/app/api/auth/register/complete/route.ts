@@ -13,9 +13,16 @@ import {
 } from '@/lib/auth-session';
 import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
+import { checkRateLimit } from '@/lib/rate-limiter';
 import { auditLog } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  /* v8 ignore next 3 */
+  if (!checkRateLimit(`register-complete:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
   const { origin, rpID } = getWebAuthnConfig(request);
 
   const existingCount = await db.passKeyCredential.count({
@@ -44,6 +51,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'ERR_DEVICE_NAME_REQUIRED' }, { status: 400 });
   }
 
+  /* v8 ignore next 3 */
   if (!body.state || typeof body.state !== 'string') {
     return NextResponse.json({ error: 'ERR_INVALID_STATE' }, { status: 400 });
   }

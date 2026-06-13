@@ -1,14 +1,9 @@
 import { db } from '@/lib/db';
+import { getSessionSecret } from '@/lib/session-secret';
 
 const encoder = new TextEncoder();
 
-const SECRET = process.env.SESSION_SECRET;
-if (!SECRET) {
-  throw new Error(
-    'SESSION_SECRET environment variable is required. ' +
-      'Set it to a long, random string (e.g., openssl rand -hex 32).',
-  );
-}
+const SECRET = getSessionSecret();
 
 async function getKey(): Promise<CryptoKey> {
   return crypto.subtle.importKey(

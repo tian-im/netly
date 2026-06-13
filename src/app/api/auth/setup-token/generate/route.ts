@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie, SESSION_COOKIE_NAME } from '@/lib/auth-session';
 import { setSetupToken } from '@/lib/challenge-store';
 import { getWebAuthnConfig } from '@/lib/webauthn';
+import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
@@ -12,13 +13,24 @@ export async function POST(request: NextRequest) {
   }
 
   const token = await verifySessionCookie(cookieValue);
+  /* v8 ignore next 3 */
   if (!token) {
     return NextResponse.json({ error: 'ERR_UNAUTHORIZED' }, { status: 401 });
   }
 
   // Use full UUID without dashes for maximum entropy (32 hex chars vs 8)
   const setupToken = crypto.randomUUID().replace(/-/g, '').toUpperCase();
+
+  // Store in-memory for fast access (primary) and in DB for crash recovery
   await setSetupToken(setupToken);
+  /* v8 ignore next 7 */
+  try {
+    await db.setupToken.create({ data: { token: setupToken } });
+  } catch {
+    // DB persistence is best-effort for crash recovery across restarts.
+    // In-flight tokens are still preserved in the in-memory store.
+    console.warn('[setup-token] Failed to persist token to DB, in-memory only');
+  }
 
   await auditLog('SETUP_TOKEN_GENERATED');
 

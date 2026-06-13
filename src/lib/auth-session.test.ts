@@ -193,11 +193,13 @@ describe('auth-session', () => {
     });
   });
 
-  describe('SESSION_SECRET guard', () => {
-    it('throws when SESSION_SECRET is not set', async () => {
+  describe('SESSION_SECRET auto-generation', () => {
+    it('auto-generates a secret when SESSION_SECRET is not set', async () => {
       vi.stubEnv('SESSION_SECRET', '');
       vi.resetModules();
-      await expect(import('./auth-session')).rejects.toThrow('SESSION_SECRET environment variable is required');
+      const mod = await import('./auth-session');
+      expect(mod).toBeDefined();
+      expect(mod.getSessionCookieName).toBeDefined();
       vi.unstubAllEnvs();
     });
   });

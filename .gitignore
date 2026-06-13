@@ -156,3 +156,4 @@ prisma/prisma/
 
 
 .mcp-token
+.session-secret

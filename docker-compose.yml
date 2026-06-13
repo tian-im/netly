@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build:
@@ -14,4 +12,3 @@ services:
     environment:
       - DATABASE_URL=file:./dev.db
       - NODE_ENV=development
-      - SESSION_SECRET=${SESSION_SECRET:-netly-dev-secret-change-in-production}

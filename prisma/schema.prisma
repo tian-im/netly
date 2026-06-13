@@ -6,6 +6,9 @@ datasource db {
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  // Note: 'native' covers the local dev platform (e.g., darwin-arm64) while
+  // 'linux-musl-openssl-3.0.x' covers the Alpine Docker production target.
+  // Inside Docker, 'native' resolves to 'linux-musl' so having both is safe.
 }
 
 // Represents financial accounts (Assets & Liabilities)
@@ -43,6 +46,9 @@ model Transaction {
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   isReviewed  Boolean  @default(false)
   createdAt   DateTime @default(now())
+
+  // Prevent duplicates: same (date, payee, amount, accountId) is unique at the DB level
+  @@unique([date, payee, amount, accountId])
 }
 
 // Simple rules for payee text matching auto-categorization
