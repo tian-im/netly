@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { getAccounts } from '../actions';
 import Papa from 'papaparse';
 import { cleanAmount, parseBankDate } from '@/lib/csv';
+import { getCurrencySymbol } from '@/lib/currencies';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 
 interface Account {
   id: string;
   name: string;
   type: string;
+  currency: string;
 }
 
 interface PreviewTransaction {
@@ -51,6 +53,10 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
 
   // Drag and Drop state
   const [isDragging, setIsDragging] = useState(false);
+
+  // Currency symbol derived from selected account
+  const selectedCurrency = accounts.find(a => a.id === selectedAccountId)?.currency || 'AUD';
+  const currencySymbol = getCurrencySymbol(selectedCurrency);
 
   // Status state
   const [isPending, startTransition] = useTransition();
@@ -196,7 +202,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
     }
   };
 
-  const getPreviewTransactions = (): PreviewTransaction[] => {
+  const previewTransactions = useMemo((): PreviewTransaction[] => {
     if (csvRows.length === 0) return [];
     
     const previewList: PreviewTransaction[] = [];
@@ -265,7 +271,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
       } catch (e) {}
     }
     return previewList;
-  };
+  }, [csvRows, csvHeaders, dateHeader, payeeHeader, amountHeader, debitHeader, creditHeader, descHeader, useSeparateDebitCredit, dateFormatHint]);
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -647,7 +653,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                             </tr>
                           </thead>
                           <tbody>
-                            {getPreviewTransactions().map((tx, idx) => (
+                            {previewTransactions.map((tx, idx) => (
                               <tr key={idx} className="hover border-b border-base-200/50">
                                 <td className="whitespace-nowrap">
                                   {tx.parsedDate ? (
@@ -667,7 +673,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                                   {!isNaN(tx.amount) ? (
                                     <>
                                       {tx.amount < 0 ? '-' : '+'}
-                                      ${Math.abs(tx.amount).toFixed(2)}
+                                      {currencySymbol}{Math.abs(tx.amount).toFixed(2)}
                                     </>
                                   ) : (
                                     <span className="text-error italic">{t('fallbackInvalid')}</span>
@@ -678,7 +684,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                                 </td>
                               </tr>
                             ))}
-                            {getPreviewTransactions().length === 0 && (
+                            {previewTransactions.length === 0 && (
                               <tr>
                                 <td colSpan={4} className="text-center py-4 text-base-content/40 italic">
                                   {t('previewMappingFailed')}
@@ -702,7 +708,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                         (!useSeparateDebitCredit ? !amountHeader : (!debitHeader && !creditHeader))
                       }
                     >
-                      {isPending ? t('importing') : t('importCardTitle')}
+                       {isPending ? t('importing') : t('importButton', { count: totalRowsCount })}
                     </button>
                   </div>
                 </div>

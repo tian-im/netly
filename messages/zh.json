@@ -234,8 +234,7 @@
     "fallbackInvalid": "无效",
     "importCardTitle": "导入交易记录",
     "dropzonePlaceholder": "拖拽您的银行 CSV 文件到此处，或者点击浏览文件",
-    "selectedFile": "已选文件：",
-    "previewCardTitle": "CSV 导入预览",
+
     "totalRowsDetected": "检测到的总行数：{count}",
     "columnMappingTitle": "列字段映射",
     "columnMappingDesc": "将您的 CSV 列与 Netly Ledger 的交易字段进行映射。",
@@ -243,17 +242,14 @@
     "dateField": "交易日期 (必填)",
     "payeeField": "商户 / 交易描述 (必填)",
     "amountField": "金额 (单列存储借记/贷记)",
-    "amountTypeField": "金额正负号类型 (如果金额只有单列，如何解析正负号)",
-    "amountTypeNormal": "正常 (负数 = 支出/借记，正数 = 收入/贷记)",
-    "amountTypeInverted": "反转 (正数 = 支出/借记，负数 = 收入/贷记)",
+
     "creditColumnField": "贷记列 (存款/收入)",
     "debitColumnField": "借记列 (取款/支出)",
     "useSplitColumns": "我的 CSV 包含独立的“贷记”和“借记”两列",
     "selectAccountField": "目标账户",
-    "selectAccountPlaceholder": "-- 选择目标账户 --",
+
     "previewDataTitle": "预览数据 (前3行)",
-    "columnHeader": "列名",
-    "sampleValueHeader": "示例数据",
+
     "noAccountError": "请选择目标账户",
     "noMappingError": "请映射“日期”和“商户/描述”列",
     "noAmountMappingError": "请映射“金额”列或分别映射“贷记/借记”两列",

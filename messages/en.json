@@ -234,8 +234,7 @@
     "fallbackInvalid": "Invalid",
     "importCardTitle": "Import Transactions",
     "dropzonePlaceholder": "Drag and drop your bank CSV here, or click to browse",
-    "selectedFile": "Selected file:",
-    "previewCardTitle": "CSV Import Preview",
+
     "totalRowsDetected": "Total rows detected: {count}",
     "columnMappingTitle": "Column Mapping",
     "columnMappingDesc": "Map the columns from your CSV to Netly Ledger's transaction fields.",
@@ -243,17 +242,14 @@
     "dateField": "Transaction Date (Required)",
     "payeeField": "Payee / Description (Required)",
     "amountField": "Amount (Single Credit/Debit Column)",
-    "amountTypeField": "Amount Type (If single column, how to interpret signs)",
-    "amountTypeNormal": "Normal (Negative = Expense/Debit, Positive = Income/Credit)",
-    "amountTypeInverted": "Inverted (Positive = Expense/Debit, Negative = Income/Credit)",
+
     "creditColumnField": "Credit Column (Deposits/Income)",
     "debitColumnField": "Debit Column (Withdrawals/Expenses)",
     "useSplitColumns": "My CSV has separate Credit and Debit columns",
     "selectAccountField": "Target Account",
-    "selectAccountPlaceholder": "-- Choose Account --",
+
     "previewDataTitle": "Preview Data (First 3 Rows)",
-    "columnHeader": "Column",
-    "sampleValueHeader": "Sample Values",
+
     "noAccountError": "Please select a target account",
     "noMappingError": "Please map Date and Payee columns",
     "noAmountMappingError": "Please map either Amount column or Credit/Debit columns",

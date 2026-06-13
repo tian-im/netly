@@ -2,14 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import Papa from 'papaparse';
+import { cleanAmount } from '../src/lib/csv';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from '../src/lib/reports';
 
 const prisma = new PrismaClient();
-
-function cleanAmount(val: string): number {
-  if (!val) return 0;
-  return parseFloat(val.replace(/[$,\s]/g, ''));
-}
 
 async function main() {
   console.log('Checking for existing credit card account...');

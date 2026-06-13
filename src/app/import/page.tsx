@@ -11,6 +11,7 @@ export default async function ImportPage() {
     id: a.id,
     name: a.name,
     type: a.type,
+    currency: a.currency,
   }));
 
   return (

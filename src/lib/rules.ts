@@ -30,7 +30,12 @@ export function matchRule(
           return rule.categoryId;
         }
       } catch (e) {
-        // Invalid regex — skip this rule; don't fall through to substring matching
+        // Invalid regex syntax — fall back to substring matching so a rule
+        // like "(direct deposit)" or "\Uber" still works as a literal match.
+        if (cleanPayee.includes(lowerPattern) || cleanDesc.includes(lowerPattern)) {
+          return rule.categoryId;
+        }
+        // If substring doesn't match either, skip to the next rule
         continue;
       }
     } else {

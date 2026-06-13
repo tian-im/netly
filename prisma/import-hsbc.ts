@@ -84,7 +84,7 @@ async function main() {
     isReviewed: boolean;
   }[] = [];
 
-  const importDateStr = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const importDateStr = new Date().toISOString().split('T')[0];
 
   for (const row of parseResult.data as Record<string, string>[]) {
     try {
