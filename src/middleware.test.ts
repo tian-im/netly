@@ -4,13 +4,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { middleware } from './middleware';
 
-// Mock auth-session so we can control verifySessionCookie
+// Mock auth-session so we can control verifySessionWithDb
 vi.mock('@/lib/auth-session', () => ({
-  verifySessionCookie: vi.fn(),
+  verifySessionWithDb: vi.fn(),
   SESSION_COOKIE_NAME: 'netly_session',
 }));
 
-import { verifySessionCookie } from '@/lib/auth-session';
+import { verifySessionWithDb } from '@/lib/auth-session';
 
 function createRequest(pathname: string, sessionCookie?: string): NextRequest {
   const url = `http://localhost:3000${pathname}`;
@@ -75,7 +75,7 @@ describe('middleware', () => {
     });
 
     it('redirects protected path to /login when session cookie is invalid', async () => {
-      vi.mocked(verifySessionCookie).mockResolvedValue(null);
+      vi.mocked(verifySessionWithDb).mockResolvedValue(null);
       const req = createRequest('/dashboard', 'some-cookie');
       const res = await middleware(req);
       expect(res.status).toBe(307);
@@ -83,7 +83,7 @@ describe('middleware', () => {
     });
 
     it('allows protected path through when session cookie is valid', async () => {
-      vi.mocked(verifySessionCookie).mockResolvedValue('valid-token');
+      vi.mocked(verifySessionWithDb).mockResolvedValue('valid-token');
       const req = createRequest('/dashboard', 'valid-cookie');
       const res = await middleware(req);
       expect(res.status).toBe(200);
@@ -98,7 +98,7 @@ describe('middleware', () => {
     });
 
     it('redirects /login to / when already authenticated', async () => {
-      vi.mocked(verifySessionCookie).mockResolvedValue('valid-token');
+      vi.mocked(verifySessionWithDb).mockResolvedValue('valid-token');
       const req = createRequest('/login', 'valid-cookie');
       const res = await middleware(req);
       expect(res.status).toBe(307);
@@ -106,17 +106,17 @@ describe('middleware', () => {
     });
   });
 
-  describe('verifySessionCookie not called for bypassed paths', () => {
-    it('does not call verifySessionCookie for /api/mcp requests', async () => {
+  describe('verifySessionWithDb not called for bypassed paths', () => {
+    it('does not call verifySessionWithDb for /api/mcp requests', async () => {
       const req = createRequest('/api/mcp');
       await middleware(req);
-      expect(verifySessionCookie).not.toHaveBeenCalled();
+      expect(verifySessionWithDb).not.toHaveBeenCalled();
     });
 
-    it('does not call verifySessionCookie for /api/auth requests', async () => {
+    it('does not call verifySessionWithDb for /api/auth requests', async () => {
       const req = createRequest('/api/auth/login');
       await middleware(req);
-      expect(verifySessionCookie).not.toHaveBeenCalled();
+      expect(verifySessionWithDb).not.toHaveBeenCalled();
     });
   });
 });

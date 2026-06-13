@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
-import { getTestDb, clearTestDb, disconnectTestDb } from '@/lib/test-db';
+import { clearTestDb } from '@/lib/test-db';
+
+vi.mock('@/lib/db', async () => {
+  const { getTestDb } = await import('@/lib/test-db');
+  return { db: getTestDb() };
+});
 
 const mockCredentialId = vi.hoisted(() => 'mock-credential-id-12345');
 const mockCredentialId2 = vi.hoisted(() => 'mock-credential-id-67890');
@@ -37,11 +42,6 @@ vi.mock('@simplewebauthn/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/db', async () => {
-  const { getTestDb } = await import('@/lib/test-db');
-  return { db: getTestDb() };
-});
-
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -53,14 +53,12 @@ import { POST as registerComplete } from './register/complete/route';
 import { POST as loginBegin } from './login/begin/route';
 import { POST as loginComplete } from './login/complete/route';
 import { GET as listCredentials, DELETE as deleteCredential } from './credentials/route';
-import { POST as logout } from './logout/route';
+import { POST as logoutHandler } from './logout/route';
 import { GET as checkSession } from './session/route';
 import { POST as generateSetupToken } from './setup-token/generate/route';
 import { POST as consumeSetupToken } from './setup-token/consume/route';
+import { db } from '@/lib/db';
 import { NextRequest } from 'next/server';
-import { db as realDb } from '@/lib/db';
-
-const db = getTestDb();
 
 function mockRequest(url: string, body?: any, origin?: string, cookies?: Record<string, string>): NextRequest {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -310,11 +308,11 @@ describe('Auth API routes', () => {
       expect(callArgs.allowCredentials).toBeUndefined();
     });
 
-    it('returns 404 when no credentials exist', async () => {
+    it('returns 409 when no credentials exist', async () => {
       const response = await loginBegin(
         mockRequest('http://localhost:3000/api/auth/login/begin', undefined, 'http://localhost:3000'),
       );
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(409);
       const data = await response.json();
       expect(data.redirect).toBe('/setup');
     });
@@ -462,8 +460,10 @@ describe('Auth API routes', () => {
     });
 
     it('returns authenticated: true for valid session cookie', async () => {
-      const { createSessionCookie } = await import('@/lib/auth-session');
+      const { createSessionCookie, createSessionRecord, extractTokenFromCookie } = await import('@/lib/auth-session');
       const cookie = await createSessionCookie();
+      const token = extractTokenFromCookie(cookie);
+      if (token) await createSessionRecord(token);
 
       const req = new NextRequest('http://localhost:3000/api/auth/session', {
         headers: { Cookie: `netly_session=${cookie}` },
@@ -564,7 +564,9 @@ describe('Auth API routes', () => {
 
   describe('POST /api/auth/logout', () => {
     it('clears the session cookie', async () => {
-      const response = await logout();
+      const response = await logoutHandler(
+        mockRequest('http://localhost:3000/api/auth/logout'),
+      );
       const data = await response.json();
       expect(data.success).toBe(true);
 

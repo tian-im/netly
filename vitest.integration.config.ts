@@ -25,6 +25,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'file:./test.db',
       NODE_ENV: 'test',
+      SESSION_SECRET: 'test-secret-for-integration-tests',
     },
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -675,10 +675,9 @@ describe('getFinancialReports', () => {
     const account = await seedAccount();
     await seedTransaction(account.id, { payee: 'Uncategorized Spend', amount: -50, categoryId: null });
     const reports = await getFinancialReports('2026-06-01', '2026-06-30');
-    // It should exist for the currency but have 0/empty totals since transaction is uncategorized
-    const aud = reports.incomeStatement.totals['AUD'];
-    expect(aud.totalIncome).toBe(0);
-    expect(aud.totalExpenses).toBe(0);
+    // Uncategorized transactions are excluded from income statement (they have no category)
+    // so totals should be empty (no categorized transactions in range)
+    expect(reports.incomeStatement.totals).toEqual({});
   });
 });
 

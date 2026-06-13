@@ -609,7 +609,12 @@
     "ERR_SETUP_TOKEN_EXPIRED_OR_INVALID": "Setup code is expired or invalid.",
     "ERR_UNAUTHORIZED": "Unauthorized access. Please sign in.",
     "ERR_MCP_NAME_REQUIRED": "Token name is required.",
-    "ERR_MCP_TOKEN_NOT_FOUND": "Token not found."
+    "ERR_MCP_TOKEN_NOT_FOUND": "Token not found.",
+    "ERR_RATE_LIMITED": "Too many requests. Please wait a moment and try again.",
+    "ERR_INVALID_REQUEST_BODY": "Invalid request body. Please try again.",
+    "ERR_INVALID_CREDENTIAL_ID": "Invalid credential ID.",
+    "ERR_INVALID_STATE": "Invalid state parameter.",
+    "ERR_INVALID_RESPONSE": "Invalid authentication response."
   },
   "passkey": {
     "login": {

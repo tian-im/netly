@@ -65,10 +65,38 @@ model PassKeyCredential {
   lastUsedAt   DateTime?
 }
 
-// Active sessions
+// Active sessions — enables server-side revocation and session listing
 model Session {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Sessions auto-expire after 7 days (matches cookie maxAge)
+}
+
+// WebAuthn challenge — persisted for production-ready multi-instance support
+// TODO: Swap challenge-store.ts from in-memory Map to this table for
+//       multi-instance deployment or crash-proof in-flight flows.
+model Challenge {
+  id        String   @id @default(uuid())
+  state     String   @unique
+  challenge String
+  createdAt DateTime @default(now())
+}
+
+// One-time setup tokens for bootstrapping new devices
+// TODO: Swap challenge-store.ts from in-memory Map to this table for
+//       multi-instance deployment or crash-proof in-flight flows.
+model SetupToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+}
+
+// Audit log for security events
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String   @default("")
   createdAt DateTime @default(now())
 }
 

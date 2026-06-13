@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { startAuthentication } from '@simplewebauthn/browser';
@@ -13,7 +13,7 @@ export default function LoginPage() {
   const t = useTranslations('passkey.login');
   const tErrors = useTranslations('errors');
   const { locale, setLocale } = useLocaleContext();
-  
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
@@ -21,6 +21,29 @@ export default function LoginPage() {
   const [useSetupCodeMode, setUseSetupCodeMode] = useState(false);
   const [setupCode, setSetupCode] = useState('');
   const [verifyingSetupCode, setVerifyingSetupCode] = useState(false);
+
+  const handleVerifySetupCode = useCallback(async (directToken?: string) => {
+    const codeToVerify = (directToken || setupCode).trim();
+    if (!codeToVerify) return;
+    setVerifyingSetupCode(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/setup-token/consume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: codeToVerify }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'ERR_UNKNOWN');
+      }
+      router.push('/setup?setupToken=1');
+    } catch (err: any) {
+      setError(tErrors(translateError(err.message)));
+    } finally {
+      setVerifyingSetupCode(false);
+    }
+  }, [setupCode, tErrors, router]);
 
   useEffect(() => {
     (async () => {
@@ -46,30 +69,7 @@ export default function LoginPage() {
       setUseSetupCodeMode(true);
       handleVerifySetupCode(tokenParam);
     }
-  }, [router]);
-
-  const handleVerifySetupCode = async (directToken?: string) => {
-    const codeToVerify = (directToken || setupCode).trim();
-    if (!codeToVerify) return;
-    setVerifyingSetupCode(true);
-    setError('');
-    try {
-      const res = await fetch('/api/auth/setup-token/consume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: codeToVerify }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'ERR_UNKNOWN');
-      }
-      router.push('/setup?setupToken=1');
-    } catch (err: any) {
-      setError(tErrors(translateError(err.message)));
-    } finally {
-      setVerifyingSetupCode(false);
-    }
-  };
+  }, [router, handleVerifySetupCode]);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -79,7 +79,7 @@ export default function LoginPage() {
       const beginRes = await fetch('/api/auth/login/begin', { method: 'POST' });
       if (!beginRes.ok) {
         const data = await beginRes.json();
-        if (beginRes.status === 404 && data.redirect === '/setup') {
+        if (beginRes.status === 409 && data.redirect === '/setup') {
           router.push('/setup');
           return;
         }

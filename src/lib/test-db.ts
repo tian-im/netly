@@ -34,7 +34,10 @@ export function getTestDb(): PrismaClient {
 export async function clearTestDb(): Promise<void> {
   const db = getTestDb();
   await db.$transaction([
+    db.auditLog.deleteMany(),
     db.session.deleteMany(),
+    db.challenge.deleteMany(),
+    db.setupToken.deleteMany(),
     db.passKeyCredential.deleteMany(),
     db.categoryRule.deleteMany(),
     db.transaction.deleteMany(),

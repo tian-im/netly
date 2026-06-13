@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setChallenge, getChallenge, generateState, setSetupToken, validateAndConsumeSetupToken } from './challenge-store';
 
 describe('challenge-store', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('setChallenge / getChallenge', () => {

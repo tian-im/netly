@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'src/**/*.integration.test.ts'],
+    env: {
+      SESSION_SECRET: 'test-secret-for-unit-tests',
+    },
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

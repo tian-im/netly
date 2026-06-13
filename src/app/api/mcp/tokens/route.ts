@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifySessionCookie, SESSION_COOKIE_NAME } from '@/lib/auth-session';
+import { verifySessionWithDb, SESSION_COOKIE_NAME } from '@/lib/auth-session';
 import { createHash, randomBytes } from 'crypto';
 
 // Helper to check user session authorization
 async function isAuthorized(request: NextRequest): Promise<boolean> {
   const cookieValue = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!cookieValue) return false;
-  const token = await verifySessionCookie(cookieValue);
+  const token = await verifySessionWithDb(cookieValue);
   return !!token;
 }
 

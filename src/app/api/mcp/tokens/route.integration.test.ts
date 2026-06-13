@@ -23,6 +23,14 @@ function mockRequest(url: string, method: 'GET' | 'POST' | 'DELETE', body?: any,
   });
 }
 
+async function createAuthenticatedSession(): Promise<Record<string, string>> {
+  const { createSessionCookie, createSessionRecord, extractTokenFromCookie } = await import('@/lib/auth-session');
+  const sessionCookie = await createSessionCookie();
+  const token = extractTokenFromCookie(sessionCookie);
+  if (token) await createSessionRecord(token);
+  return { netly_session: sessionCookie };
+}
+
 describe('MCP Tokens API Endpoint', () => {
   beforeEach(async () => {
     await clearTestDb();
@@ -45,9 +53,7 @@ describe('MCP Tokens API Endpoint', () => {
   });
 
   it('CRUD lifecycle of McpToken when authorized', async () => {
-    const { createSessionCookie } = await import('@/lib/auth-session');
-    const sessionCookie = await createSessionCookie();
-    const cookies = { netly_session: sessionCookie };
+    const cookies = await createAuthenticatedSession();
 
     // 1. Create token (POST)
     const reqCreate = mockRequest('http://localhost:3000/api/mcp/tokens', 'POST', { name: 'OpenCode Client' }, cookies);
@@ -86,9 +92,7 @@ describe('MCP Tokens API Endpoint', () => {
   });
 
   it('rejects POST with invalid name', async () => {
-    const { createSessionCookie } = await import('@/lib/auth-session');
-    const sessionCookie = await createSessionCookie();
-    const cookies = { netly_session: sessionCookie };
+    const cookies = await createAuthenticatedSession();
 
     const reqCreate = mockRequest('http://localhost:3000/api/mcp/tokens', 'POST', { name: '  ' }, cookies);
     const resCreate = await POST(reqCreate);
@@ -98,9 +102,7 @@ describe('MCP Tokens API Endpoint', () => {
   });
 
   it('rejects DELETE with invalid ID', async () => {
-    const { createSessionCookie } = await import('@/lib/auth-session');
-    const sessionCookie = await createSessionCookie();
-    const cookies = { netly_session: sessionCookie };
+    const cookies = await createAuthenticatedSession();
 
     const reqDelete = mockRequest('http://localhost:3000/api/mcp/tokens', 'DELETE', { id: '' }, cookies);
     const resDelete = await DELETE(reqDelete);

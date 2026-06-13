@@ -14,3 +14,4 @@ services:
     environment:
       - DATABASE_URL=file:./dev.db
       - NODE_ENV=development
+      - SESSION_SECRET=${SESSION_SECRET:-netly-dev-secret-change-in-production}

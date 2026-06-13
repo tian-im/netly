@@ -1,22 +1,52 @@
 import { NextResponse } from 'next/server';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 import { getChallenge } from '@/lib/challenge-store';
-import { createSessionCookie, SESSION_COOKIE_NAME } from '@/lib/auth-session';
+import {
+  createSessionCookie,
+  createSessionRecord,
+  extractTokenFromCookie,
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  getSessionCookieMaxAge,
+} from '@/lib/auth-session';
 import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { auditLog } from '@/lib/audit';
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  if (!checkRateLimit(`login-complete:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
   const { origin, rpID } = getWebAuthnConfig(request);
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'ERR_INVALID_REQUEST_BODY' }, { status: 400 });
+  }
 
-  const expectedChallenge = getChallenge(body.state);
+  if (!body.id || typeof body.id !== 'string') {
+    return NextResponse.json({ error: 'ERR_INVALID_CREDENTIAL_ID' }, { status: 400 });
+  }
+  if (!body.state || typeof body.state !== 'string') {
+    return NextResponse.json({ error: 'ERR_INVALID_STATE' }, { status: 400 });
+  }
+  if (!body.response || typeof body.response !== 'object') {
+    return NextResponse.json({ error: 'ERR_INVALID_RESPONSE' }, { status: 400 });
+  }
+
+  const expectedChallenge = await getChallenge(body.state);
   if (!expectedChallenge) {
+    await auditLog('LOGIN_CHALLENGE_EXPIRED', `state=${body.state}`);
     return NextResponse.json({ error: 'ERR_CHALLENGE_EXPIRED_OR_INVALID' }, { status: 400 });
   }
 
   const credential = await db.passKeyCredential.findUnique({
-    where: { id: body.id },
+    where: { id: body.id as string },
   });
 
   if (!credential) {
@@ -24,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   const verification = await verifyAuthenticationResponse({
-    response: body,
+    response: body as any,
     expectedChallenge,
     expectedOrigin: origin,
     expectedRPID: rpID,
@@ -37,6 +67,7 @@ export async function POST(request: Request) {
   });
 
   if (!verification.verified) {
+    await auditLog('LOGIN_FAILURE', `credentialId=${credential.id}`);
     return NextResponse.json({ error: 'ERR_AUTHENTICATION_VERIFICATION_FAILED' }, { status: 400 });
   }
 
@@ -49,13 +80,17 @@ export async function POST(request: Request) {
   });
 
   const sessionCookie = await createSessionCookie();
+  const token = extractTokenFromCookie(sessionCookie);
+  if (token) {
+    await createSessionRecord(token);
+  }
+
+  await auditLog('LOGIN_SUCCESS', `credentialId=${credential.id}`);
+
   const response = NextResponse.json({ success: true });
   response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60,
+    ...SESSION_COOKIE_OPTIONS,
+    maxAge: getSessionCookieMaxAge(),
   });
 
   return response;

@@ -609,7 +609,12 @@
     "ERR_SETUP_TOKEN_EXPIRED_OR_INVALID": "设置码已过期或无效。",
     "ERR_UNAUTHORIZED": "未授权访问。请登录。",
     "ERR_MCP_NAME_REQUIRED": "令牌名称不能为空。",
-    "ERR_MCP_TOKEN_NOT_FOUND": "未找到令牌。"
+    "ERR_MCP_TOKEN_NOT_FOUND": "未找到令牌。",
+    "ERR_RATE_LIMITED": "请求过于频繁，请稍后再试。",
+    "ERR_INVALID_REQUEST_BODY": "无效的请求数据，请重试。",
+    "ERR_INVALID_CREDENTIAL_ID": "无效的凭证 ID。",
+    "ERR_INVALID_STATE": "无效的状态参数。",
+    "ERR_INVALID_RESPONSE": "无效的身份验证响应。"
   },
   "passkey": {
     "login": {

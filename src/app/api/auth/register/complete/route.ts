@@ -1,9 +1,19 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { getChallenge } from '@/lib/challenge-store';
-import { createSessionCookie, verifySessionCookie, SESSION_COOKIE_NAME, SETUP_SESSION_COOKIE_NAME } from '@/lib/auth-session';
+import {
+  createSessionCookie,
+  createSessionRecord,
+  extractTokenFromCookie,
+  verifySessionCookie,
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  SETUP_SESSION_COOKIE_NAME,
+  getSessionCookieMaxAge,
+} from '@/lib/auth-session';
 import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
+import { auditLog } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   const { origin, rpID } = getWebAuthnConfig(request);
@@ -34,7 +44,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'ERR_DEVICE_NAME_REQUIRED' }, { status: 400 });
   }
 
-  const expectedChallenge = getChallenge(body.state);
+  if (!body.state || typeof body.state !== 'string') {
+    return NextResponse.json({ error: 'ERR_INVALID_STATE' }, { status: 400 });
+  }
+
+  const expectedChallenge = await getChallenge(body.state);
   if (!expectedChallenge) {
     return NextResponse.json({ error: 'ERR_CHALLENGE_EXPIRED_OR_INVALID' }, { status: 400 });
   }
@@ -74,13 +88,17 @@ export async function POST(request: NextRequest) {
   });
 
   const sessionCookie = await createSessionCookie();
+  const token = extractTokenFromCookie(sessionCookie);
+  if (token) {
+    await createSessionRecord(token);
+  }
+
+  await auditLog('REGISTER_CREDENTIAL', `deviceName=${body.deviceName.trim()}`);
+
   const response = NextResponse.json({ success: true });
   response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60,
+    ...SESSION_COOKIE_OPTIONS,
+    maxAge: getSessionCookieMaxAge(),
   });
   response.cookies.set(SETUP_SESSION_COOKIE_NAME, '', { maxAge: 0, path: '/' });
 
