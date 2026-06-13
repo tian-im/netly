@@ -117,9 +117,15 @@ export default function ReportsClient() {
         if (compare) {
           const startD = new Date(start);
           const endD = new Date(end);
-          const durationMs = endD.getTime() - startD.getTime();
-          const priorEnd = new Date(startD.getTime() - 24 * 60 * 60 * 1000);
-          const priorStart = new Date(priorEnd.getTime() - durationMs);
+          // Use UTC-based calculations to avoid DST boundary issues
+          const startUTC = Date.UTC(startD.getFullYear(), startD.getMonth(), startD.getDate());
+          const endUTC = Date.UTC(endD.getFullYear(), endD.getMonth(), endD.getDate());
+          const durationMs = endUTC - startUTC;
+          // For zero-duration periods (start === end), use a 1-day prior period
+          const priorEndMs = startUTC - 86400000;
+          const priorStartMs = durationMs > 0 ? priorEndMs - durationMs : priorEndMs;
+          const priorStart = new Date(priorStartMs);
+          const priorEnd = new Date(priorEndMs);
           
           const priorStartStr = priorStart.toISOString().split('T')[0];
           const priorEndStr = priorEnd.toISOString().split('T')[0];
@@ -164,6 +170,11 @@ export default function ReportsClient() {
 
   // Compile button handler
   const handleCompile = () => {
+    // Validate start date <= end date
+    if (startDateStr && endDateStr && new Date(startDateStr) > new Date(endDateStr)) {
+      showToast(t('startBeforeEnd'), 'error');
+      return;
+    }
     const cur = searchParams.get('cur') || defaultCur;
     syncParams(startDateStr, endDateStr, cur, comparePrior);
   };
@@ -187,14 +198,18 @@ export default function ReportsClient() {
 
   const handleExportCSV = async () => {
     try {
-      const { transactions: txs } = await getTransactions();
+      const { transactions: txs } = await getTransactions({
+        startDateStr,
+        endDateStr,
+      });
       if (txs.length === 0) {
         showToast(t('noTxToExport'), 'error');
         return;
       }
 
       const csvContent = generateLedgerCSV(txs as any);
-      downloadCSV(csvContent, `financial_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+      const dateLabel = startDateStr && endDateStr ? `${startDateStr}_${endDateStr}` : new Date().toISOString().split('T')[0];
+      downloadCSV(csvContent, `financial_ledger_${dateLabel}.csv`);
       showToast(t('exportSuccess'));
     } catch (err: any) {
       showToast(t('exportFailed') + err.message, 'error');

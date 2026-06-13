@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLocaleContext } from '@/app/providers';
 import { IncomeStatement } from '../types';
 import { Receipt, Search } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
@@ -21,6 +22,7 @@ export default function IncomeStatementPanel({
   onDrillDown,
 }: IncomeStatementPanelProps) {
   const t = useTranslations('reports');
+  const { locale } = useLocaleContext();
   const totals = report.totals[currency] || {
     income: [],
     expenses: [],
@@ -66,10 +68,10 @@ export default function IncomeStatementPanel({
           <Receipt className="h-5 w-5" /> {t('incomeStatement.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          {t('incomeStatement.netIncomeShort')}: {symbol}{totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('incomeStatement.netIncomeShort')}: {symbol}{totals.netIncome.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              {t('balanceSheet.prior')}{symbol}{priorTotals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('balanceSheet.prior')}{symbol}{priorTotals.netIncome.toLocaleString(locale, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -119,9 +121,9 @@ export default function IncomeStatementPanel({
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
-                          {symbol}{inc.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {symbol}{inc.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
                         </span>
-                        <RenderDelta current={inc.amount} prior={priorVal} showDelta={!!comparisonReport} />
+                        <RenderDelta current={inc.amount} prior={priorVal} showDelta={!!comparisonReport} locale={locale} />
                       </div>
                     </div>
                   );
@@ -130,8 +132,8 @@ export default function IncomeStatementPanel({
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
                 <span>{t('incomeStatement.totalIncome')}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-success">{symbol}{totals.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  <RenderDelta current={totals.totalIncome} prior={priorTotals ? priorTotals.totalIncome : 0} showDelta={!!comparisonReport} />
+                  <span className="text-success">{symbol}{totals.totalIncome.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
+                  <RenderDelta current={totals.totalIncome} prior={priorTotals ? priorTotals.totalIncome : 0} showDelta={!!comparisonReport} locale={locale} />
                 </div>
               </div>
             </div>
@@ -159,9 +161,9 @@ export default function IncomeStatementPanel({
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">
-                          {symbol}{exp.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {symbol}{exp.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
                         </span>
-                        <RenderDelta current={exp.amount} prior={priorVal} showDelta={!!comparisonReport} reverseImpact={true} />
+                        <RenderDelta current={exp.amount} prior={priorVal} showDelta={!!comparisonReport} reverseImpact={true} locale={locale} />
                       </div>
                     </div>
                   );
@@ -170,8 +172,8 @@ export default function IncomeStatementPanel({
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
                 <span>{t('incomeStatement.totalExpenses')}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-error">{symbol}{totals.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  <RenderDelta current={totals.totalExpenses} prior={priorTotals ? priorTotals.totalExpenses : 0} showDelta={!!comparisonReport} reverseImpact={true} />
+                  <span className="text-error">{symbol}{totals.totalExpenses.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
+                  <RenderDelta current={totals.totalExpenses} prior={priorTotals ? priorTotals.totalExpenses : 0} showDelta={!!comparisonReport} reverseImpact={true} locale={locale} />
                 </div>
               </div>
             </div>
@@ -182,9 +184,9 @@ export default function IncomeStatementPanel({
           <span className="font-extrabold text-md">{t('incomeStatement.netIncomeShort')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netIncome >= 0 ? 'text-success' : 'text-error'}`}>
-              {symbol}{totals.netIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
+              {symbol}{totals.netIncome.toLocaleString(locale, { minimumFractionDigits: 2 })} {currency}
             </span>
-            <RenderDelta current={totals.netIncome} prior={priorTotals ? priorTotals.netIncome : 0} showDelta={!!comparisonReport} />
+            <RenderDelta current={totals.netIncome} prior={priorTotals ? priorTotals.netIncome : 0} showDelta={!!comparisonReport} locale={locale} />
           </div>
         </div>
       </div>

@@ -341,6 +341,13 @@ export async function getTransactions(
       };
     }
   } else if (startDateStr || endDateStr) {
+    // NOTE: Date boundary semantics
+    //   `new Date(startDateStr)` with YYYY-MM-DD is parsed as UTC midnight.
+    //   `new Date(endDateStr).setHours(23,59,59,999)` sets the end to local time 23:59:59.999.
+    //   This mixed UTC/local approach is consistent with the frontend's ISO date strings,
+    //   but the actual cutoff depends on the server's timezone. For a UTC server, a user
+    //   at UTC+10 will see dates ending at 10:00 UTC the next day. This is a known limitation
+    //   of date-range filtering without full timezone awareness.
     where.date = {
       ...(startDateStr ? { gte: new Date(startDateStr) } : {}),
       ...(endDateStr ? { lte: new Date(new Date(endDateStr).setHours(23, 59, 59, 999)) } : {}),
@@ -374,9 +381,9 @@ export async function getTransactions(
       },
     };
     if (cashFlowType === 'inflow') {
-      where.amount = { gt: 0 };
+      (where as Record<string, unknown>).amount = { gt: 0 } satisfies Prisma.FloatFilter;
     } else if (cashFlowType === 'outflow') {
-      where.amount = { lt: 0 };
+      (where as Record<string, unknown>).amount = { lt: 0 } satisfies Prisma.FloatFilter;
     }
   }
 
@@ -507,17 +514,23 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
     }
   });
 
-  const balanceSheetTransactions = balanceSums.map((sum) => ({
-    id: `bs-summary-${sum.accountId}`,
-    date: endDate,
-    amount: sum._sum.amount || 0,
-    accountId: sum.accountId,
-    categoryId: null,
-    category: null,
-    account: {
-      currency: accountsList.find(a => a.id === sum.accountId)?.currency || 'AUD'
+  const balanceSheetTransactions = balanceSums.map((sum) => {
+    const account = accountsList.find(a => a.id === sum.accountId);
+    if (!account) {
+      console.warn(`[actions] Balance sheet aggregation found accountId "${sum.accountId}" not in accounts list. Defaulting currency to AUD.`);
     }
-  }));
+    return {
+      id: `bs-summary-${sum.accountId}`,
+      date: endDate,
+      amount: sum._sum.amount || 0,
+      accountId: sum.accountId,
+      categoryId: null,
+      category: null,
+      account: {
+        currency: account?.currency || 'AUD'
+      },
+    };
+  });
 
   // Format Decimal/Float equivalents for calculators
   const mappedAccounts = accountsList.map((a) => ({

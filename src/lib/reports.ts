@@ -45,8 +45,13 @@ export function generateBalanceSheet(
   const endMs = parsedEndDate.getTime();
 
   // Index transactions by accountId for O(N) retrieval
+  const accountIds = new Set(accounts.map((a) => a.id));
   const txsByAccount: Record<string, TransactionLike[]> = {};
   for (const tx of transactions) {
+    if (!accountIds.has(tx.accountId)) {
+      console.warn(`[reports] Orphaned transaction "${tx.id}" references account "${tx.accountId}" which is not in the accounts list. Skipping.`);
+      continue;
+    }
     if (!txsByAccount[tx.accountId]) {
       txsByAccount[tx.accountId] = [];
     }
@@ -115,9 +120,9 @@ export function generateIncomeStatement(
     return txDate >= parsedStartDate && txDate <= parsedEndDate && tx.category !== null;
   });
 
-  // Find all unique currencies to initialize empty state
+  // Find all unique currencies from range-filtered transactions only
   const uniqueCurrencies = new Set<string>();
-  for (const tx of transactions) {
+  for (const tx of rangeTransactions) {
     uniqueCurrencies.add(tx.currency || 'AUD');
   }
 
@@ -209,9 +214,9 @@ export function generateCashFlowStatement(
 
   const cashFlowTypes = ['OPERATING', 'INVESTING', 'FINANCING'] as const;
 
-  // Find all unique currencies to initialize empty state
+  // Find all unique currencies from range-filtered transactions only
   const uniqueCurrencies = new Set<string>();
-  for (const tx of transactions) {
+  for (const tx of rangeTransactions) {
     uniqueCurrencies.add(tx.currency || 'AUD');
   }
 
@@ -284,63 +289,12 @@ export function generateCashFlowStatement(
   };
 }
 
-/**
- * Shape of a database transaction record as returned by Prisma's `findMany`
- * with `{ include: { account: true, category: true } }`.
- * The `currency` field is optional because some callers (e.g. test mocks)
- * include it directly, while Prisma always provides it via `account.currency`.
- */
-export interface DbTransactionRecord {
-  id: string;
-  date: Date;
-  amount: number;
-  accountId: string;
-  categoryId: string | null;
-  currency?: string;
-  account?: { currency?: string } | null;
-  category?: {
-    id: string;
-    name: string;
-    type: string;
-    cashFlowType: string;
-  } | null;
-}
-
-/** Client-safe shape after mapping. */
-export interface ClientTransaction {
-  id: string;
-  date: Date;
-  amount: number;
-  accountId: string;
-  currency: string;
-  categoryId: string | null;
-  category: {
-    id: string;
-    name: string;
-    type: string;
-    cashFlowType: string;
-  } | null;
-}
-
-/**
- * Maps a database transaction record with relationships to a clean, serializable client-friendly shape.
- */
-export function mapTransactionForClient(t: DbTransactionRecord): ClientTransaction {
-  return {
-    id: t.id,
-    date: t.date,
-    amount: t.amount,
-    accountId: t.accountId,
-    currency: t.account?.currency || t.currency || 'AUD',
-    categoryId: t.categoryId,
-    category: t.category
-      ? {
-          id: t.category.id,
-          name: t.category.name,
-          type: t.category.type,
-          cashFlowType: t.category.cashFlowType,
-        }
-      : null,
-  };
-}
+// Re-export mapper types and functions for backward compatibility
+export {
+  mapTransactionForClient,
+} from './mappers';
+export type {
+  DbTransactionRecord,
+  ClientTransaction,
+} from './mappers';
 

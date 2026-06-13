@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLocaleContext } from '@/app/providers';
 import { BalanceSheet } from '../types';
 import { Scale, Search } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
@@ -21,6 +22,7 @@ export default function BalanceSheetPanel({
   onDrillDown,
 }: BalanceSheetPanelProps) {
   const t = useTranslations('reports');
+  const { locale } = useLocaleContext();
   const totals = report.totals[currency] || { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
   const priorTotals = comparisonReport?.totals[currency] || null;
   const symbol = getCurrencySymbol(currency);
@@ -62,10 +64,10 @@ export default function BalanceSheetPanel({
           <Scale className="h-5 w-5" /> {t('balanceSheet.title')} ({currency})
         </span>
         <span className="text-sm font-semibold opacity-60">
-          {t('balanceSheet.netWorth')}: {symbol}{totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {t('balanceSheet.netWorth')}: {symbol}{totals.netWorth.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              {t('balanceSheet.prior')}{symbol}{priorTotals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              {t('balanceSheet.prior')}{symbol}{priorTotals.netWorth.toLocaleString(locale, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -114,9 +116,9 @@ export default function BalanceSheetPanel({
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
-                          {symbol}{acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {symbol}{acc.balance.toLocaleString(locale, { minimumFractionDigits: 2 })}
                         </span>
-                        <RenderDelta current={acc.balance} prior={priorVal} showDelta={!!comparisonReport} />
+                        <RenderDelta current={acc.balance} prior={priorVal} showDelta={!!comparisonReport} locale={locale} />
                       </div>
                     </div>
                   );
@@ -125,8 +127,8 @@ export default function BalanceSheetPanel({
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
                 <span>{t('balanceSheet.totalAssets')}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-success">{symbol}{totals.totalAssets.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  <RenderDelta current={totals.totalAssets} prior={priorTotals ? priorTotals.totalAssets : 0} showDelta={!!comparisonReport} />
+                  <span className="text-success">{symbol}{totals.totalAssets.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
+                  <RenderDelta current={totals.totalAssets} prior={priorTotals ? priorTotals.totalAssets : 0} showDelta={!!comparisonReport} locale={locale} />
                 </div>
               </div>
             </div>
@@ -153,9 +155,9 @@ export default function BalanceSheetPanel({
                       </button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">
-                          {symbol}{acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {symbol}{acc.balance.toLocaleString(locale, { minimumFractionDigits: 2 })}
                         </span>
-                        <RenderDelta current={acc.balance} prior={priorVal} showDelta={!!comparisonReport} reverseImpact={true} />
+                        <RenderDelta current={acc.balance} prior={priorVal} showDelta={!!comparisonReport} reverseImpact={true} locale={locale} />
                       </div>
                     </div>
                   );
@@ -164,8 +166,8 @@ export default function BalanceSheetPanel({
               <div className="flex justify-between items-start font-bold text-sm border-t border-base-300 pt-3 mt-3">
                 <span>{t('balanceSheet.totalLiabilities')}</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-error">{symbol}{totals.totalLiabilities.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  <RenderDelta current={totals.totalLiabilities} prior={priorTotals ? priorTotals.totalLiabilities : 0} showDelta={!!comparisonReport} reverseImpact={true} />
+                  <span className="text-error">{symbol}{totals.totalLiabilities.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
+                  <RenderDelta current={totals.totalLiabilities} prior={priorTotals ? priorTotals.totalLiabilities : 0} showDelta={!!comparisonReport} reverseImpact={true} locale={locale} />
                 </div>
               </div>
             </div>
@@ -176,9 +178,9 @@ export default function BalanceSheetPanel({
           <span className="font-extrabold text-md">{t('balanceSheet.netWorthTotal')}</span>
           <div className="flex flex-col items-end">
             <span className={`font-mono font-extrabold text-xl ${totals.netWorth >= 0 ? 'text-success' : 'text-error'}`}>
-              {symbol}{totals.netWorth.toLocaleString(undefined, { minimumFractionDigits: 2 })} {currency}
+              {symbol}{totals.netWorth.toLocaleString(locale, { minimumFractionDigits: 2 })} {currency}
             </span>
-            <RenderDelta current={totals.netWorth} prior={priorTotals ? priorTotals.netWorth : 0} showDelta={!!comparisonReport} />
+            <RenderDelta current={totals.netWorth} prior={priorTotals ? priorTotals.netWorth : 0} showDelta={!!comparisonReport} locale={locale} />
           </div>
         </div>
       </div>

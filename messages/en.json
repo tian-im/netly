@@ -392,6 +392,7 @@
     "updating": "Updating statements...",
     "noReport": "No financial report loaded",
     "noReportDesc": "Compile statements or check your database settings.",
+    "startBeforeEnd": "Start date must be before or equal to end date.",
     "noTxToExport": "No transactions to export.",
     "exportSuccess": "Ledger CSV exported successfully",
     "exportFailed": "Failed to export CSV: ",

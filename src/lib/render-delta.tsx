@@ -3,9 +3,10 @@ interface RenderDeltaProps {
   prior: number;
   showDelta: boolean;
   reverseImpact?: boolean; // If true, a decrease is positive (e.g. liabilities, expenses, outflows)
+  locale?: string; // Locale for number formatting (default: undefined uses browser locale)
 }
 
-export function RenderDelta({ current, prior, showDelta, reverseImpact = false }: RenderDeltaProps) {
+export function RenderDelta({ current, prior, showDelta, reverseImpact = false, locale }: RenderDeltaProps) {
   if (!showDelta) return null;
   const delta = current - prior;
   if (Math.abs(delta) < 0.005) return null;
@@ -16,7 +17,7 @@ export function RenderDelta({ current, prior, showDelta, reverseImpact = false }
   return (
     <span className={`text-xs font-semibold font-mono ${isPositiveImpact ? 'text-success' : 'text-error'}`}>
       {delta > 0 ? '+' : ''}
-      {delta.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {delta.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       {' '}({delta > 0 ? '+' : ''}{pctChange.toFixed(0)}%)
     </span>
   );

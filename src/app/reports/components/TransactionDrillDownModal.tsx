@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { useLocaleContext } from '@/app/providers';
 import { getTransactions } from '../../actions';
 import { Search, X } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
@@ -43,6 +44,7 @@ export default function TransactionDrillDownModal({
 }: TransactionDrillDownModalProps) {
   const t = useTranslations('reports');
   const tCommon = useTranslations('common');
+  const { locale } = useLocaleContext();
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
   const [isPending, startTransition] = useTransition();
 
@@ -140,7 +142,7 @@ export default function TransactionDrillDownModal({
                         <span className="badge badge-ghost badge-sm">{tx.categoryName}</span>
                       </td>
                       <td className={`text-right font-mono font-bold whitespace-nowrap ${tx.amount >= 0 ? 'text-success' : 'text-error'}`}>
-                        {tx.amount < 0 ? '-' : ''}{symbol}{Math.abs(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {tx.amount < 0 ? '-' : ''}{symbol}{Math.abs(tx.amount).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
                   ))}

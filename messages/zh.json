@@ -392,6 +392,7 @@
     "updating": "正在更新财务报表...",
     "noReport": "未加载任何财务报表",
     "noReportDesc": "生成财务报表或检查您的数据库设置。",
+    "startBeforeEnd": "开始日期必须早于或等于结束日期。",
     "noTxToExport": "没有可导出的交易流水。",
     "exportSuccess": "完整账目 CSV 成功导出",
     "exportFailed": "导出 CSV 失败：",

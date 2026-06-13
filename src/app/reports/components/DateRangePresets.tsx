@@ -74,6 +74,10 @@ export default function DateRangePresets({
         startStr = '1970-01-01';
         break;
       }
+      default: {
+        // Fallback: unrecognized preset — leave start empty to let the caller handle it
+        break;
+      }
     }
     return { startStr, endStr };
   };

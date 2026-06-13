@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement, mapTransactionForClient } from './reports';
 
 interface AccountMock {
@@ -200,6 +200,34 @@ describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
       const checkAcc = sheet.accounts.find((a) => a.id === 'acc_checking');
       expect(checkAcc?.balance).toBe(2200);
     });
+
+    it('should warn and skip orphaned transactions referencing non-existent accounts', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const orphanedTx = {
+        id: 'tx_orphan',
+        date: new Date('2026-06-15'),
+        amount: -500,
+        accountId: 'acc_non_existent',
+        categoryId: 'cat_groceries',
+        category: categories.cat_groceries,
+        currency: 'AUD',
+      };
+
+      const endDate = new Date('2026-06-30');
+      const sheet = generateBalanceSheet(accounts, [...transactions, orphanedTx], endDate);
+
+      // The orphaned transaction should be skipped — balance unchanged from the base test
+      expect(sheet.totals.AUD.netWorth).toBe(1850);
+
+      // Should have warned about the orphaned tx
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('tx_orphan')
+      );
+      expect(warnSpy.mock.calls[0][0]).toContain('acc_non_existent');
+
+      warnSpy.mockRestore();
+    });
   });
 
   describe('generateIncomeStatement', () => {
@@ -230,6 +258,30 @@ describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
       const usdGroceriesGroup = statement.totals.USD.expenses.find((c: any) => c.name === 'Groceries');
       expect(usdGroceriesGroup?.amount).toBe(50);
     });
+
+    it('should only include currencies present in the date range (not in all transactions)', () => {
+      // Transactions include a EUR tx outside the range — EUR should NOT appear in the statement
+      const txWithEuroOutsideRange: TransactionMock[] = [
+        ...transactions,
+        {
+          id: 'tx_eur_outside',
+          date: new Date('2026-08-01'),
+          amount: -100,
+          accountId: 'acc_checking',
+          categoryId: 'cat_groceries',
+          category: categories.cat_groceries,
+          currency: 'EUR',
+        },
+      ];
+
+      const statement = generateIncomeStatement(txWithEuroOutsideRange, new Date('2026-06-01'), new Date('2026-06-30'));
+
+      // EUR should NOT appear since the only EUR tx is outside the date range
+      expect(statement.totals.EUR).toBeUndefined();
+      // AUD and USD from range transactions should still appear
+      expect(statement.totals.AUD).toBeDefined();
+      expect(statement.totals.USD).toBeDefined();
+    });
   });
 
   describe('generateCashFlowStatement', () => {
@@ -252,6 +304,28 @@ describe('Financial Reporting Calculations Engine (Multi-Currency)', () => {
       expect(statement.totals.USD.investing.net).toBe(0);
       expect(statement.totals.USD.financing.net).toBe(0);
       expect(statement.totals.USD.netCashFlow).toBe(-50);
+    });
+
+    it('should only include currencies from the date range in cash flow statement', () => {
+      const txWithGbpOutsideRange: TransactionMock[] = [
+        ...transactions,
+        {
+          id: 'tx_gbp_outside',
+          date: new Date('2026-08-01'),
+          amount: -50,
+          accountId: 'acc_checking',
+          categoryId: 'cat_groceries',
+          category: categories.cat_groceries,
+          currency: 'GBP',
+        },
+      ];
+
+      const statement = generateCashFlowStatement(txWithGbpOutsideRange, new Date('2026-06-01'), new Date('2026-06-30'));
+
+      // GBP should NOT appear since the only GBP tx is outside the date range
+      expect(statement.totals.GBP).toBeUndefined();
+      expect(statement.totals.AUD).toBeDefined();
+      expect(statement.totals.USD).toBeDefined();
     });
 
     it('should skip categories with unknown cashFlowType section groupings', () => {
