@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { Bot, Trash2, Plus, Copy } from 'lucide-react';
@@ -24,6 +24,12 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
   const [isRevokingMcpId, setIsRevokingMcpId] = useState<string | null>(null);
 
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const handleCopyToken = (text: string) => {
     navigator.clipboard.writeText(text);

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
@@ -33,6 +33,13 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
 
   const tokenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const urlTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (tokenTimeoutRef.current) clearTimeout(tokenTimeoutRef.current);
+      if (urlTimeoutRef.current) clearTimeout(urlTimeoutRef.current);
+    };
+  }, []);
 
   const handleCopyToken = (text: string) => {
     navigator.clipboard.writeText(text);

@@ -30,7 +30,8 @@
     "currencyCny": "CNY (Chinese Yuan)",
     "discardChangesConfirm": "You have unsaved changes. Are you sure you want to discard them?",
     "error": "Error",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "copy": "Copy"
   },
   "nav": {
     "brand": "NETLY LEDGER",
@@ -538,7 +539,6 @@
     "wiping": "Wiping...",
     "wipeSuccess": "Database successfully wiped.",
     "wipeFailed": "Failed to reset database",
-    "preferencesUpdated": "Preferences updated",
     "currencySet": "Default currency set to {currency}",
     "periodSet": "Default analysis period set to {period}",
     "dateFormatSet": "Date format preference updated to {format}",

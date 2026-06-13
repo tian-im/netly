@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Download, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { exportAllTransactions, exportAllAccounts } from '../../actions';
-import { Transaction } from '@/app/transactions/types';
 
 interface ExportCardProps {
   accountsCount: number;
@@ -17,7 +16,7 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
   const handleExportTransactions = async () => {
     setIsExporting(true);
     try {
-      const txs = await exportAllTransactions() as unknown as Transaction[];
+      const txs = await exportAllTransactions();
       const { generateLedgerCSV, downloadCSV } = await import('@/lib/csv-export');
       const csvContent = generateLedgerCSV(txs);
       downloadCSV(csvContent, `netly_transactions_${new Date().toISOString().split('T')[0]}.csv`);

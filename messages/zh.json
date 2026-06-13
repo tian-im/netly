@@ -30,7 +30,8 @@
     "currencyCny": "CNY（人民币）",
     "discardChangesConfirm": "您有未保存的修改。确定要放弃修改吗？",
     "error": "错误",
-    "unknown": "未知"
+    "unknown": "未知",
+    "copy": "复制"
   },
   "nav": {
     "brand": "NETLY LEDGER",
@@ -538,7 +539,6 @@
     "wiping": "清空中...",
     "wipeSuccess": "数据库已成功清空。",
     "wipeFailed": "重置数据库失败",
-    "preferencesUpdated": "偏好设置已更新",
     "currencySet": "默认货币已设置为 {currency}",
     "periodSet": "默认分析周期已设置为 {period}",
     "dateFormatSet": "偏好日期格式已更新为 {format}",

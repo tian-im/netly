@@ -119,6 +119,7 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
               <option value="EUR">{t('currencyOptionEur')}</option>
               <option value="GBP">{t('currencyOptionGbp')}</option>
               <option value="CAD">{t('currencyOptionCad')}</option>
+              <option value="CNY">{t('currencyOptionCny')}</option>
             </select>
           </div>
 

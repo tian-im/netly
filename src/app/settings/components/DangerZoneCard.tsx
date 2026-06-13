@@ -24,6 +24,7 @@ export default function DangerZoneCard({
   const [isPending, startTransition] = useTransition();
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [wipeConfirmInput, setWipeConfirmInput] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleResetDbConfirm = async () => {
     if (wipeConfirmInput.trim() !== 'WIPE') return;
@@ -43,8 +44,19 @@ export default function DangerZoneCard({
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    setIsLoggingOut(true);
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!res.ok) {
+        throw new Error('Logout request failed');
+      }
+      router.push('/login');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(msg || tCommon('error'), 'error');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -82,8 +94,13 @@ export default function DangerZoneCard({
             <button
               onClick={handleLogout}
               className="btn btn-outline btn-sm gap-2"
+              disabled={isLoggingOut}
             >
-              <LogOut className="h-4 w-4" />
+              {isLoggingOut ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
               {t('signOutBtn')}
             </button>
           </div>
