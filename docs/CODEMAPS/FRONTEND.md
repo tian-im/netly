@@ -1,6 +1,6 @@
 # Netly Ledger — Frontend
 
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-06-13
 **UI Library:** Tailwind CSS v4 + DaisyUI v5 + lucide-react icons
 **Charts:** recharts (LineChart, BarChart)
 **Frameworks:** next-intl i18n, WebAuthn via @simplewebauthn/browser
@@ -85,5 +85,5 @@ This ensures every link carries the correct query params and they stay consisten
 
 - **Library**: next-intl with `NextIntlClientProvider`
 - **Messages**: `messages/en.json`, `messages/zh.json`
-- **Locale detection**: `netly_locale` cookie (set in providers.tsx)
+- **Locale detection**: `netly_locale` cookie (set client-side in providers.tsx) with `Accept-Language` header fallback on first visit (in `layout.tsx` — `parseAcceptLanguage()`)
 - **Context**: `LocaleContext` provides `locale` + `setLocale` to all pages

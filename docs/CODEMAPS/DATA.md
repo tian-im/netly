@@ -1,6 +1,6 @@
 # Netly Ledger — Data Layer
 
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-06-13
 **Database:** SQLite via Prisma ORM
 **Location:** `prisma/schema.prisma`
 
@@ -51,7 +51,9 @@ McpToken           (MCP API tokens)
 | categoryId | String? | FK → Category (SetNull on delete) |
 | isReviewed | Boolean | @default(false) |
 
-**Dedup key**: Unique hash of `(date, payee, amount, accountId)` — enforced in application code (not DB constraint).
+**Dedup key**: `@@unique([date, payee, amount, accountId])` — enforced at both
+application level (skip during import) and database level (unique index prevents
+insertion even in race conditions or direct DB writes).
 
 ### CategoryRule
 | Field | Type | Notes |

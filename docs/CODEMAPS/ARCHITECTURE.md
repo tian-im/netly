@@ -1,6 +1,6 @@
 # Netly Ledger — Architecture
 
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-06-13
 **Stack:** Next.js 14 (App Router) + SQLite (Prisma) + Tailwind CSS v4 + DaisyUI v5
 **Auth:** WebAuthn (PassKeys) + Session cookies
 **i18n:** next-intl (en/zh)
@@ -43,11 +43,13 @@ page.tsx (RSC)
 ```
 File Upload → Auto-detect headers → Column mapping UI
     → POST /api/import → parseCSV() (papaparse)
-    → Duplicate filter (date+payee+amount hash)
+    → Duplicate filter (date+payee+amount+accountId composite)
     → matchRule() auto-categorization
     → db.transaction.createMany()
     → Revalidate all pages
 ```
+Duplicate prevention is enforced at **both** application level (skip check) and
+database level (`@@unique([date, payee, amount, accountId])` constraint).
 
 ### MCP Tool Flow
 ```
@@ -62,10 +64,12 @@ AI/LLM → MCP SDK Server → Tools:
 ## Key Design Decisions
 
 - **RSC-first**: Pages fetch data on server, pass serializable props to client components
-- **SQLite**: Single-file DB (`prisma/dev.db`), no external DB server needed
-- **Server Actions** for mutations instead of REST endpoints (except CSV import via `/api/import`)
+- **SQLite**: Single-file DB (`prisma/dev.db`), no external DB server needed. WAL mode enabled for concurrent read/write performance.
+- **Server Actions** for mutations instead of REST endpoints (except CSV import via `/api/import` and auth routes)
 - **MCP SDK** enables AI agents to interact with the ledger programmatically
 - **PassKey auth**: WebAuthn-based passwordless auth, no email/password storage
+- **Session secret**: Auto-generated on first run, persisted to `.session-secret` file. Survives restarts without `.env` setup.
+- **Health check**: `/api/health` endpoint with database connectivity verification, used by Docker HEALTHCHECK.
 
 ## Related Codemaps
 

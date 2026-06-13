@@ -1,13 +1,13 @@
 # Netly Ledger — Module Map
 
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-06-13
 
 ## Directory Layout
 
 ```
 netly/
 ├── prisma/
-│   ├── schema.prisma        — 6 models (Account, Tx, Category, Rule, PassKey, Session, McpToken)
+│   ├── schema.prisma        — 9 models (Account, Transaction, Category, Rule, PassKey, Session, Challenge, SetupToken, AuditLog, McpToken)
 │   ├── migrations/
 │   ├── dev.db               — SQLite (local)
 │   └── seed-csv.ts
@@ -32,7 +32,7 @@ netly/
 │   │   └── globals.css  loading.tsx  error.tsx  not-found.tsx
 │   │
 │   ├── lib/               — Core logic
-│   │   ├── db.ts          — PrismaClient singleton
+│   │   ├── db.ts          — PrismaClient singleton (WAL mode + busy timeout)
 │   │   ├── csv.ts         — Parser (papaparse)
 │   │   ├── csv-export.ts  — Export + download
 │   │   ├── reports.ts     — BS/IS/CFS generators
@@ -40,7 +40,9 @@ netly/
 │   │   ├── currencies.ts  — Symbols + compact format
 │   │   ├── links.ts       — URL builders for reports/transactions pages
 │   │   ├── auth-session.ts— HMAC session cookies
+│   │   ├── session-secret.ts — Auto-generate + persist session secret to file
 │   │   ├── challenge-store.ts / webauthn.ts — PassKey auth
+│   │   ├── rate-limiter.ts — In-memory sliding-window rate limiter
 │   │   └── translateError.ts
 │   │
 │   └── mcp-server/        — AI/LLM tool interface (MCP SDK)
@@ -52,7 +54,7 @@ netly/
 │           ├── reports.ts     (4 tools)
 │           └── analysis.ts    (2 tools)
 │
-├── docker-compose.yml  Dockerfile.dev
+├── docker-compose.yml  Dockerfile.dev  .dockerignore  .env.example
 ├── next.config.js  tsconfig.json  postcss.config.js
 ├── vitest.config.ts  vitest.integration.config.ts
 └── package.json
@@ -90,6 +92,8 @@ lib/links.ts (URL builders) ← used by:
 | `lib/reports.ts` | `generateBalanceSheet`, `IncomeStatement`, `CashFlowStatement` | Dashboard, MCP |
 | `lib/links.ts` | `buildReportsUrl()`, `buildAccountTransactionsUrl()`, `buildCategoryTransactionsUrl()` | Navigation across all pages — **always use instead of hardcoding paths with query params** |
 | `lib/rules.ts` | `matchRule()` | CSV import, MCP tools |
-| `lib/auth-session.ts` | `createSessionCookie()`, `verifySessionCookie()` | Login/setup pages |
+| `lib/auth-session.ts` | `createSessionCookie()`, `verifySessionCookie()`, `verifySessionWithDb()` | Login/setup pages |
+| `lib/session-secret.ts` | `getSessionSecret()` | `auth-session.ts` (auto-generate + file persist) |
+| `lib/rate-limiter.ts` | `checkRateLimit()`, `resetRateLimiter()` | Auth API routes (login, register, setup-token) |
 | `mcp-server/tools/transactions.ts` | `import_csv`, `list_transactions`, `categorize_uncategorized` | AI agents |
 | `mcp-server/tools/reports.ts` | `get_dashboard_summary`, `get_financial_reports`, `get_net_worth_trend` | AI agents |
