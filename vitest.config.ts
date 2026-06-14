@@ -9,9 +9,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'src/**/*.integration.test.ts'],
-    env: {
-      SESSION_SECRET: 'test-secret-for-unit-tests',
-    },
+    // Note: SESSION_SECRET is intentionally NOT set here.
+    // Each test manages its own env var state explicitly via vi.stubEnv().
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

@@ -16,6 +16,9 @@ const helmet = {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Standalone output bundles the server code into .next/standalone/,
+  // enabling a minimal production Docker image via multi-stage builds.
+  output: 'standalone',
   async headers() {
     return [
       {

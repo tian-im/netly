@@ -15,7 +15,7 @@ generator client {
 model Account {
   id              String        @id @default(uuid())
   name            String
-  type            String        // "ASSET" or "LIABILITY"
+  type            String // "ASSET" or "LIABILITY"
   startingBalance Float         @default(0) // SQLite Float is fine for personal scale, or standard Decimal which translates to Float in Prisma/SQLite
   currency        String        @default("AUD")
   createdAt       DateTime      @default(now())
@@ -25,27 +25,27 @@ model Account {
 
 // Represents financial categories (Income, Expense, Transfer)
 model Category {
-  id           String        @id @default(uuid())
-  name         String        @unique
-  type         String        // "INCOME", "EXPENSE", "TRANSFER"
-  cashFlowType String        // "OPERATING", "INVESTING", "FINANCING"
+  id           String         @id @default(uuid())
+  name         String         @unique
+  type         String // "INCOME", "EXPENSE", "TRANSFER"
+  cashFlowType String // "OPERATING", "INVESTING", "FINANCING"
   transactions Transaction[]
   rules        CategoryRule[]
 }
 
 // A ledger transaction record
 model Transaction {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   date        DateTime
   payee       String
   description String?
   amount      Float
   accountId   String
-  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  isReviewed  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isReviewed  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 
   // Prevent duplicates: same (date, payee, amount, accountId) is unique at the DB level
   @@unique([date, payee, amount, accountId])
@@ -54,21 +54,21 @@ model Transaction {
 // Simple rules for payee text matching auto-categorization
 model CategoryRule {
   id         String   @id @default(uuid())
-  pattern    String   // Regex or substring to match, e.g. "Uber", "Woolworths"
+  pattern    String // Regex or substring to match, e.g. "Uber", "Woolworths"
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 // WebAuthn / PassKey credentials for single-user auth
 model PassKeyCredential {
-  id           String    @id
-  userId       String    @default("default")
-  publicKey    Bytes
-  counter      BigInt    @default(0)
-  transports   String    @default("[]")
-  deviceName   String?
-  createdAt    DateTime  @default(now())
-  lastUsedAt   DateTime?
+  id         String    @id
+  userId     String    @default("default")
+  publicKey  Bytes
+  counter    BigInt    @default(0)
+  transports String    @default("[]")
+  deviceName String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
 }
 
 // Active sessions — enables server-side revocation and session listing

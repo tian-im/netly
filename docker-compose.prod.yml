@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────
+# Netly Ledger — Production Docker Compose
+# ─────────────────────────────────────────────────────────────────
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# This compose file demonstrates a zero-config production deployment.
+# Simply mount a host directory at /app/data and everything — the
+# SQLite database AND the session secret — persists automatically.
+#
+# 1. Build the image (one time):
+#    docker compose -f docker-compose.prod.yml build
+#
+# 2. Start the service:
+#    docker compose -f docker-compose.prod.yml up -d
+#
+# 3. Open http://localhost:3000 in your browser.
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  netly:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount a host directory so the SQLite DB and session secret survive restarts.
+      # On Linux hosts, ensure the directory is writable by UID 1001:
+      #   mkdir -p ./netly-data && chown 1001:1001 ./netly-data
+      - ./netly-data:/app/data
+    environment:
+      - NODE_ENV=production
+      # Optional: set SKIP_MIGRATIONS=1 if you manage the DB schema externally
+      # - SKIP_MIGRATIONS=1
+      # Optional: set SKIP_PRISMA_GENERATE=1 if you pre-build the Prisma client
+      # - SKIP_PRISMA_GENERATE=1
+    restart: unless-stopped

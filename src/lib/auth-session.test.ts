@@ -193,13 +193,31 @@ describe('auth-session', () => {
     });
   });
 
-  describe('SESSION_SECRET auto-generation', () => {
+  describe('SESSION_SECRET edge cases', () => {
     it('auto-generates a secret when SESSION_SECRET is not set', async () => {
       vi.stubEnv('SESSION_SECRET', '');
       vi.resetModules();
       const mod = await import('./auth-session');
       expect(mod).toBeDefined();
       expect(mod.getSessionCookieName).toBeDefined();
+      vi.unstubAllEnvs();
+    });
+
+    it('returns null from verifySessionCookie when SESSION_SECRET is not set', async () => {
+      // verifySessionCookie lazily reads SESSION_SECRET and throws if empty.
+      // The throw is caught internally and returns null.
+      const cookie = 'dGVzdA.sig';
+      vi.stubEnv('SESSION_SECRET', '');
+      const result = await verifySessionCookie(cookie);
+      expect(result).toBeNull();
+      vi.unstubAllEnvs();
+    });
+
+    it('throws from createSessionCookie when SESSION_SECRET is not set', async () => {
+      vi.stubEnv('SESSION_SECRET', '');
+      // createSessionCookie calls resolveSecret() internally without try/catch,
+      // so the error propagates as a rejected promise.
+      await expect(createSessionCookie()).rejects.toThrow('SESSION_SECRET');
       vi.unstubAllEnvs();
     });
   });

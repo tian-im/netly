@@ -153,6 +153,8 @@ prisma/prisma/
 # SQLite local databases
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 
 
 .mcp-token
