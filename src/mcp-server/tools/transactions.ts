@@ -261,16 +261,44 @@ export function registerTransactionTools(server: McpServer) {
             where: { id: transactionIds[0] },
           });
           if (firstTx && firstTx.payee) {
-            const pattern = firstTx.payee.trim().toLowerCase();
-            const existingRule = await db.categoryRule.findFirst({
-              where: { pattern, categoryId },
+            const pattern = firstTx.payee.trim();
+            const lowerPattern = pattern.toLowerCase();
+            // Check for case-insensitive duplicates within the same category
+            const sameCategoryRules = await db.categoryRule.findMany({
+              where: { categoryId },
             });
-            if (!existingRule) {
-              await db.categoryRule.create({
-                data: { pattern, categoryId },
-              });
-              ruleCreated = true;
+            const isSameCategoryDuplicate = sameCategoryRules.some(
+              (r) => r.pattern.toLowerCase() === lowerPattern
+            );
+            if (isSameCategoryDuplicate) {
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify({ updated: transactionIds.length, ruleCreated: false }),
+                }],
+              };
             }
+            // Check for same pattern in a different category (first-match-wins ambiguity)
+            const otherCategoryRules = await db.categoryRule.findMany({
+              where: { NOT: { categoryId } },
+              include: { category: { select: { name: true } } },
+            });
+            const conflictingRule = otherCategoryRules.find(
+              (r) => r.pattern.toLowerCase() === lowerPattern
+            );
+            if (conflictingRule) {
+              // Pattern exists in another category — don't create a conflicting rule
+              return {
+                content: [{
+                  type: "text",
+                  text: JSON.stringify({ updated: transactionIds.length, ruleCreated: false }),
+                }],
+              };
+            }
+            await db.categoryRule.create({
+              data: { pattern, categoryId },
+            });
+            ruleCreated = true;
           }
         }
 
@@ -296,7 +324,12 @@ export function registerTransactionTools(server: McpServer) {
     },
     async ({ pattern, categoryId, createRule }) => {
       try {
-        const lowerPattern = pattern.trim().toLowerCase();
+        const trimmedPattern = pattern.trim();
+        if (!trimmedPattern) {
+          return { isError: true, content: [{ type: "text", text: "Pattern is required." }] };
+        }
+        const storedPattern = trimmedPattern;
+        const lowerPattern = trimmedPattern.toLowerCase();
 
         // Validate the category exists
         const category = await db.category.findUnique({ where: { id: categoryId } });
@@ -330,15 +363,27 @@ export function registerTransactionTools(server: McpServer) {
           });
         }
 
-        // 3. Create the rule if requested and does not already exist
+        // 3. Create the rule if requested and does not already exist (case-insensitive)
         let ruleCreated = false;
         if (createRule) {
-          const existingRule = await db.categoryRule.findFirst({
-            where: { pattern: lowerPattern, categoryId },
+          // Check for case-insensitive duplicates within the same category
+          const sameCategoryRules = await db.categoryRule.findMany({
+            where: { categoryId },
           });
-          if (!existingRule) {
+          const isSameCategoryDuplicate = sameCategoryRules.some(
+            (r) => r.pattern.toLowerCase() === lowerPattern
+          );
+          // Check for same pattern in a different category (first-match-wins ambiguity)
+          const otherCategoryRules = await db.categoryRule.findMany({
+            where: { NOT: { categoryId } },
+            include: { category: { select: { name: true } } },
+          });
+          const conflictingRule = otherCategoryRules.find(
+            (r) => r.pattern.toLowerCase() === lowerPattern
+          );
+          if (!isSameCategoryDuplicate && !conflictingRule) {
             await db.categoryRule.create({
-              data: { pattern: lowerPattern, categoryId },
+              data: { pattern: storedPattern, categoryId },
             });
             ruleCreated = true;
           }

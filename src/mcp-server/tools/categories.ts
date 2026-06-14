@@ -53,10 +53,15 @@ export function registerCategoryTools(server: McpServer) {
     },
     async ({ pattern, categoryId }) => {
       try {
-        const lowerPattern = pattern.trim().toLowerCase();
-        if (!lowerPattern) {
+        const trimmedPattern = pattern.trim();
+        if (!trimmedPattern) {
           throw new Error('ERR_PATTERN_REQUIRED');
         }
+        // Store the original casing so users see what they typed. Matching is
+        // case-insensitive regardless, so the original casing is cosmetic only.
+        const storedPattern = trimmedPattern;
+        // Lowercased version for DB-level duplicate checks and matching
+        const lowerPattern = storedPattern.toLowerCase();
 
         // Validate the category exists
         const category = await db.category.findUnique({ where: { id: categoryId } });
@@ -67,28 +72,34 @@ export function registerCategoryTools(server: McpServer) {
           };
         }
 
-        // Check for duplicate patterns within the same category
-        const sameCategoryRule = await db.categoryRule.findFirst({
-          where: { pattern: lowerPattern, categoryId },
+        // Check for duplicate patterns within the same category (case-insensitive)
+        const sameCategoryRules = await db.categoryRule.findMany({
+          where: { categoryId },
         });
-        if (sameCategoryRule) {
+        const sameCategoryMatch = sameCategoryRules.find(
+          (r) => r.pattern.toLowerCase() === lowerPattern
+        );
+        if (sameCategoryMatch) {
           return {
             isError: true,
             content: [{ type: "text", text: "A rule with this pattern already exists for this category." }],
           };
         }
 
-        // Check for same pattern in a different category (first-match-wins ambiguity)
-        const conflictingRule = await db.categoryRule.findFirst({
-          where: { pattern: lowerPattern, NOT: { categoryId } },
+        // Check for same pattern in a different category (case-insensitive)
+        const otherCategoryRules = await db.categoryRule.findMany({
+          where: { NOT: { categoryId } },
           include: { category: { select: { name: true } } },
         });
+        const conflictingRule = otherCategoryRules.find(
+          (r) => r.pattern.toLowerCase() === lowerPattern
+        );
         if (conflictingRule) {
           return {
             isError: true,
             content: [{
               type: "text",
-              text: `Duplicate pattern detected: "${lowerPattern}" is already used by category "${conflictingRule.category.name}". ` +
+              text: `Duplicate pattern detected: "${storedPattern}" is already used by category "${conflictingRule.category.name}". ` +
                     `Duplicate patterns across categories can cause unpredictable matching — the first rule encountered wins. ` +
                     `Please delete the existing rule first or use a more specific pattern.`,
             }],
@@ -97,7 +108,7 @@ export function registerCategoryTools(server: McpServer) {
 
         const rule = await db.categoryRule.create({
           data: {
-            pattern: lowerPattern,
+            pattern: storedPattern,
             categoryId,
           },
         });

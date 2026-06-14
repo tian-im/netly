@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getTestDb, clearTestDb } from '@/lib/test-db';
 import { GET, POST, DELETE } from './route';
+import { DELETE as DeleteById } from './[id]/route';
 import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/db', async () => {
@@ -109,5 +110,44 @@ describe('MCP Tokens API Endpoint', () => {
     expect(resDelete.status).toBe(400);
     const err = await resDelete.json();
     expect(err.error).toBe('ERR_MCP_TOKEN_NOT_FOUND');
+  });
+
+  it('DELETE /api/mcp/tokens/[id]: revokes token via RESTful route', async () => {
+    const cookies = await createAuthenticatedSession();
+
+    // Create a token first
+    const reqCreate = mockRequest('http://localhost:3000/api/mcp/tokens', 'POST', { name: 'Token To Revoke' }, cookies);
+    const resCreate = await POST(reqCreate);
+    const created = await resCreate.json();
+
+    // Revoke via [id] route
+    const reqRevoke = mockRequest(`http://localhost:3000/api/mcp/tokens/${created.id}`, 'DELETE', undefined, cookies);
+    const resRevoke = await DeleteById(reqRevoke, { params: { id: created.id } });
+    expect(resRevoke.status).toBe(200);
+    const revokeResult = await resRevoke.json();
+    expect(revokeResult.success).toBe(true);
+
+    // Verify deleted from DB
+    const tokens = await db.mcpToken.findMany();
+    expect(tokens).toHaveLength(0);
+  });
+
+  it('DELETE /api/mcp/tokens/[id]: returns 404 for non-existent token', async () => {
+    const cookies = await createAuthenticatedSession();
+    const fakeId = '00000000-0000-0000-0000-000000000000';
+
+    const reqRevoke = mockRequest(`http://localhost:3000/api/mcp/tokens/${fakeId}`, 'DELETE', undefined, cookies);
+    const resRevoke = await DeleteById(reqRevoke, { params: { id: fakeId } });
+    expect(resRevoke.status).toBe(404);
+    const err = await resRevoke.json();
+    expect(err.error).toBe('ERR_MCP_TOKEN_NOT_FOUND');
+  });
+
+  it('DELETE /api/mcp/tokens/[id]: rejects unauthenticated requests', async () => {
+    const fakeId = '00000000-0000-0000-0000-000000000000';
+
+    const reqRevoke = mockRequest(`http://localhost:3000/api/mcp/tokens/${fakeId}`, 'DELETE');
+    const resRevoke = await DeleteById(reqRevoke, { params: { id: fakeId } });
+    expect(resRevoke.status).toBe(401);
   });
 });

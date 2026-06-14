@@ -168,32 +168,40 @@ export async function getCategories() {
 }
 
 export async function createCategoryRule(pattern: string, categoryId: string) {
-  if (!pattern.trim()) throw new Error('ERR_PATTERN_REQUIRED');
+  const trimmedPattern = pattern.trim();
+  if (!trimmedPattern) throw new Error('ERR_PATTERN_REQUIRED');
 
   // Validate the category exists
   const category = await db.category.findUnique({ where: { id: categoryId } });
   if (!category) throw new Error('ERR_CATEGORY_NOT_FOUND');
 
-  const lowerPattern = pattern.trim().toLowerCase();
+  const storedPattern = trimmedPattern;
+  const lowerPattern = storedPattern.toLowerCase();
 
-  // Check for duplicate patterns within the same category
-  const sameCategoryRule = await db.categoryRule.findFirst({
-    where: { pattern: lowerPattern, categoryId }
+  // Check for duplicate patterns within the same category (case-insensitive)
+  const sameCategoryRules = await db.categoryRule.findMany({
+    where: { categoryId }
   });
-  if (sameCategoryRule) throw new Error('ERR_DUPLICATE_RULE_PATTERN');
+  const sameCategoryMatch = sameCategoryRules.find(
+    (r) => r.pattern.toLowerCase() === lowerPattern
+  );
+  if (sameCategoryMatch) throw new Error('ERR_DUPLICATE_RULE_PATTERN');
 
   // Check for same pattern in a different category (first-match-wins ambiguity)
-  const conflictingRule = await db.categoryRule.findFirst({
-    where: { pattern: lowerPattern, NOT: { categoryId } },
+  const otherCategoryRules = await db.categoryRule.findMany({
+    where: { NOT: { categoryId } },
     include: { category: { select: { name: true } } },
   });
+  const conflictingRule = otherCategoryRules.find(
+    (r) => r.pattern.toLowerCase() === lowerPattern
+  );
   if (conflictingRule) {
     throw new Error(`ERR_DUPLICATE_RULE_PATTERN_GLOBAL:::${conflictingRule.category.name}`);
   }
 
   const rule = await db.categoryRule.create({
     data: {
-      pattern: pattern.trim().toLowerCase(),
+      pattern: storedPattern,
       categoryId
     }
   });

@@ -23,9 +23,6 @@ export function registerAnalysisTools(server: McpServer) {
           orderBy: { date: "asc" },
         });
 
-        // Ensure transactions are explicitly sorted by date to prevent fragile assumptions
-        transactions.sort((a, b) => a.date.getTime() - b.date.getTime());
-
         const limit = maxResults ?? 100;
         const duplicates: { transaction1: any; transaction2: any; matchScore: number }[] = [];
 
@@ -37,7 +34,7 @@ export function registerAnalysisTools(server: McpServer) {
             if (duplicates.length >= limit) break;
             const t2 = transactions[j];
 
-            // Filter out different accounts if checking per-account
+            // Only compare within the same account (cross-account pairs are not duplicates)
             if (t1.accountId !== t2.accountId) continue;
 
             const timeDiff = Math.abs(t1.date.getTime() - t2.date.getTime()) / (1000 * 60 * 60 * 24);
@@ -105,6 +102,9 @@ export function registerAnalysisTools(server: McpServer) {
           },
           include: { category: true, account: true },
           orderBy: { date: "asc" },
+          // Cap at 50k records to prevent unbounded memory use on very old ledgers.
+          // For a daily-transaction 5-year ledger this is ~1 825 records, well under limit.
+          take: 50000,
         });
 
         // Group by payee normalized key

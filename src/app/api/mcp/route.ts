@@ -104,12 +104,15 @@ async function validateAuth(request: NextRequest): Promise<McpToken | null> {
     return null;
   }
 
-  // Update lastUsedAt metadata asynchronously (non-blocking)
+  // Update lastUsedAt metadata asynchronously (non-blocking — auth latency
+  // should not depend on a metadata write). Errors are logged but do not
+  // propagate; a stale lastUsedAt is acceptable.
   db.mcpToken.update({
     where: { id: mcpToken.id },
     data: { lastUsedAt: new Date() },
-  }).catch((err) => {
-    console.error("Error updating token lastUsedAt:", err);
+  }).catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Error updating token lastUsedAt:", message);
   });
 
   return mcpToken;

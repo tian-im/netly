@@ -397,10 +397,10 @@ describe('Category actions', () => {
 
 describe('Category Rule actions', () => {
   describe('createCategoryRule', () => {
-    it('creates a rule and lowercases the pattern', async () => {
+    it('creates a rule and preserves the original casing of the pattern', async () => {
       const cat = await seedCategory();
       const rule = await createCategoryRule('Woolworths', cat.id);
-      expect(rule.pattern).toBe('woolworths');
+      expect(rule.pattern).toBe('Woolworths');
       expect(rule.categoryId).toBe(cat.id);
     });
 
@@ -580,6 +580,7 @@ describe('Transaction actions', () => {
 
       const rule = await db.categoryRule.findFirst({ where: { categoryId: cat.id } });
       expect(rule).not.toBeNull();
+      // updateTransactionCategory lowercases auto-derived patterns
       expect(rule?.pattern).toBe('netflix');
     });
 
@@ -593,6 +594,8 @@ describe('Transaction actions', () => {
 
       const rules = await db.categoryRule.findMany({ where: { categoryId: cat.id } });
       expect(rules).toHaveLength(1);
+      // Existing pattern retains its original casing
+      expect(rules[0].pattern).toBe('netflix');
     });
 
     it('does NOT create a rule when createGlobalRule=false', async () => {

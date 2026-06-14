@@ -53,6 +53,30 @@ describe('MCP SSE & JSON-RPC Route Handler', () => {
     expect(res.headers.get('Cache-Control')).toBe('no-cache');
   });
 
+  it('updates lastUsedAt when token is used', async () => {
+    // Verify lastUsedAt is null before use
+    let token = await db.mcpToken.findUnique({ where: { token: tokenHash } });
+    expect(token?.lastUsedAt).toBeNull();
+
+    // Use the token to authenticate a request
+    const req = mockRequest('http://localhost:3000/api/mcp', 'GET', undefined, tokenPlaintext);
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+
+    // Drain the SSE stream to close the connection gracefully
+    const reader = res.body?.getReader();
+    if (reader) {
+      // Give async lastUsedAt update time to complete, then cancel
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      reader.cancel();
+    }
+
+    // Verify lastUsedAt was updated
+    token = await db.mcpToken.findUnique({ where: { token: tokenHash } });
+    expect(token?.lastUsedAt).not.toBeNull();
+    expect(token?.lastUsedAt!.getTime()).toBeGreaterThan(Date.now() - 5000);
+  });
+
   it('rejects POST request without valid Bearer token', async () => {
     const req = mockRequest('http://localhost:3000/api/mcp?sessionId=123', 'POST', { jsonrpc: '2.0', method: 'tools/list' });
     const res = await POST(req);

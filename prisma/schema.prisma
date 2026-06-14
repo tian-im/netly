@@ -46,9 +46,12 @@ model Transaction {
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   isReviewed  Boolean   @default(false)
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Prevent duplicates: same (date, payee, amount, accountId) is unique at the DB level
   @@unique([date, payee, amount, accountId])
+  @@index([accountId])
+  @@index([categoryId])
 }
 
 // Simple rules for payee text matching auto-categorization
@@ -57,6 +60,8 @@ model CategoryRule {
   pattern    String // Regex or substring to match, e.g. "Uber", "Woolworths"
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // WebAuthn / PassKey credentials for single-user auth
@@ -77,25 +82,6 @@ model Session {
   token     String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime // Sessions auto-expire after 7 days (matches cookie maxAge)
-}
-
-// WebAuthn challenge — persisted for production-ready multi-instance support
-// TODO: Swap challenge-store.ts from in-memory Map to this table for
-//       multi-instance deployment or crash-proof in-flight flows.
-model Challenge {
-  id        String   @id @default(uuid())
-  state     String   @unique
-  challenge String
-  createdAt DateTime @default(now())
-}
-
-// One-time setup tokens for bootstrapping new devices
-// TODO: Swap challenge-store.ts from in-memory Map to this table for
-//       multi-instance deployment or crash-proof in-flight flows.
-model SetupToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  createdAt DateTime @default(now())
 }
 
 // Audit log for security events

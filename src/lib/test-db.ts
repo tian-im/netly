@@ -36,8 +36,6 @@ export async function clearTestDb(): Promise<void> {
   await db.$transaction([
     db.auditLog.deleteMany(),
     db.session.deleteMany(),
-    db.challenge.deleteMany(),
-    db.setupToken.deleteMany(),
     db.passKeyCredential.deleteMany(),
     db.categoryRule.deleteMany(),
     db.transaction.deleteMany(),

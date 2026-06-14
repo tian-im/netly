@@ -233,6 +233,24 @@ describe('MCP Tools Integration Tests', () => {
       const updatedTx = await db.transaction.findUnique({ where: { id: tx.id } });
       expect(updatedTx?.categoryId).toBe(cat.id);
     });
+
+    it('create_category_rule: preserves original casing of pattern', async () => {
+      const acc = await seedAccount();
+      const cat = await seedCategory({ name: 'Transport' });
+      await seedTransaction(acc.id, { payee: 'Netflix Subscription', categoryId: null });
+
+      const handler = getHandler('create_category_rule');
+      const result = await handler({ pattern: 'NetFlix', categoryId: cat.id });
+      const data = JSON.parse(result.content[0].text);
+
+      expect(data.success).toBe(true);
+      // Original casing is preserved, not lowercased
+      expect(data.rule.pattern).toBe('NetFlix');
+
+      // Matching is still case-insensitive
+      const rule = await db.categoryRule.findFirst({ where: { categoryId: cat.id } });
+      expect(rule?.pattern).toBe('NetFlix');
+    });
   });
 
   // Test transactions tools
@@ -324,7 +342,7 @@ describe('MCP Tools Integration Tests', () => {
       const acc = await seedAccount();
       const cat = await seedCategory();
       const tx1 = await seedTransaction(acc.id);
-      const tx2 = await seedTransaction(acc.id);
+      const tx2 = await seedTransaction(acc.id, { payee: 'Another Store', amount: -25 });
 
       const handler = getHandler('update_transaction_category');
       const result = await handler({
@@ -338,7 +356,8 @@ describe('MCP Tools Integration Tests', () => {
       expect(data.ruleCreated).toBe(true);
 
       const rule = await db.categoryRule.findFirst({ where: { categoryId: cat.id } });
-      expect(rule?.pattern).toBe('supermarket');
+      // Pattern preserves original casing (seeded as 'Supermarket')
+      expect(rule?.pattern).toBe('Supermarket');
     });
 
     it('categorize_uncategorized: batch update by pattern', async () => {
@@ -359,6 +378,10 @@ describe('MCP Tools Integration Tests', () => {
 
       const updated = await db.transaction.findUnique({ where: { id: tx.id } });
       expect(updated?.categoryId).toBe(cat.id);
+
+      // Pattern preserves original casing
+      const rule = await db.categoryRule.findFirst({ where: { categoryId: cat.id } });
+      expect(rule?.pattern).toBe('Uber');
     });
   });
 
