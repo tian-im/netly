@@ -112,12 +112,12 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
             {isVacuuming ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              <RefreshCw className="h-4 w-4 animate-spin" />
+              <RefreshCw className="h-4 w-4" />
             )}
             {t('dbVacuumBtn')}
           </button>
           <label className="label mt-1">
-            <span className="label-text-alt text-[10px] text-base-content/40 text-center w-full">
+            <span className="label-text-alt text-[10px] text-base-content/40 text-center w-full break-words whitespace-normal">
               {t('dbVacuumDesc')}
             </span>
           </label>
