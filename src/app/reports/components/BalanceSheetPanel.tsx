@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useLocaleContext } from '@/app/providers';
 import { BalanceSheet } from '../types';
 import { Scale, Search } from 'lucide-react';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { RenderDelta } from '@/lib/render-delta';
 
 interface BalanceSheetPanelProps {
@@ -29,7 +29,7 @@ export default function BalanceSheetPanel({
 
   // Filter accounts by type and currency (Optimized with useMemo)
   const bsAccounts = useMemo(() => {
-    return report.accounts.filter((a) => (a.currency || 'AUD') === currency);
+    return report.accounts.filter((a) => (a.currency || DEFAULT_CURRENCY) === currency);
   }, [report.accounts, currency]);
 
   const assetAccounts = useMemo(() => {

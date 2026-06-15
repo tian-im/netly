@@ -1,8 +1,63 @@
-import { describe, it, expect } from 'vitest';
-import { getCurrencySymbol, formatCompactNumber, SUPPORTED_CURRENCIES, CURRENCY_OPTIONS } from './currencies';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  getCurrencySymbol,
+  formatCompactNumber,
+  SUPPORTED_CURRENCIES,
+  CURRENCY_OPTIONS,
+  DEFAULT_CURRENCY,
+  getPreferredCurrency,
+} from './currencies';
+import { CURRENCY_LIST, isValidCurrencyCode } from './iso-4217-data';
+
+describe('DEFAULT_CURRENCY', () => {
+  it('is AUD', () => {
+    expect(DEFAULT_CURRENCY).toBe('AUD');
+  });
+});
+
+describe('getPreferredCurrency', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', undefined);
+    vi.restoreAllMocks();
+  });
+
+  it('returns DEFAULT_CURRENCY during SSR (no window)', () => {
+    expect(getPreferredCurrency()).toBe(DEFAULT_CURRENCY);
+  });
+
+  it('returns the stored value when localStorage has a valid currency', () => {
+    vi.stubGlobal('window', {});
+    const getItem = vi.fn().mockReturnValue('EUR');
+    Storage.prototype.getItem = getItem;
+    expect(getPreferredCurrency()).toBe('EUR');
+    expect(getItem).toHaveBeenCalledWith('netly_pref_default_currency');
+  });
+
+  it('returns DEFAULT_CURRENCY when localStorage has an unsupported currency', () => {
+    vi.stubGlobal('window', {});
+    const getItem = vi.fn().mockReturnValue('XYZ');
+    Storage.prototype.getItem = getItem;
+    expect(getPreferredCurrency()).toBe(DEFAULT_CURRENCY);
+  });
+
+  it('returns DEFAULT_CURRENCY when localStorage is empty', () => {
+    vi.stubGlobal('window', {});
+    const getItem = vi.fn().mockReturnValue(null);
+    Storage.prototype.getItem = getItem;
+    expect(getPreferredCurrency()).toBe(DEFAULT_CURRENCY);
+  });
+
+  it('handles localStorage throwing gracefully', () => {
+    vi.stubGlobal('window', {});
+    const getItem = vi.fn().mockImplementation(() => { throw new Error('localStorage error'); });
+    Storage.prototype.getItem = getItem;
+    expect(getPreferredCurrency()).toBe(DEFAULT_CURRENCY);
+  });
+});
 
 describe('SUPPORTED_CURRENCIES', () => {
-  it('includes all currencies available in the UI', () => {
+  it('includes all currencies from the ISO data', () => {
+    expect(SUPPORTED_CURRENCIES.size).toBeGreaterThanOrEqual(170);
     expect(SUPPORTED_CURRENCIES.has('AUD')).toBe(true);
     expect(SUPPORTED_CURRENCIES.has('USD')).toBe(true);
     expect(SUPPORTED_CURRENCIES.has('EUR')).toBe(true);
@@ -13,9 +68,15 @@ describe('SUPPORTED_CURRENCIES', () => {
     expect(SUPPORTED_CURRENCIES.has('CNY')).toBe(true);
   });
 
-  it('rejects unsupported currencies', () => {
-    expect(SUPPORTED_CURRENCIES.has('JPY')).toBe(false);
-    expect(SUPPORTED_CURRENCIES.has('INR')).toBe(false);
+  it('now includes previously-unsupported currencies like JPY and INR', () => {
+    expect(SUPPORTED_CURRENCIES.has('JPY')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('INR')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('KRW')).toBe(true);
+    expect(SUPPORTED_CURRENCIES.has('BRL')).toBe(true);
+  });
+
+  it('rejects invalid currencies', () => {
+    expect(SUPPORTED_CURRENCIES.has('XYZ')).toBe(false);
     expect(SUPPORTED_CURRENCIES.has('')).toBe(false);
   });
 
@@ -26,20 +87,34 @@ describe('SUPPORTED_CURRENCIES', () => {
 });
 
 describe('CURRENCY_OPTIONS', () => {
-  it('has entries matching SUPPORTED_CURRENCIES', () => {
-    const keys = new Set(CURRENCY_OPTIONS.map((c) => c.key));
-    expect(keys).toEqual(SUPPORTED_CURRENCIES);
+  it('has the same count as CURRENCY_LIST', () => {
+    expect(CURRENCY_OPTIONS.length).toBe(CURRENCY_LIST.length);
   });
 
-  it('each entry has key and i18nKey', () => {
+  it('keys match the data file codes', () => {
+    const keys = CURRENCY_OPTIONS.map((c) => c.key);
+    const dataCodes = CURRENCY_LIST.map((c) => c.code);
+    expect(keys).toEqual(dataCodes);
+  });
+
+  it('each entry has key, i18nKey, and name', () => {
     for (const opt of CURRENCY_OPTIONS) {
       expect(opt.key).toBeTruthy();
+      expect(opt.key).toMatch(/^[A-Z]{3}$/);
       expect(opt.i18nKey).toBeTruthy();
       expect(opt.i18nKey).toMatch(/^currency[A-Z]/);
+      expect(opt.name).toBeTruthy();
     }
   });
 
-  it('pairs match known i18n common keys', () => {
+  it('name matches the currency data', () => {
+    const aud = CURRENCY_OPTIONS.find((c) => c.key === 'AUD');
+    expect(aud?.name).toBe('Australian Dollar');
+    const jpy = CURRENCY_OPTIONS.find((c) => c.key === 'JPY');
+    expect(jpy?.name).toBe('Japanese Yen');
+  });
+
+  it('i18nKey follows pattern for known currencies', () => {
     const aud = CURRENCY_OPTIONS.find((c) => c.key === 'AUD');
     expect(aud?.i18nKey).toBe('currencyAud');
     const cny = CURRENCY_OPTIONS.find((c) => c.key === 'CNY');
@@ -62,10 +137,43 @@ describe('getCurrencySymbol', () => {
     expect(getCurrencySymbol('CNY')).toBe('¥');
   });
 
-  it('should return $ as default', () => {
+  it('should return ₩ for KRW', () => {
+    expect(getCurrencySymbol('KRW')).toBe('₩');
+  });
+
+  it('should return ₹ for INR', () => {
+    expect(getCurrencySymbol('INR')).toBe('₹');
+  });
+
+  it('should return ₽ for RUB', () => {
+    expect(getCurrencySymbol('RUB')).toBe('₽');
+  });
+
+  it('should return $ for AUD, USD, CAD, NZD, SGD', () => {
     expect(getCurrencySymbol('AUD')).toBe('$');
     expect(getCurrencySymbol('USD')).toBe('$');
+    expect(getCurrencySymbol('CAD')).toBe('$');
+    expect(getCurrencySymbol('NZD')).toBe('$');
+    expect(getCurrencySymbol('SGD')).toBe('$');
+  });
+
+  it('should return the code itself for currencies where symbol equals code', () => {
+    // XAU has symbol 'XAU' in data (same as code), so we return the code
+    expect(getCurrencySymbol('XAU')).toBe('XAU');
+    expect(getCurrencySymbol('XAG')).toBe('XAG');
+    expect(getCurrencySymbol('CHF')).toBe('CHF');
+  });
+
+  it('should return $ as ultimate fallback for unknown codes', () => {
     expect(getCurrencySymbol('UNKNOWN')).toBe('$');
+    expect(getCurrencySymbol('XYZ')).toBe('$');
+    expect(getCurrencySymbol('')).toBe('$');
+  });
+
+  it('handles lower-case input', () => {
+    expect(getCurrencySymbol('eur')).toBe('€');
+    expect(getCurrencySymbol('gbp')).toBe('£');
+    expect(getCurrencySymbol('aud')).toBe('$');
   });
 });
 

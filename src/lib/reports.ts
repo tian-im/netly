@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENCY } from './currencies';
+
 export interface AccountLike {
   id: string;
   name: string;
@@ -82,7 +84,7 @@ export function generateBalanceSheet(
   const totals: Record<string, { totalAssets: number; totalLiabilities: number; netWorth: number }> = {};
 
   for (const account of accountBalances) {
-    const currency = account.currency || 'AUD';
+    const currency = account.currency || DEFAULT_CURRENCY;
     if (!totals[currency]) {
       totals[currency] = { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
     }
@@ -123,7 +125,7 @@ export function generateIncomeStatement(
   // Find all unique currencies from range-filtered transactions only
   const uniqueCurrencies = new Set<string>();
   for (const tx of rangeTransactions) {
-    uniqueCurrencies.add(tx.currency || 'AUD');
+    uniqueCurrencies.add(tx.currency || DEFAULT_CURRENCY);
   }
 
   const totals: Record<
@@ -152,7 +154,7 @@ export function generateIncomeStatement(
   const currencyGrouped: Record<string, Record<string, { type: string; sum: number; categoryId: string }>> = {};
   
   for (const tx of rangeTransactions) {
-    const currency = tx.currency || 'AUD';
+    const currency = tx.currency || DEFAULT_CURRENCY;
     const category = tx.category!;
     if (category.type === 'TRANSFER') continue;
 
@@ -217,7 +219,7 @@ export function generateCashFlowStatement(
   // Find all unique currencies from range-filtered transactions only
   const uniqueCurrencies = new Set<string>();
   for (const tx of rangeTransactions) {
-    uniqueCurrencies.add(tx.currency || 'AUD');
+    uniqueCurrencies.add(tx.currency || DEFAULT_CURRENCY);
   }
 
   const totals: Record<
@@ -257,7 +259,7 @@ export function generateCashFlowStatement(
   });
 
   for (const tx of rangeTransactions) {
-    const currency = tx.currency || 'AUD';
+    const currency = tx.currency || DEFAULT_CURRENCY;
     const category = tx.category!;
     if (category.type === 'TRANSFER') continue;
 

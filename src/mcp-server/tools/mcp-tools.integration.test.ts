@@ -153,6 +153,17 @@ describe('MCP Tools Integration Tests', () => {
       expect(result.content[0].text).toContain('Invalid currency code');
     });
 
+    it('create_account: rejects unsupported 3-letter currency code', async () => {
+      const handler = getHandler('create_account');
+      const result = await handler({
+        name: 'Bad Currency',
+        type: 'ASSET',
+        currency: 'ZZZ',
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('not supported');
+    });
+
     it('create_account: rejects empty name', async () => {
       const handler = getHandler('create_account');
       const result = await handler({

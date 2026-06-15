@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENCY } from './currencies';
+
 /**
  * Shape of a database transaction record as returned by Prisma's `findMany`
  * with `{ include: { account: true, category: true } }`.
@@ -45,7 +47,7 @@ export function mapTransactionForClient(t: DbTransactionRecord): ClientTransacti
     date: t.date,
     amount: t.amount,
     accountId: t.accountId,
-    currency: t.account?.currency || t.currency || 'AUD',
+    currency: t.account?.currency || t.currency || DEFAULT_CURRENCY,
     categoryId: t.categoryId,
     category: t.category
       ? {

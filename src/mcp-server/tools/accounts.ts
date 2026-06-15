@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { generateBalanceSheet } from "@/lib/reports";
+import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
 import { fetchAndMapData } from "../data";
 
 export function registerAccountTools(server: McpServer) {
@@ -113,6 +114,12 @@ export function registerAccountTools(server: McpServer) {
           return {
             isError: true,
             content: [{ type: "text", text: `Invalid currency code "${rawCurrency}". Must be a 3-letter ISO 4217 code.` }],
+          };
+        }
+        if (!SUPPORTED_CURRENCIES.has(currencyCode)) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `Currency "${currencyCode}" is not supported.` }],
           };
         }
 

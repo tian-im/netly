@@ -27,7 +27,7 @@ export default function BreakdownList({
   totalAmount,
   emptyMessage,
   progressColorClass,
-  currency = 'USD',
+  currency = 'AUD',
   locale,
 }: BreakdownListProps) {
   const symbol = getCurrencySymbol(currency);

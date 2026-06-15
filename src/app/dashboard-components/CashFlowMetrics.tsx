@@ -31,7 +31,7 @@ export default function CashFlowMetrics({
   financingLabel,
   detailedStatementsLabel,
   detailedStatementsHref = '/reports',
-  currency = 'USD',
+  currency = 'AUD',
   locale,
 }: CashFlowMetricsProps) {
   const symbol = getCurrencySymbol(currency);

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocaleContext } from '@/app/providers';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
-import { getCurrencySymbol, CURRENCY_OPTIONS } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY, getPreferredCurrency } from '@/lib/currencies';
+import CurrencySelector from '@/app/components/CurrencySelector';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
 
@@ -54,18 +55,27 @@ export default function AccountsClient({
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'ASSET' | 'LIABILITY'>('ALL');
 
+  // Client-side mounted flag — SSR renders empty form, client populates after hydration
+  const [mounted, setMounted] = useState(false);
+
   // Create Form State
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<'ASSET' | 'LIABILITY'>('ASSET');
   const [newAccBalance, setNewAccBalance] = useState('');
-  const [newAccCurrency, setNewAccCurrency] = useState('AUD');
+  const [newAccCurrency, setNewAccCurrency] = useState('');
+
+  // After mount, read user's preferred currency from localStorage
+  useEffect(() => {
+    setMounted(true);
+    setNewAccCurrency(getPreferredCurrency());
+  }, []);
 
   // Edit Modal State
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<'ASSET' | 'LIABILITY'>('ASSET');
   const [editBalance, setEditBalance] = useState('');
-  const [editCurrency, setEditCurrency] = useState('AUD');
+  const [editCurrency, setEditCurrency] = useState(DEFAULT_CURRENCY);
 
   // Discard changes confirm Modal State
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
@@ -119,7 +129,7 @@ export default function AccountsClient({
 
     const totals: Record<string, { totalAssets: number; totalLiabilities: number; netWorth: number }> = {};
     for (const account of accountBalances) {
-      const currency = account.currency || 'AUD';
+      const currency = account.currency || DEFAULT_CURRENCY;
       if (!totals[currency]) {
         totals[currency] = { totalAssets: 0, totalLiabilities: 0, netWorth: 0 };
       }
@@ -206,7 +216,7 @@ export default function AccountsClient({
         setSearchTerm('');
         setNewAccName('');
         setNewAccBalance('');
-        setNewAccCurrency('AUD');
+        setNewAccCurrency(getPreferredCurrency());
         setNewAccType('ASSET');
         showToast(t('createdSuccess', { name: created.name }));
       } catch (err: any) {
@@ -566,17 +576,15 @@ export default function AccountsClient({
                 <label className="label" htmlFor="new-account-currency">
                   <span className="label-text font-bold">{t('newAccountCurrency')}</span>
                 </label>
-                <select
-                  id="new-account-currency"
-                  value={newAccCurrency}
-                  onChange={(e) => setNewAccCurrency(e.target.value)}
-                  className="select select-bordered w-full"
-                  disabled={isCreating}
-                >
-                  {CURRENCY_OPTIONS.map((c) => (
-                    <option key={c.key} value={c.key}>{tCommon(c.i18nKey)}</option>
-                  ))}
-                </select>
+                {mounted && (
+                  <CurrencySelector
+                    id="new-account-currency"
+                    value={newAccCurrency}
+                    onChange={setNewAccCurrency}
+                    disabled={isCreating}
+                    className="w-full"
+                  />
+                )}
               </div>
 
               <div className="form-control w-full">
@@ -594,7 +602,7 @@ export default function AccountsClient({
                     placeholder="0.00"
                     value={newAccBalance}
                     onChange={(e) => setNewAccBalance(e.target.value)}
-                    className="input input-bordered w-full pl-8"
+                    className="input input-bordered w-full"
                     disabled={isCreating}
                   />
                 </div>
@@ -662,17 +670,15 @@ export default function AccountsClient({
                 <label className="label" htmlFor="edit-account-currency">
                   <span className="label-text font-bold">{t('newAccountCurrency')}</span>
                 </label>
-                <select
-                  id="edit-account-currency"
-                  value={editCurrency}
-                  onChange={(e) => setEditCurrency(e.target.value)}
-                  className="select select-bordered w-full"
-                  disabled={isUpdating}
-                >
-                  {CURRENCY_OPTIONS.map((c) => (
-                    <option key={c.key} value={c.key}>{tCommon(c.i18nKey)}</option>
-                  ))}
-                </select>
+                {mounted && (
+                  <CurrencySelector
+                    id="edit-account-currency"
+                    value={editCurrency}
+                    onChange={setEditCurrency}
+                    disabled={isUpdating}
+                    className="w-full"
+                  />
+                )}
               </div>
 
               <div className="form-control w-full">
@@ -690,7 +696,7 @@ export default function AccountsClient({
                     placeholder="0.00"
                     value={editBalance}
                     onChange={(e) => setEditBalance(e.target.value)}
-                    className="input input-bordered w-full pl-8"
+                    className="input input-bordered w-full"
                     disabled={isUpdating}
                   />
                 </div>

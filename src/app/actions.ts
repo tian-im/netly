@@ -3,7 +3,7 @@
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from '@/lib/reports';
-import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Prisma } from '@prisma/client';
 
 export async function getAccounts() {
@@ -535,7 +535,7 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
       categoryId: null,
       category: null,
       account: {
-        currency: account?.currency || 'AUD'
+        currency: account?.currency || DEFAULT_CURRENCY
       },
     };
   });

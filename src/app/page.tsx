@@ -7,6 +7,7 @@ import {
   generateCashFlowStatement,
   mapTransactionForClient,
 } from '@/lib/reports';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { getPeriodDates } from '@/lib/links';
 import type { PeriodType } from '@/lib/links';
 
@@ -92,12 +93,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   // Compute default currency (most common) so the client doesn't duplicate this logic
-  const activeCurrencies = Array.from(new Set(mappedAccounts.map((a) => a.currency || 'AUD')));
+  const activeCurrencies = Array.from(new Set(mappedAccounts.map((a) => a.currency || DEFAULT_CURRENCY)));
   const defaultCurrency = (() => {
-    if (mappedAccounts.length === 0) return 'AUD';
+    if (mappedAccounts.length === 0) return DEFAULT_CURRENCY;
     const counts: Record<string, number> = {};
     mappedAccounts.forEach((a) => {
-      const c = a.currency || 'AUD';
+      const c = a.currency || DEFAULT_CURRENCY;
       counts[c] = (counts[c] || 0) + 1;
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
@@ -141,7 +142,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         let totalAssets = 0;
         let totalLiabilities = 0;
         for (const acct of mappedAccounts) {
-          if ((acct.currency || 'AUD') !== currency) continue;
+          if ((acct.currency || DEFAULT_CURRENCY) !== currency) continue;
           const rawBalance = runningBalances[acct.id] ?? acct.startingBalance;
           const balance = acct.type === 'LIABILITY' ? -rawBalance : rawBalance;
           if (acct.type === 'ASSET') {

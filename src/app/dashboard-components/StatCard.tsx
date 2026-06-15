@@ -31,7 +31,7 @@ export default function StatCard({
   title,
   icon,
   value,
-  currency = 'USD',
+  currency = 'AUD',
   valueClass = '',
   locale,
   href,

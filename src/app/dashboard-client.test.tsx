@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import DashboardClient from './dashboard-client';
 import enMessages from '../../messages/en.json';
 import zhMessages from '../../messages/zh.json';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import {
   generateBalanceSheet,
   generateIncomeStatement,
@@ -100,10 +101,10 @@ describe('DashboardClient Component', () => {
 
   // Helper to determine default currency (mirrors server logic in page.tsx)
   const getDefaultCurrency = (accounts: any[]): string => {
-    if (accounts.length === 0) return 'AUD';
+    if (accounts.length === 0) return DEFAULT_CURRENCY;
     const counts: Record<string, number> = {};
     accounts.forEach((a: any) => {
-      const c = a.currency || 'AUD';
+      const c = a.currency || DEFAULT_CURRENCY;
       counts[c] = (counts[c] || 0) + 1;
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
@@ -133,7 +134,7 @@ describe('DashboardClient Component', () => {
     };
 
     const netWorthTrendByCurrency: Record<string, { date: string; value: number }[]> = {};
-    const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
+    const activeCurrencies = Array.from(new Set(accounts.map((a) => a.currency || DEFAULT_CURRENCY)));
     activeCurrencies.forEach((currency) => {
       netWorthTrendByCurrency[currency] = [{ date: '2026-06-01T00:00:00.000Z', value: bs.totals[currency]?.netWorth ?? 0 }];
     });

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Upload, RefreshCw } from 'lucide-react';
 
 // Custom components
@@ -38,7 +39,7 @@ export default function ReportsClient() {
     return {
       defaultStartStr: urlStart || new Date(d.getFullYear(), 0, 1).toISOString().split('T')[0],
       defaultEndStr: urlEnd || d.toISOString().split('T')[0],
-      defaultCur: urlCur || 'AUD',
+      defaultCur: urlCur || DEFAULT_CURRENCY,
     };
   }, [searchParams]);
 

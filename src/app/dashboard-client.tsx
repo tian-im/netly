@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
 import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl } from '@/lib/links';
 
@@ -107,7 +107,7 @@ export default function DashboardClient({
 
   // Unified set of all active currencies across accounts
   const activeCurrencies = useMemo(() => {
-    return Array.from(new Set(accounts.map((a) => a.currency || 'AUD')));
+    return Array.from(new Set(accounts.map((a) => a.currency || DEFAULT_CURRENCY)));
   }, [accounts]);
 
   // Use the server-computed default currency (most common across accounts).
@@ -123,7 +123,7 @@ export default function DashboardClient({
   const currentVisualCurrency = useMemo(() => {
     return activeCurrencies.includes(selectedVisualCurrency)
       ? selectedVisualCurrency
-      : (activeCurrencies[0] || 'AUD');
+      : (activeCurrencies[0] || DEFAULT_CURRENCY);
   }, [activeCurrencies, selectedVisualCurrency]);
   const symbol = getCurrencySymbol(currentVisualCurrency);
 

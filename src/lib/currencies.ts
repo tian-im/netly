@@ -1,36 +1,64 @@
-/**
- * Set of currency codes supported by the application.
- * Used for server-side validation and UI dropdown options.
- */
-export const SUPPORTED_CURRENCIES = new Set(['AUD', 'USD', 'EUR', 'GBP', 'SGD', 'NZD', 'CAD', 'CNY']);
+import {
+  CURRENCY_LIST,
+  CURRENCIES,
+  CurrencyInfo,
+  isValidCurrencyCode,
+  getCurrencyInfo,
+} from './iso-4217-data';
 
 /**
- * Currency option entries for UI dropdowns (create form, edit form).
- * The `key` matches SUPPORTED_CURRENCIES entries and the `i18nKey` is
- * the `common.*` translation key for the display label.
+ * Default currency code for the application (Australian Dollar).
  */
-export const CURRENCY_OPTIONS: { key: string; i18nKey: string }[] = [
-  { key: 'AUD', i18nKey: 'currencyAud' },
-  { key: 'USD', i18nKey: 'currencyUsd' },
-  { key: 'EUR', i18nKey: 'currencyEur' },
-  { key: 'GBP', i18nKey: 'currencyGbp' },
-  { key: 'SGD', i18nKey: 'currencySgd' },
-  { key: 'NZD', i18nKey: 'currencyNzd' },
-  { key: 'CAD', i18nKey: 'currencyCad' },
-  { key: 'CNY', i18nKey: 'currencyCny' },
-];
+export const DEFAULT_CURRENCY = 'AUD';
 
 /**
- * Shared utility to get the symbol for a given currency code.
+ * Set of all valid ISO 4217 currency codes supported by the application.
+ * Auto-generated from the comprehensive ISO data module.
+ */
+export const SUPPORTED_CURRENCIES = new Set(Object.keys(CURRENCIES));
+
+/**
+ * Currency option entries for UI dropdowns.
+ * - `key`: 3-letter ISO code (e.g. "AUD")
+ * - `i18nKey`: Legacy translation key for backward compatibility with old `tCommon(c.i18nKey)` calls.
+ *               Generated as `currency{Xxx}` pattern (e.g. `currencyAud`).
+ * - `name`: English display name from ISO data (e.g. "Australian Dollar")
+ */
+export const CURRENCY_OPTIONS: { key: string; i18nKey: string; name: string }[] =
+  CURRENCY_LIST.map((c) => ({
+    key: c.code,
+    i18nKey: `currency${c.code.charAt(0)}${c.code.slice(1).toLowerCase()}`,
+    name: c.name,
+  }));
+
+/**
+ * Get the currency symbol for a given currency code.
+ * Uses the comprehensive ISO 4217 data map, falling back to '$'.
  */
 export function getCurrencySymbol(currency: string): string {
-  switch (currency?.toUpperCase()) {
-    case 'EUR': return '€';
-    case 'GBP': return '£';
-    case 'JPY':
-    case 'CNY': return '¥';
-    default: return '$';
+  const info = getCurrencyInfo(currency);
+  if (!info) return '$';
+  // Return the symbol from our data if it's a real symbol (not just the code itself)
+  // When symbol equals the code (e.g. CHF -> 'CHF', XAU -> 'XAU'), return the code
+  // as a fallback — it's more recognizable than '$'
+  if (info.symbol !== info.code) return info.symbol;
+  return info.code;
+}
+
+/**
+ * Read the user's preferred default currency from localStorage.
+ * Falls back to DEFAULT_CURRENCY if nothing is stored or the stored value is invalid.
+ * Only available in browser environments — returns DEFAULT_CURRENCY during SSR.
+ */
+export function getPreferredCurrency(): string {
+  if (typeof window === 'undefined') return DEFAULT_CURRENCY;
+  try {
+    const saved = localStorage.getItem('netly_pref_default_currency');
+    if (saved && SUPPORTED_CURRENCIES.has(saved)) return saved;
+  } catch {
+    // localStorage may throw in some environments (private browsing, storage full)
   }
+  return DEFAULT_CURRENCY;
 }
 
 /**

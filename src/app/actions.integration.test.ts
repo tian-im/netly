@@ -247,12 +247,25 @@ describe('Account actions', () => {
         updateAccount(account.id, 'New Name', 'ASSET', 0, 'INVALID')
       ).rejects.toThrow('ERR_INVALID_CURRENCY');
     });
+
+    it('throws error for 3-letter unsupported currency code', async () => {
+      const account = await seedAccount();
+      await expect(
+        updateAccount(account.id, 'New Name', 'ASSET', 0, 'ZZZ')
+      ).rejects.toThrow('ERR_INVALID_CURRENCY');
+    });
   });
 
   describe('createAccount error paths', () => {
     it('throws error for invalid currency', async () => {
       await expect(
         createAccount('Test', 'ASSET', 0, 'INVALID')
+      ).rejects.toThrow('ERR_INVALID_CURRENCY');
+    });
+
+    it('throws error for 3-letter unsupported currency code', async () => {
+      await expect(
+        createAccount('Test', 'ASSET', 0, 'ZZZ')
       ).rejects.toThrow('ERR_INVALID_CURRENCY');
     });
 

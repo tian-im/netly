@@ -4,6 +4,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { X, Calendar, Landmark, Tag, DollarSign, Info } from 'lucide-react';
 import { Transaction, Category } from '../types';
 import { useLocaleContext } from '@/app/providers';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -45,7 +46,7 @@ export default function TransactionDetailDrawer({
 
   const formattedAmount = new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: transaction.account.currency || 'AUD',
+    currency: transaction.account.currency || DEFAULT_CURRENCY,
   }).format(Math.abs(transaction.amount));
 
   const formattedDate = format.dateTime(new Date(transaction.date), {

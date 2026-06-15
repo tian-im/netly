@@ -5,7 +5,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { getAccounts } from '../actions';
 import Papa from 'papaparse';
 import { cleanAmount, parseBankDate } from '@/lib/csv';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 
 interface Account {
@@ -55,7 +55,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   // Currency symbol derived from selected account
-  const selectedCurrency = accounts.find(a => a.id === selectedAccountId)?.currency || 'AUD';
+  const selectedCurrency = accounts.find(a => a.id === selectedAccountId)?.currency || DEFAULT_CURRENCY;
   const currencySymbol = getCurrencySymbol(selectedCurrency);
 
   // Status state

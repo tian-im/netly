@@ -5,6 +5,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { Transaction, Category, SortConfig } from '../types';
 import { useLocaleContext } from '@/app/providers';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import Pagination from './Pagination';
 
 interface TransactionTableProps {
@@ -105,7 +106,7 @@ export default function TransactionTable({
   const formatAmount = (tx: Transaction) => {
     const formatted = new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: tx.account.currency || 'AUD',
+      currency: tx.account.currency || DEFAULT_CURRENCY,
     }).format(Math.abs(tx.amount));
     return `${tx.amount >= 0 ? '+' : '-'}${formatted}`;
   };

@@ -36,7 +36,7 @@ export default function IncomeVsExpensesChart({
   expenseLabel,
   chartIncomeLabel,
   chartExpenseLabel,
-  currency = 'USD',
+  currency = 'AUD',
   locale,
   tooltipLabel = 'Amount',
 }: IncomeVsExpensesChartProps) {

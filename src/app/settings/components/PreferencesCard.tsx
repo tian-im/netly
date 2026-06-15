@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Sliders } from 'lucide-react';
 import { useLocaleContext } from '../../providers';
 import { useTranslations } from 'next-intl';
+import CurrencySelector from '@/app/components/CurrencySelector';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface PreferencesCardProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
@@ -24,14 +26,14 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
   const t = useTranslations('settings');
   const tReports = useTranslations('reports');
 
-  const [defaultCurrency, setDefaultCurrency] = useState('AUD');
+  const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [defaultRange, setDefaultRange] = useState('Month');
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
   const [currentTheme, setCurrentTheme] = useState('night');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedCurrency = localStorage.getItem('netly_pref_default_currency') || 'AUD';
+    const savedCurrency = localStorage.getItem('netly_pref_default_currency') || DEFAULT_CURRENCY;
     const savedRange = localStorage.getItem('netly_pref_default_date_range') || 'Month';
     const savedFormat = localStorage.getItem('netly_pref_date_format') || 'YYYY-MM-DD';
     const savedTheme = localStorage.getItem('netly_pref_theme') || 'night';
@@ -107,20 +109,14 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
                 {t('currencyLabel')}
               </span>
             </label>
-            <select
+            <CurrencySelector
               id="currency-select"
               value={mounted ? defaultCurrency : 'AUD'}
-              onChange={(e) => handleCurrencyChange(e.target.value)}
-              className="select select-bordered select-sm w-full"
+              onChange={handleCurrencyChange}
               disabled={!mounted}
-            >
-              <option value="AUD">{t('currencyOptionAud')}</option>
-              <option value="USD">{t('currencyOptionUsd')}</option>
-              <option value="EUR">{t('currencyOptionEur')}</option>
-              <option value="GBP">{t('currencyOptionGbp')}</option>
-              <option value="CAD">{t('currencyOptionCad')}</option>
-              <option value="CNY">{t('currencyOptionCny')}</option>
-            </select>
+              className="w-full"
+              placeholder={t('currencyLabel')}
+            />
           </div>
 
           <div className="form-control w-full">
