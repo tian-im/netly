@@ -628,7 +628,9 @@
       "setupCodePlaceholder": "例如：ABC123XY",
       "submitSetupCodeBtn": "验证设置码",
       "verifyingSetupCode": "验证中...",
-      "backToPasskey": "返回 PassKey 登录"
+      "backToPasskey": "返回 PassKey 登录",
+      "successTitle": "登录成功",
+      "successDesc": "正在跳转到仪表盘..."
     },
     "setup": {
       "title": "欢迎使用 Netly Ledger",
@@ -637,7 +639,9 @@
       "deviceNamePlaceholder": "例如：我的 MacBook Face ID",
       "createBtn": "创建 PassKey",
       "registering": "注册中...",
-      "deviceNameHelp": "用于识别此 PassKey 密钥的友好名称"
+      "deviceNameHelp": "用于识别此 PassKey 密钥的友好名称",
+      "successTitle": "PassKey 创建成功",
+      "successDesc": "正在跳转到仪表盘..."
     },
     "settings": {
       "title": "PassKeys 安全密钥",

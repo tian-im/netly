@@ -628,7 +628,9 @@
       "setupCodePlaceholder": "e.g. ABC123XY",
       "submitSetupCodeBtn": "Verify Code",
       "verifyingSetupCode": "Verifying...",
-      "backToPasskey": "Back to PassKey login"
+      "backToPasskey": "Back to PassKey login",
+      "successTitle": "Signed In",
+      "successDesc": "Redirecting to dashboard..."
     },
     "setup": {
       "title": "Welcome to Netly Ledger",
@@ -637,7 +639,9 @@
       "deviceNamePlaceholder": "e.g. My MacBook Face ID",
       "createBtn": "Create PassKey",
       "registering": "Registering...",
-      "deviceNameHelp": "A friendly name to identify this PassKey"
+      "deviceNameHelp": "A friendly name to identify this PassKey",
+      "successTitle": "PassKey Created",
+      "successDesc": "Redirecting to dashboard..."
     },
     "settings": {
       "title": "PassKeys",

@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { setChallenge, getChallenge, generateState, setSetupToken, validateAndConsumeSetupToken } from './challenge-store';
+import { setChallenge, getChallenge, generateState, setSetupToken, validateAndConsumeSetupToken, resetChallengeStore } from './challenge-store';
 
 describe('challenge-store', () => {
   beforeEach(() => {
+    resetChallengeStore();
     vi.useFakeTimers();
   });
 
@@ -81,6 +82,31 @@ describe('challenge-store', () => {
       setSetupToken('TOKEN4');
       vi.advanceTimersByTime(14 * 60 * 1000);
       expect(validateAndConsumeSetupToken('TOKEN4')).toBe(true);
+    });
+  });
+
+  describe('resetChallengeStore', () => {
+    it('removes all challenges and setup tokens', () => {
+      setChallenge(generateState(), 'test-challenge');
+      setSetupToken('TOKEN1');
+
+      resetChallengeStore();
+
+      // All entries should be gone
+      expect(getChallenge(generateState())).toBeNull();
+      expect(validateAndConsumeSetupToken('TOKEN1')).toBe(false);
+    });
+  });
+
+  describe('lazy initialisation (globalThis)', () => {
+    it('auto-creates the store when not pre-initialised', () => {
+      // Simulate a fresh runtime where no store exists yet
+      const g = globalThis as any;
+      delete g.__netlyChallengeStore;
+
+      const state = generateState();
+      setChallenge(state, 'test-challenge');
+      expect(getChallenge(state)).toBe('test-challenge');
     });
   });
 });

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { startAuthentication } from '@simplewebauthn/browser';
-import { KeyRound, Loader2, AlertCircle } from 'lucide-react';
+import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
 
@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
 
   const [useSetupCodeMode, setUseSetupCodeMode] = useState(false);
@@ -102,11 +103,13 @@ export default function LoginPage() {
         throw new Error(data.error);
       }
 
-      router.push('/');
-      router.refresh();
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/');
+        router.refresh();
+      }, 2000);
     } catch (err: any) {
       setError(tErrors(translateError(err.message)));
-    } finally {
       setLoading(false);
     }
   };
@@ -115,6 +118,40 @@ export default function LoginPage() {
     return (
       <div className="h-full flex items-center justify-center bg-base-300">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="h-full flex items-center justify-center bg-base-300">
+        <div className="card w-full max-w-md bg-base-100 shadow-2xl border border-base-200 relative">
+          <div className="absolute top-4 right-4">
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
+              className="select select-bordered select-xs"
+              aria-label="Language Selector"
+            >
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+            </select>
+          </div>
+
+          <div className="card-body items-center text-center p-8">
+            <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-4">
+              <CheckCircle className="h-10 w-10 text-success" />
+            </div>
+
+            <h1 className="text-2xl font-black tracking-tight text-base-content">
+              {t('successTitle')}
+            </h1>
+            <p className="text-sm text-base-content/60 mt-1 mb-6 flex items-center gap-2 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t('successDesc')}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
