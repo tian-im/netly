@@ -20,20 +20,23 @@ You are a specialized senior software engineer agent tasked with implementing th
    - Use **chrome-devtools** (via MCP) for web/UI verification **only when the user explicitly requests it**. Do NOT use browser_subagent or curl for visual UI checks.
 6. **Git Commits on User Request Only**:
    - NEVER run `git commit` or `git push` autonomously. Only commit when the user explicitly asks for it.
+7. **Decision Rationale in Comments ("Why" Comments)**:
+   - When you choose one implementation approach among multiple viable options, write a comment explaining **why** that specific choice was made.
+   - Format: `// WHY: <rationale>` — e.g., `// WHY: We use client-side case-insensitive comparison instead of a DB UNIQUE constraint because SQLite with Prisma doesn't support case-insensitive unique indexes, and the account count (<100) makes this safe.`
+   - If you later read such a `// WHY:` comment and consider changing the code, **confirm with the user before making any changes** to ensure the original trade-off is still understood.
 
 ## References
 
 Always ground your decisions and implementation steps in the following project documents:
-- **Implementation Plan**: [implementation_plan.md](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/implementation_plan.md)
-- **System Architecture Review**: [architect_review.md](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/architect_review.md)
-- **Task Checklist**: [task.md](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/task.md)
+- **Implementation Plan**: [docs/implementation_plan.md](./docs/implementation_plan.md)
+- **System Architecture Review**: [docs/architect_review.md](./docs/architect_review.md)
 
 ---
 
 ## Architectural Rules
 
 ### 1. Data Schema (Prisma)
-Follow the database model defined in [architect_review.md Section 3](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/architect_review.md#L84-L142):
+Follow the database model defined in [architect_review.md Section 3](./docs/architect_review.md#L84-L142):
 - **Account**: Tracks Assets & Liabilities with standard `startingBalance` and native `currency` settings.
 - **Transaction**: Stores dates, amounts, payees, and relations to Accounts and Categories.
 - **Category**: Tracks category types (`INCOME`, `EXPENSE`, `TRANSFER`) and cash flow statements grouping (`OPERATING`, `INVESTING`, `FINANCING`).
@@ -49,7 +52,7 @@ Follow the database model defined in [architect_review.md Section 3](file:///Use
 - Auto-assign matches to the matching Category. Mark unresolved items as `isReviewed = false` for manual UI categorizations.
 
 ### 4. Financial Calculations Ledger Engine (`src/lib/reports.ts`)
-Implement the formulas defined in [architect_review.md Section 4](file:///Users/tian/.gemini/antigravity-ide/brain/ef9502a0-cdf2-4bca-a72b-85f9a2a95f01/architect_review.md#L146-L175):
+Implement the formulas defined in [architect_review.md Section 4](./docs/architect_review.md#L146-L175):
 - **Independent Currency Ledgers**: Calculate totals and groups strictly partitioned by account currency code, preventing incorrect mathematical additions between different currencies.
 - **Income Statement**: Grouped category sums of income and expense within date range, split by currency.
 - **Balance Sheet**: Cumulative sum of transaction values up to `endDate` added to accounts `startingBalance`. Group by Asset/Liability and report Net Worth, split by currency.
@@ -59,3 +62,16 @@ Implement the formulas defined in [architect_review.md Section 4](file:///Users/
 - Render client using Tailwind CSS v4 and DaisyUI v5 (beta).
 - Establish a consistent layout for both desktop dashboard and mobile network screen sizes (PWA configuration).
 - Use local server host network binding (`0.0.0.0:3000`) for mobile testing.
+
+### 6. MCP Server (`src/mcp-server/`)
+- The app exposes an MCP (Model Context Protocol) server at `/api/mcp` for AI agent integration.
+- Tools are registered in `src/mcp-server/tools/` and organized by domain: `accounts.ts`, `transactions.ts`, `categories.ts`, `reports.ts`, `analysis.ts`.
+- The `data.ts` shared utility fetches and maps all accounts, transactions, and categories together.
+- All MCP tools implement Zod validation and return structured JSON responses.
+- MCP tokens are managed in the `McpToken` table (SHA-256 hashed), with admin setup at `/setup`.
+
+### 7. Authentication (WebAuthn/PassKey)
+- The app uses WebAuthn (`@simplewebauthn/server` + `@simplewebauthn/browser`) for passwordless authentication.
+- Server-side session auth is in `src/lib/auth-session.ts` with HMAC-signed cookies (`src/lib/session-crypto.ts`).
+- Routes are protected by Next.js middleware (`src/middleware.ts`) — public paths: `/login`, `/setup`, API routes.
+- WebAuthn credential management and session lifecycle are in `src/app/api/auth/`.

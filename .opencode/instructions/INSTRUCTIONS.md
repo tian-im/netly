@@ -111,6 +111,7 @@ Before marking work complete:
 - [ ] No console.log statements
 - [ ] No hardcoded values
 - [ ] No mutation (immutable patterns used)
+- [ ] Decision rationale documented: when choosing among multiple viable implementation approaches, a `// WHY: <rationale>` comment explains the trade-off choice made. If you later read such a `// WHY:` comment and consider changing the code, **confirm with the user before making any changes**.
 
 ---
 
@@ -303,7 +304,7 @@ interface Repository<T> {
 
 ## OpenCode-Specific Notes
 
-Since OpenCode does not support hooks, the following actions that were automated in Claude Code must be done manually:
+The ECC plugin (`.opencode/plugins/ecc-hooks.ts`) provides hooks for file editing, tool execution, session lifecycle, shell env injection, compacting, and permission auto-approval. However, the following actions must still be done manually or verified:
 
 ### Web & UI Verification
 
