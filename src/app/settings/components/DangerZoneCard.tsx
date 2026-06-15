@@ -27,7 +27,7 @@ export default function DangerZoneCard({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleResetDbConfirm = async () => {
-    if (wipeConfirmInput.trim() !== 'WIPE') return;
+    if (wipeConfirmInput.trim().toUpperCase() !== 'WIPE') return;
 
     startTransition(async () => {
       try {
@@ -129,17 +129,16 @@ export default function DangerZoneCard({
                   <span className="label-text-alt text-base-content/60">
                     {/* Interpolate next-intl placeholder to render WIPE as a ReactNode */}
                     {t.rich('wipeConfirmPrompt', {
-                      word: () => <strong className="text-error">WIPE</strong>
+                      word: (chunks) => <strong className="text-error">{chunks}</strong>
                     })}
                   </span>
                 </label>
                 <input
                   id="wipe-confirm-input"
                   type="text"
-                  placeholder={t('wipeConfirmPlaceholder')}
                   value={wipeConfirmInput}
                   onChange={(e) => setWipeConfirmInput(e.target.value)}
-                  className="input input-bordered input-sm w-full font-bold uppercase"
+                  className="input input-bordered input-sm w-full font-bold"
                   disabled={isPending}
                 />
               </div>
@@ -161,7 +160,7 @@ export default function DangerZoneCard({
                 type="button"
                 onClick={handleResetDbConfirm}
                 className="btn btn-error btn-sm gap-2"
-                disabled={isPending || wipeConfirmInput.trim() !== 'WIPE'}
+                disabled={isPending || wipeConfirmInput.trim().toUpperCase() !== 'WIPE'}
               >
                 {isPending && <span className="loading loading-spinner loading-xs"></span>}
                 {isPending ? t('wiping') : t('wipeAllBtn')}

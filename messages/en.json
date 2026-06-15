@@ -533,8 +533,8 @@
     "wipeConfirmTransactions": "All imported transactions ({count})",
     "wipeConfirmRules": "All auto-matching payee rules ({count})",
     "wipeConfirmPermanent": "This action is permanent and cannot be rolled back.",
-    "wipeConfirmPrompt": "Type {word} to confirm:",
-    "wipeConfirmPlaceholder": "Type WIPE here",
+    "wipeConfirmPrompt": "Type <word>WIPE</word> to confirm:",
+
     "wipeAllBtn": "Wipe All Data",
     "wiping": "Wiping...",
     "wipeSuccess": "Database successfully wiped.",

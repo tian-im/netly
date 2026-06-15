@@ -533,8 +533,8 @@
     "wipeConfirmTransactions": "所有已导入交易流水 ({count} 笔)",
     "wipeConfirmRules": "所有自动分类匹配规则 ({count} 条)",
     "wipeConfirmPermanent": "此操作是永久性的，无法被撤销或恢复。",
-    "wipeConfirmPrompt": "输入 {word} 以确认：",
-    "wipeConfirmPlaceholder": "请在这里输入 WIPE",
+    "wipeConfirmPrompt": "输入 <word>WIPE</word> 以确认：",
+
     "wipeAllBtn": "清空全部数据",
     "wiping": "清空中...",
     "wipeSuccess": "数据库已成功清空。",
