@@ -44,6 +44,29 @@ export function registerTransactionTools(server: McpServer) {
           };
         }
 
+        // Batch-level disambiguation: within a single CSV import, if two transactions
+        // have the exact same (date, payee, amount, description), automatically append
+        // " (2)", " (3)", etc. to the description to differentiate them.
+        {
+          const keyCounts = new Map<string, number>();
+          for (const tx of parsedTx) {
+            const key = `${tx.date.toISOString().split("T")[0]}_${tx.payee.toLowerCase().trim()}_${String(Math.round(tx.amount * 100) / 100)}_${(tx.description ?? "").toLowerCase().trim()}`;
+            keyCounts.set(key, (keyCounts.get(key) || 0) + 1);
+          }
+          const keyOccurrence = new Map<string, number>();
+          for (const tx of parsedTx) {
+            const key = `${tx.date.toISOString().split("T")[0]}_${tx.payee.toLowerCase().trim()}_${String(Math.round(tx.amount * 100) / 100)}_${(tx.description ?? "").toLowerCase().trim()}`;
+            const count = keyCounts.get(key)!;
+            if (count > 1) {
+              const occurrence = (keyOccurrence.get(key) || 0) + 1;
+              keyOccurrence.set(key, occurrence);
+              if (occurrence > 1) {
+                tx.description = `${tx.description ?? ""} (${occurrence})`;
+              }
+            }
+          }
+        }
+
         const dates = parsedTx.map((tx) => tx.date.getTime());
         const minDate = new Date(Math.min(...dates));
         const maxDate = new Date(Math.max(...dates));
@@ -55,14 +78,14 @@ export function registerTransactionTools(server: McpServer) {
           },
         });
 
-        const makeHash = (date: Date, payee: string, amount: number) => {
+        const makeHash = (date: Date, payee: string, amount: number, description: string | null | undefined) => {
           const dateStr = date.toISOString().split("T")[0];
           const roundedAmount = Math.round(amount * 100) / 100;
-          return `${dateStr}_${payee.toLowerCase().trim()}_${roundedAmount.toFixed(2)}`;
+          return `${dateStr}_${payee.toLowerCase().trim()}_${roundedAmount.toFixed(2)}_${(description ?? "").toLowerCase().trim()}`;
         };
 
         const existingSet = new Set(
-          existingTransactions.map((tx) => makeHash(tx.date, tx.payee, tx.amount))
+          existingTransactions.map((tx) => makeHash(tx.date, tx.payee, tx.amount, tx.description))
         );
 
         let importedCount = 0;
@@ -71,7 +94,7 @@ export function registerTransactionTools(server: McpServer) {
         const newTransactionsData: Prisma.TransactionCreateManyInput[] = [];
 
         for (const tx of parsedTx) {
-          const hash = makeHash(tx.date, tx.payee, tx.amount);
+          const hash = makeHash(tx.date, tx.payee, tx.amount, tx.description);
           if (existingSet.has(hash)) {
             skippedCount++;
             continue;

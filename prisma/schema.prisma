@@ -48,11 +48,12 @@ model Transaction {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Prevent duplicates: same (date, payee, amount, accountId) is unique at the DB level.
+  // Prevent duplicates: same (date, payee, amount, description, accountId) is unique at the DB level.
+  // Description is included to handle credit card CSVs where each transaction has a unique reference/description.
   // The unique constraint's leading column is `date`, which also serves as a de facto date index.
   // The composite indexes below cover single-column lookups via the prefix rule,
   // so separate @@index([accountId]) and @@index([categoryId]) are redundant.
-  @@unique([date, payee, amount, accountId])
+  @@unique([date, payee, amount, description, accountId])
   @@index([accountId, date])
   @@index([categoryId, date])
 }
