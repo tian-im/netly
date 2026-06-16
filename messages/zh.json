@@ -19,7 +19,10 @@
     "copy": "复制",
     "currencyLabel": "{code}（{name}）",
     "currencyCodeOnly": "{code}",
-    "currencySymbol": "{symbol}"
+    "currencySymbol": "{symbol}",
+    "currencySearchPlaceholder": "搜索货币...",
+    "currencyMoreResults": "还有 {count} 个结果 — 继续输入缩小范围",
+    "currencyNoMatches": "没有匹配 \"{inputValue}\" 的货币"
   },
   "nav": {
     "brand": "NETLY LEDGER",
@@ -138,6 +141,8 @@
     "saving": "保存中...",
     "confirmDelete": "确认删除",
     "deleteWarning": "您确定要删除账户 \"{name}\" 吗？所有相关的交易流水将从本地数据库中永久删除。此操作无法撤销。",
+    "accountTypeAsset": "资产",
+    "accountTypeLiability": "负债",
     "deleteAccountBtn": "删除账户",
     "createdSuccess": "账户 \"{name}\" 创建成功",
     "updatedSuccess": "账户 \"{name}\" 更新成功",
@@ -569,6 +574,7 @@
   },
   "errors": {
     "ERR_ACCOUNT_NAME_REQUIRED": "账户名称不能为空。",
+    "ERR_ACCOUNT_NAME_EXISTS": "该名称的账户已存在。",
     "ERR_ACCOUNT_NOT_FOUND": "未找到该账户。",
     "ERR_INVALID_CURRENCY": "无效或不支持的货币代码。",
     "ERR_PATTERN_REQUIRED": "关键字不能为空。",

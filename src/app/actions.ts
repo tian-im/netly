@@ -86,6 +86,14 @@ export async function getAccountsWithBalances() {
 export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = 'AUD') {
   if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
 
+  // Check for duplicate account name (case-insensitive — SQLite LOWER)
+  const existingName = await db.$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`SELECT id FROM "Account" WHERE LOWER("name") = ${name.trim().toLowerCase()} LIMIT 1`
+  );
+  if (existingName.length > 0) {
+    throw new Error('ERR_ACCOUNT_NAME_EXISTS');
+  }
+
   const normalizedCurrency = currency.trim().toUpperCase();
   if (!normalizedCurrency || !SUPPORTED_CURRENCIES.has(normalizedCurrency)) {
     throw new Error('ERR_INVALID_CURRENCY');
@@ -131,6 +139,18 @@ export async function updateAccount(
 
   const existing = await db.account.findUnique({ where: { id } });
   if (!existing) throw new Error('ERR_ACCOUNT_NOT_FOUND');
+
+  // Check for duplicate account name (case-insensitive) on rename.
+  // AND id != currentId guards against the query matching the current account
+  // if someone refactors the `if` guard above away.
+  if (name.trim().toLowerCase() !== existing.name.trim().toLowerCase()) {
+    const duplicateName = await db.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`SELECT id FROM "Account" WHERE LOWER("name") = ${name.trim().toLowerCase()} AND id != ${id} LIMIT 1`
+    );
+    if (duplicateName.length > 0) {
+      throw new Error('ERR_ACCOUNT_NAME_EXISTS');
+    }
+  }
 
   const normalizedCurrency = currency.trim().toUpperCase();
   if (!normalizedCurrency || !SUPPORTED_CURRENCIES.has(normalizedCurrency)) {

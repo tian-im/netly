@@ -14,7 +14,7 @@ generator client {
 // Represents financial accounts (Assets & Liabilities)
 model Account {
   id              String        @id @default(uuid())
-  name            String
+  name            String        @unique
   type            String // "ASSET" or "LIABILITY"
   startingBalance Float         @default(0) // SQLite Float is fine for personal scale, or standard Decimal which translates to Float in Prisma/SQLite
   currency        String        @default("AUD")

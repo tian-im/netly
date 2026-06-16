@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
 import CurrencySelector from './CurrencySelector';
+import enMessages from '../../../messages/en.json';
+
+function renderWithProvider(ui: React.ReactElement) {
+  return render(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      {ui}
+    </NextIntlClientProvider>
+  );
+}
 
 afterEach(() => {
   cleanup();
@@ -8,7 +18,7 @@ afterEach(() => {
 
 describe('CurrencySelector', () => {
   it('renders with the current value', () => {
-    const { container } = render(<CurrencySelector value="AUD" onChange={() => {}} />);
+    const { container } = renderWithProvider(<CurrencySelector value="AUD" onChange={() => {}} />);
     const input = container.querySelector('input[role="combobox"]');
     expect(input).toBeTruthy();
     expect((input as HTMLInputElement).value).toContain('AUD');
@@ -17,7 +27,7 @@ describe('CurrencySelector', () => {
 
   it('calls onChange when a currency is selected from dropdown', async () => {
     const handleChange = vi.fn();
-    const { container } = render(<CurrencySelector value="USD" onChange={handleChange} />);
+    const { container } = renderWithProvider(<CurrencySelector value="USD" onChange={handleChange} />);
 
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
     fireEvent.focus(input);
@@ -33,7 +43,7 @@ describe('CurrencySelector', () => {
   });
 
   it('shows all options on focus with empty search', async () => {
-    const { container } = render(<CurrencySelector value="" onChange={() => {}} />);
+    const { container } = renderWithProvider(<CurrencySelector value="" onChange={() => {}} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
 
     fireEvent.focus(input);
@@ -42,7 +52,7 @@ describe('CurrencySelector', () => {
   });
 
   it('filters options by currency code', async () => {
-    const { container } = render(<CurrencySelector value="" onChange={() => {}} />);
+    const { container } = renderWithProvider(<CurrencySelector value="" onChange={() => {}} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
 
     fireEvent.focus(input);
@@ -55,7 +65,7 @@ describe('CurrencySelector', () => {
   });
 
   it('filters options by currency name', async () => {
-    const { container } = render(<CurrencySelector value="" onChange={() => {}} />);
+    const { container } = renderWithProvider(<CurrencySelector value="" onChange={() => {}} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
 
     fireEvent.focus(input);
@@ -68,7 +78,7 @@ describe('CurrencySelector', () => {
   });
 
   it('shows no results message when nothing matches', async () => {
-    const { container } = render(<CurrencySelector value="" onChange={() => {}} />);
+    const { container } = renderWithProvider(<CurrencySelector value="" onChange={() => {}} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
 
     fireEvent.focus(input);
@@ -81,7 +91,7 @@ describe('CurrencySelector', () => {
 
   it('handles keyboard navigation (ArrowDown/ArrowUp/Enter)', async () => {
     const handleChange = vi.fn();
-    const { container } = render(<CurrencySelector value="" onChange={handleChange} />);
+    const { container } = renderWithProvider(<CurrencySelector value="" onChange={handleChange} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
 
     fireEvent.focus(input);
@@ -97,13 +107,13 @@ describe('CurrencySelector', () => {
   });
 
   it('disables the input when disabled prop is true', () => {
-    const { container } = render(<CurrencySelector value="AUD" onChange={() => {}} disabled={true} />);
+    const { container } = renderWithProvider(<CurrencySelector value="AUD" onChange={() => {}} disabled={true} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
     expect(input.disabled).toBe(true);
   });
 
   it('closes dropdown on Escape', async () => {
-    const { container } = render(<CurrencySelector value="" onChange={() => {}} />);
+    const { container } = renderWithProvider(<CurrencySelector value="" onChange={() => {}} />);
     const input = container.querySelector('input[role="combobox"]') as HTMLInputElement;
 
     fireEvent.focus(input);

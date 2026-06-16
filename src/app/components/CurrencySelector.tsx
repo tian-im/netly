@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { CURRENCY_OPTIONS } from '@/lib/currencies';
 import { getCurrencyInfo } from '@/lib/iso-4217-data';
 import { Search } from 'lucide-react';
@@ -27,8 +28,10 @@ export default function CurrencySelector({
   disabled = false,
   className = '',
   name,
-  placeholder = 'Search currency...',
+  placeholder,
 }: CurrencySelectorProps) {
+  const tCommon = useTranslations('common');
+  const resolvedPlaceholder = placeholder ?? tCommon('currencySearchPlaceholder');
   const [inputValue, setInputValue] = useState(() => {
     const info = getCurrencyInfo(value);
     return info ? `${info.code} - ${info.name}` : value;
@@ -141,7 +144,7 @@ export default function CurrencySelector({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           role="combobox"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -188,7 +191,7 @@ export default function CurrencySelector({
           ))}
           {filteredOptions.length > 100 && (
             <li className="px-3 py-2 text-xs text-base-content/40 text-center border-t border-base-200">
-              {filteredOptions.length - 100} more results — type to narrow
+              {tCommon('currencyMoreResults', { count: filteredOptions.length - 100 })}
             </li>
           )}
         </ul>
@@ -197,7 +200,7 @@ export default function CurrencySelector({
       {isOpen && filteredOptions.length === 0 && inputValue.trim() && (
         <div className="absolute z-50 mt-1 w-full bg-base-100 border border-base-300 rounded-lg shadow-xl">
           <p className="px-3 py-3 text-xs text-base-content/40 text-center">
-            No currencies match &quot;{inputValue}&quot;
+            {tCommon('currencyNoMatches', { inputValue })}
           </p>
         </div>
       )}

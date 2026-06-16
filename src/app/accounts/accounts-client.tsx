@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useMemo } from 'react';
+import { useState, useEffect, useTransition, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocaleContext } from '@/app/providers';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
@@ -96,6 +96,10 @@ export default function AccountsClient({
   const [sortField, setSortField] = useState<'name' | 'type' | 'balance' | 'transactions'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // WHY: Intl.Collator with the user's locale ensures CJK account names sort
+  // in dictionary order rather than Unicode code-point order.
+  const collator = useMemo(() => new Intl.Collator(locale, { sensitivity: 'base' }), [locale]);
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -163,29 +167,29 @@ export default function AccountsClient({
   const sortedAccounts = useMemo(() => {
     const sorted = [...filteredAccounts];
     sorted.sort((a, b) => {
-      let valA: any = '';
-      let valB: any = '';
+      const sign = sortDirection === 'asc' ? 1 : -1;
 
       if (sortField === 'name') {
-        valA = a.name.toLowerCase();
-        valB = b.name.toLowerCase();
+        // WHY: Pass locale to collator so Chinese account names sort in
+        // dictionary order rather than Unicode code-point order.
+        return sign * collator.compare(a.name, b.name);
       } else if (sortField === 'type') {
-        valA = a.type;
-        valB = b.type;
+        if (a.type < b.type) return sortDirection === 'asc' ? -1 : 1;
+        if (a.type > b.type) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
       } else if (sortField === 'balance') {
-        valA = bs.accounts.find((x) => x.id === a.id)?.balance ?? a.startingBalance;
-        valB = bs.accounts.find((x) => x.id === b.id)?.balance ?? b.startingBalance;
+        const valA = bs.accounts.find((x) => x.id === a.id)?.balance ?? a.startingBalance;
+        const valB = bs.accounts.find((x) => x.id === b.id)?.balance ?? b.startingBalance;
+        return sign * (valA - valB);
       } else if (sortField === 'transactions') {
-        valA = a._count?.transactions || 0;
-        valB = b._count?.transactions || 0;
+        const valA = a._count?.transactions || 0;
+        const valB = b._count?.transactions || 0;
+        return sign * (valA - valB);
       }
-
-      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
     return sorted;
-  }, [filteredAccounts, sortField, sortDirection, bs.accounts]);
+  }, [filteredAccounts, sortField, sortDirection, bs.accounts, collator]);
 
   const handleSort = (field: 'name' | 'type' | 'balance' | 'transactions') => {
     if (sortField === field) {
@@ -313,6 +317,36 @@ export default function AccountsClient({
   const handleDiscardCancel = () => {
     setShowDiscardConfirm(false);
   };
+
+  // WHY: Using a ref for isEditDirty avoids re-registering the keydown
+  // listener on every keystroke (isEditDirty recalculates via useMemo
+  // whenever the edit form fields change).
+  const isEditDirtyRef = useRef(isEditDirty);
+  isEditDirtyRef.current = isEditDirty;
+
+  // Close modals on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Check discard confirm first since it stacks above the edit modal
+        if (showDiscardConfirm) {
+          setShowDiscardConfirm(false);
+        } else if (editingAccount) {
+          if (isEditDirtyRef.current) {
+            setShowDiscardConfirm(true);
+          } else {
+            setEditingAccount(null);
+          }
+        } else if (accountToDelete) {
+          setAccountToDelete(null);
+        }
+      }
+    };
+    if (editingAccount || accountToDelete || showDiscardConfirm) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [editingAccount, accountToDelete, showDiscardConfirm]);
 
   const SortIndicator = ({ field }: { field: typeof sortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
@@ -443,7 +477,7 @@ export default function AccountsClient({
                           </td>
                           <td>
                             <span className={`badge ${acc.type === 'ASSET' ? 'badge-primary' : 'badge-secondary'} badge-sm font-semibold`}>
-                              {acc.type}
+                              {acc.type === 'ASSET' ? t('accountTypeAsset') : t('accountTypeLiability')}
                             </span>
                           </td>
                           <td className="text-center font-semibold text-sm">

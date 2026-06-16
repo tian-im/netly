@@ -19,7 +19,10 @@
     "copy": "Copy",
     "currencyLabel": "{code} ({name})",
     "currencyCodeOnly": "{code}",
-    "currencySymbol": "{symbol}"
+    "currencySymbol": "{symbol}",
+    "currencySearchPlaceholder": "Search currency...",
+    "currencyMoreResults": "{count} more results — type to narrow",
+    "currencyNoMatches": "No currencies match \"{inputValue}\""
   },
   "nav": {
     "brand": "NETLY LEDGER",
@@ -138,6 +141,8 @@
     "saving": "Saving...",
     "confirmDelete": "Confirm Delete",
     "deleteWarning": "Are you sure you want to delete the account \"{name}\"? All of its associated transactions will be permanently deleted from the local database. This action cannot be undone.",
+    "accountTypeAsset": "Asset",
+    "accountTypeLiability": "Liability",
     "deleteAccountBtn": "Delete Account",
     "createdSuccess": "Account \"{name}\" created successfully",
     "updatedSuccess": "Account \"{name}\" updated successfully",
@@ -569,6 +574,7 @@
   },
   "errors": {
     "ERR_ACCOUNT_NAME_REQUIRED": "Account name is required.",
+    "ERR_ACCOUNT_NAME_EXISTS": "An account with this name already exists.",
     "ERR_ACCOUNT_NOT_FOUND": "Account not found.",
     "ERR_INVALID_CURRENCY": "Invalid or unsupported currency code.",
     "ERR_PATTERN_REQUIRED": "Pattern is required.",
