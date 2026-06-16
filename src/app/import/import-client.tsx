@@ -6,6 +6,7 @@ import { getAccounts } from '../actions';
 import Papa from 'papaparse';
 import { cleanAmount, parseBankDate } from '@/lib/csv';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
+import { buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 
 interface Account {
@@ -367,7 +368,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
           {accounts.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-base-content/60">{t('noAccountsWarning')}</p>
-              <a href="/accounts" className="btn btn-primary mt-4 btn-sm">{t('goCreateAccount')}</a>
+              <a href={buildAccountsUrl()} className="btn btn-primary mt-4 btn-sm">{t('goCreateAccount')}</a>
             </div>
           ) : (
             <form onSubmit={handleImport} className="space-y-6">
@@ -458,7 +459,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     <span>{importResult.message}</span>
                   </div>
                   {importResult.success && (
-                    <a href="/transactions" className="btn btn-xs btn-outline border-success-content/20 hover:bg-success-content/10">
+                    <a href={buildTransactionsUrl()} className="btn btn-xs btn-outline border-success-content/20 hover:bg-success-content/10">
                       {t('viewTransactions')} →
                     </a>
                   )}

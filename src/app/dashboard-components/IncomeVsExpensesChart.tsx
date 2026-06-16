@@ -116,13 +116,13 @@ export default function IncomeVsExpensesChart({
 
         <div className="w-full grid grid-cols-2 gap-4 text-xs font-bold border-t border-base-200 pt-3 mt-4">
           <div className="flex flex-col">
-            <span className="text-success/70 text-[10px] uppercase opacity-85">{incomeLabel}</span>
+            <span className="text-success/70 text-xs uppercase opacity-85">{incomeLabel}</span>
             <span className="text-sm font-extrabold text-success">
               +{symbol}{totalIncome.toLocaleString(locale, { maximumFractionDigits: 2 })}
             </span>
           </div>
           <div className="flex flex-col border-l border-base-200 pl-3">
-            <span className="text-error/70 text-[10px] uppercase opacity-85">{expenseLabel}</span>
+            <span className="text-error/70 text-xs uppercase opacity-85">{expenseLabel}</span>
             <span className="text-sm font-extrabold text-error">
               -{symbol}{totalExpenses.toLocaleString(locale, { maximumFractionDigits: 2 })}
             </span>

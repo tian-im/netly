@@ -7,6 +7,7 @@ import { startRegistration } from '@simplewebauthn/browser';
 import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
+import { buildLoginUrl, buildDashboardUrl } from '@/lib/links';
 
 function getDefaultDeviceName(): string {
   if (typeof navigator === 'undefined') return '';
@@ -41,7 +42,7 @@ export default function SetupPage() {
         if (res.ok) {
           const creds = await res.json();
           if (creds.length > 0 && !hasSetupToken) {
-            router.replace('/login');
+            router.replace(buildLoginUrl());
             return;
           }
         }
@@ -86,7 +87,7 @@ export default function SetupPage() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push('/');
+        router.push(buildDashboardUrl());
         router.refresh();
       }, 2000);
     } catch (err: any) {

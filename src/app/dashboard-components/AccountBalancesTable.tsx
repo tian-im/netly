@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Wallet, ArrowUpDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -24,7 +24,7 @@ interface AccountBalancesTableProps {
   uncategorizedCounts?: Record<string, number>;
 }
 
-type SortField = 'name' | 'balance' | 'transactions';
+type SortField = 'name' | 'balance';
 type SortDir = 'asc' | 'desc';
 
 export default function AccountBalancesTable({
@@ -35,31 +35,34 @@ export default function AccountBalancesTable({
   const t = useTranslations('dashboard');
   const { locale } = useLocaleContext();
 
+  // WHY: Intl.Collator with the user's locale ensures CJK account names sort
+  // in dictionary order rather than Unicode code-point order (Fix #1).
+  const collator = useMemo(() => new Intl.Collator(locale, { sensitivity: 'base' }), [locale]);
+
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
-  const toggleSort = (field: SortField) => {
+  const toggleSort = useCallback((field: SortField) => {
     if (sortField === field) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
       setSortDir('asc');
     }
-  };
+  }, [sortField]);
 
   const sortedAccounts = useMemo(() => {
     return [...accounts].sort((a, b) => {
       const sign = sortDir === 'asc' ? 1 : -1;
-      if (sortField === 'name') return sign * a.name.localeCompare(b.name);
-      if (sortField === 'transactions') {
-        return sign * ((a._count?.transactions || 0) - (b._count?.transactions || 0));
-      }
+      // WHY: Pass locale to collator so Chinese account names sort in
+      // dictionary order rather than Unicode code-point order (Fix #1).
+      if (sortField === 'name') return sign * collator.compare(a.name, b.name);
       // balance sort — calculatedBalances[id] is a positive magnitude (asset value or liability owed)
       const balA = calculatedBalances[a.id] ?? a.startingBalance;
       const balB = calculatedBalances[b.id] ?? b.startingBalance;
       return sign * (balA - balB);
     });
-  }, [accounts, calculatedBalances, sortField, sortDir]);
+  }, [accounts, calculatedBalances, sortField, sortDir, collator]);
 
   const SortHeader = ({ field, label, className = '' }: { field: SortField; label: string; className?: string }) => (
     <th

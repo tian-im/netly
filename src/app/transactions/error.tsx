@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { buildDashboardUrl } from '@/lib/links';
 
 const TRANSLATIONS = {
   en: { title: 'Transactions Error', desc: 'Failed to load the transaction ledger. Please try again.', tryAgain: 'Try Again', goBack: 'Go to Dashboard' },
@@ -42,7 +43,7 @@ export default function TransactionsErrorPage({
         <button onClick={() => reset()} className="btn btn-primary btn-sm">
           {t.tryAgain}
         </button>
-        <a href="/" className="btn btn-outline btn-sm">
+        <a href={buildDashboardUrl()} className="btn btn-outline btn-sm">
           {t.goBack}
         </a>
       </div>

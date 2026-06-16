@@ -5,6 +5,14 @@ import {
   buildReportsUrl,
   buildAccountTransactionsUrl,
   buildCategoryTransactionsUrl,
+  buildDashboardUrl,
+  buildAccountsUrl,
+  buildImportUrl,
+  buildTransactionsUrl,
+  buildLoginUrl,
+  buildSetupUrl,
+  buildCategoriesUrl,
+  buildSettingsUrl,
 } from './links';
 
 describe('getPeriodDates', () => {
@@ -124,6 +132,10 @@ describe('buildReportsUrl', () => {
     expect(url).toContain('start=2026-04-01');
     expect(url).toContain('end=2026-06-30');
   });
+
+  it('should return /reports with no args for static nav links', () => {
+    expect(buildReportsUrl()).toBe('/reports');
+  });
 });
 
 describe('buildAccountTransactionsUrl', () => {
@@ -152,5 +164,86 @@ describe('buildCategoryTransactionsUrl', () => {
   it('should encode special characters in category ID', () => {
     const url = buildCategoryTransactionsUrl('cat & more');
     expect(url).toBe('/transactions?categoryId=cat%20%26%20more');
+  });
+});
+
+describe('buildDashboardUrl', () => {
+  it('should return home path when no params', () => {
+    expect(buildDashboardUrl()).toBe('/');
+  });
+
+  it('should append URLSearchParams as query string', () => {
+    const params = new URLSearchParams({ period: '3m' });
+    expect(buildDashboardUrl(params)).toBe('/?period=3m');
+  });
+
+  it('should accept a string as query string', () => {
+    expect(buildDashboardUrl('period=6m')).toBe('/?period=6m');
+  });
+
+  it('should handle multiple query params', () => {
+    const params = new URLSearchParams({ period: 'ytd', cur: 'USD' });
+    const url = buildDashboardUrl(params);
+    expect(url).toContain('period=ytd');
+    expect(url).toContain('cur=USD');
+    expect(url.startsWith('/?')).toBe(true);
+  });
+});
+
+describe('buildAccountsUrl', () => {
+  it('should return /accounts', () => {
+    expect(buildAccountsUrl()).toBe('/accounts');
+  });
+});
+
+describe('buildImportUrl', () => {
+  it('should return /import', () => {
+    expect(buildImportUrl()).toBe('/import');
+  });
+});
+
+describe('buildTransactionsUrl', () => {
+  it('should return /transactions when no filter', () => {
+    expect(buildTransactionsUrl()).toBe('/transactions');
+  });
+
+  it('should append filter param when provided', () => {
+    expect(buildTransactionsUrl('uncategorized')).toBe('/transactions?filter=uncategorized');
+  });
+
+  it('should encode special chars in filter', () => {
+    expect(buildTransactionsUrl('needs review')).toBe('/transactions?filter=needs%20review');
+  });
+});
+
+describe('buildLoginUrl', () => {
+  it('should return /login', () => {
+    expect(buildLoginUrl()).toBe('/login');
+  });
+});
+
+describe('buildSetupUrl', () => {
+  it('should return /setup without token', () => {
+    expect(buildSetupUrl()).toBe('/setup');
+  });
+
+  it('should return /setup?setupToken=1 with token', () => {
+    expect(buildSetupUrl(true)).toBe('/setup?setupToken=1');
+  });
+
+  it('should default to undefined (no token)', () => {
+    expect(buildSetupUrl(false)).toBe('/setup');
+  });
+});
+
+describe('buildCategoriesUrl', () => {
+  it('should return /categories', () => {
+    expect(buildCategoriesUrl()).toBe('/categories');
+  });
+});
+
+describe('buildSettingsUrl', () => {
+  it('should return /settings', () => {
+    expect(buildSettingsUrl()).toBe('/settings');
   });
 });

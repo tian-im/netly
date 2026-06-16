@@ -90,13 +90,21 @@ export function getPeriodDateRange(
 }
 
 /**
- * Build a URL to the Financial Statements page pre-filled with the selected period and currency.
+ * Build a URL to the Financial Statements page.
+ *
+ * - With `period` and `now`: pre-fills the date range (and optionally currency).
+ * - Without arguments: returns the plain `/reports` path, suitable for static nav links.
+ *
+ * WHY: Static navigation links (e.g. in the sidebar) need a no-arg variant because
+ * they don't have a period/now context at module-init time.
+ *
+ * TypeScript overloads ensure callers either pass all required args (period + now)
+ * or none at all. Passing period without now (or vice versa) is a compile-time error.
  */
-export function buildReportsUrl(
-  period: PeriodType,
-  now: Date,
-  currency?: string,
-): string {
+export function buildReportsUrl(): string;
+export function buildReportsUrl(period: PeriodType, now: Date, currency?: string): string;
+export function buildReportsUrl(period?: PeriodType, now?: Date, currency?: string): string {
+  if (!period || !now) return '/reports';
   const { start, end } = getPeriodDateRange(period, now);
   const params = new URLSearchParams({ start, end });
   if (currency) {
@@ -117,4 +125,68 @@ export function buildAccountTransactionsUrl(accountId: string): string {
  */
 export function buildCategoryTransactionsUrl(categoryId: string): string {
   return `/transactions?categoryId=${encodeURIComponent(categoryId)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Top-level page route builders
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a URL to the home / dashboard page.
+ * If `params` is provided, appends them as the query string.
+ *
+ * WHY: Centralising all route generation in one file means future route changes
+ * (e.g. `/` → `/dashboard`) require only a single edit instead of hunting down
+ * every hardcoded string across the codebase.
+ */
+export function buildDashboardUrl(params?: URLSearchParams | string): string {
+  const qs = typeof params === 'string' ? params : params?.toString();
+  return qs ? `/?${qs}` : '/';
+}
+
+/** Build a URL to the Accounts management page. */
+export function buildAccountsUrl(): string {
+  return '/accounts';
+}
+
+/** Build a URL to the CSV Import page. */
+export function buildImportUrl(): string {
+  return '/import';
+}
+
+/**
+ * Build a URL to the Transaction Ledger.
+ *
+ * The optional `filter` parameter sets `?filter=<value>` (e.g. `'uncategorized'`).
+ * For account- or category-scoped URLs use `buildAccountTransactionsUrl()` or
+ * `buildCategoryTransactionsUrl()` instead — this builder only handles the
+ * top-level `filter` query param, not the full set of filter params that the
+ * transactions page supports (accountId, categoryId, search, dateFrom, etc.).
+ */
+export function buildTransactionsUrl(filter?: string): string {
+  const base = '/transactions';
+  return filter ? `${base}?filter=${encodeURIComponent(filter)}` : base;
+}
+
+/** Build a URL to the Categories management page. */
+export function buildCategoriesUrl(): string {
+  return '/categories';
+}
+
+/** Build a URL to the Settings page. */
+export function buildSettingsUrl(): string {
+  return '/settings';
+}
+
+/** Build a URL to the login page. */
+export function buildLoginUrl(): string {
+  return '/login';
+}
+
+/**
+ * Build a URL to the WebAuthn setup page.
+ * Pass `withToken: true` to preserve the setup-token flow.
+ */
+export function buildSetupUrl(withToken?: boolean): string {
+  return withToken ? '/setup?setupToken=1' : '/setup';
 }

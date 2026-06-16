@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
-import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl } from '@/lib/links';
+import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl, buildDashboardUrl, buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -321,7 +321,7 @@ export default function DashboardClient({
     startTransition(() => {
       const params = new URLSearchParams(window.location.search);
       params.set('period', newPeriod);
-      router.push(`/?${params.toString()}`);
+      router.push(buildDashboardUrl(params));
     });
   };
 
@@ -355,7 +355,7 @@ export default function DashboardClient({
             </div>
           </div>
           <Link
-            href="/accounts"
+            href={buildAccountsUrl()}
             className="btn btn-primary shadow-md hover:scale-105 transition-transform shrink-0"
           >
             {tAccounts('createAccount')}
@@ -376,7 +376,7 @@ export default function DashboardClient({
             </div>
           </div>
           <Link
-            href="/transactions?filter=uncategorized"
+            href={buildTransactionsUrl('uncategorized')}
             className="btn btn-warning btn-sm gap-1 hover:scale-105 transition-transform"
           >
             {t('categorizeNow')} <ArrowRight className="h-4 w-4" />

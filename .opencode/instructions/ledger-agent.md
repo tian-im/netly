@@ -20,7 +20,11 @@ You are a specialized senior software engineer agent tasked with implementing th
    - Use **chrome-devtools** (via MCP) for web/UI verification **only when the user explicitly requests it**. Do NOT use browser_subagent or curl for visual UI checks.
 6. **Git Commits on User Request Only**:
    - NEVER run `git commit` or `git push` autonomously. Only commit when the user explicitly asks for it.
-7. **Decision Rationale in Comments ("Why" Comments)**:
+7. **URL Helper for All Routes**:
+   - NEVER hardcode route paths (e.g. `href="/"`, `router.push('/accounts')`) anywhere in the app.
+   - Always import and use the URL builder functions from `@/lib/links` (e.g. `buildDashboardUrl()`, `buildAccountsUrl()`, `buildCategoriesUrl()`, `buildImportUrl()`, `buildTransactionsUrl()`, `buildReportsUrl()`, `buildSettingsUrl()`, `buildLoginUrl()`, `buildSetupUrl()`, `buildAccountTransactionsUrl()`, `buildCategoryTransactionsUrl()`).
+   - If a new route is added, first add a builder function in `@/lib/links.ts`, then use it everywhere. This centralises path logic so future route changes require only a single edit.
+8. **Decision Rationale in Comments ("Why" Comments)**:
    - When you choose one implementation approach among multiple viable options, write a comment explaining **why** that specific choice was made.
    - Format: `// WHY: <rationale>` — e.g., `// WHY: We use client-side case-insensitive comparison instead of a DB UNIQUE constraint because SQLite with Prisma doesn't support case-insensitive unique indexes, and the account count (<100) makes this safe.`
    - If you later read such a `// WHY:` comment and consider changing the code, **confirm with the user before making any changes** to ensure the original trade-off is still understood.

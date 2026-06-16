@@ -5,15 +5,27 @@ import { usePathname } from 'next/navigation';
 import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Sun, Moon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useThemeContext } from '@/app/providers';
+import {
+  buildDashboardUrl,
+  buildAccountsUrl,
+  buildCategoriesUrl,
+  buildTransactionsUrl,
+  buildImportUrl,
+  buildReportsUrl,
+  buildSettingsUrl,
+} from '@/lib/links';
 
+// WHY: navItems is a module-level const array. The builder functions are pure and
+// return constant strings, so calling them at module scope is safe — no runtime
+// values are needed until render time.
 const navItems = [
-  { href: '/',             labelKey: 'dashboard',    icon: BarChart3  },
-  { href: '/accounts',     labelKey: 'accounts',     icon: Wallet     },
-  { href: '/categories',   labelKey: 'categories',   icon: Tags       },
-  { href: '/transactions', labelKey: 'transactions', icon: FolderTree },
-  { href: '/import',       labelKey: 'import',       icon: Inbox      },
-  { href: '/reports',      labelKey: 'reports',      icon: TrendingUp },
-  { href: '/settings',     labelKey: 'settings',     icon: Settings   },
+  { href: buildDashboardUrl(),  labelKey: 'dashboard',    icon: BarChart3  },
+  { href: buildAccountsUrl(),   labelKey: 'accounts',     icon: Wallet     },
+  { href: buildCategoriesUrl(), labelKey: 'categories',   icon: Tags       },
+  { href: buildTransactionsUrl(), labelKey: 'transactions', icon: FolderTree },
+  { href: buildImportUrl(),     labelKey: 'import',       icon: Inbox      },
+  { href: buildReportsUrl(),    labelKey: 'reports',      icon: TrendingUp },
+  { href: buildSettingsUrl(),   labelKey: 'settings',     icon: Settings   },
 ] as const;
 
 function closeDrawer() {

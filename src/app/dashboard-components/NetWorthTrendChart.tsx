@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { formatCompactNumber } from '@/lib/currencies';
 import {
@@ -36,6 +36,9 @@ export default function NetWorthTrendChart({
   tooltipLabel = 'Net Worth',
 }: NetWorthTrendChartProps) {
   const [mounted, setMounted] = useState(false);
+  // WHY: useId() generates a unique gradient ID per component instance so that
+  // multiple charts on the same page don't conflict (Fix #2).
+  const gradientId = useId();
 
   useEffect(() => {
     setMounted(true);
@@ -65,7 +68,7 @@ export default function NetWorthTrendChart({
                   margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
                   <defs>
-                    <linearGradient id="netWorthGrad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--p)" stopOpacity={0.2} />
                       <stop offset="95%" stopColor="var(--p)" stopOpacity={0} />
                     </linearGradient>
@@ -108,7 +111,7 @@ export default function NetWorthTrendChart({
                     stroke="var(--p)"
                     strokeWidth={2}
                     fillOpacity={1}
-                    fill="url(#netWorthGrad)"
+                    fill={`url(#${gradientId})`}
                   />
                 </AreaChart>
               </ResponsiveContainer>

@@ -2,6 +2,7 @@ import { useState, useTransition } from 'react';
 import { AlertTriangle, Trash2, LogOut, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { buildLoginUrl } from '@/lib/links';
 import { resetDatabase } from '../../actions';
 
 interface DangerZoneCardProps {
@@ -50,7 +51,7 @@ export default function DangerZoneCard({
       if (!res.ok) {
         throw new Error('Logout request failed');
       }
-      router.push('/login');
+      router.push(buildLoginUrl());
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(msg || tCommon('error'), 'error');

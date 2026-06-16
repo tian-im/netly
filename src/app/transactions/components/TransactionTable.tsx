@@ -6,6 +6,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { Transaction, Category, SortConfig } from '../types';
 import { useLocaleContext } from '@/app/providers';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
+import { buildImportUrl } from '@/lib/links';
 import Pagination from './Pagination';
 
 interface TransactionTableProps {
@@ -172,7 +173,7 @@ export default function TransactionTable({
                     <div>
                       <h3 className="font-bold text-lg text-base-content/75">{t('noTransactions')}</h3>
                     </div>
-                    <Link href="/import" className="btn btn-primary btn-sm mt-2">
+                    <Link href={buildImportUrl()} className="btn btn-primary btn-sm mt-2">
                       {t('uploadStatement')}
                     </Link>
                   </div>

@@ -7,6 +7,7 @@ import { startAuthentication } from '@simplewebauthn/browser';
 import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
+import { buildSetupUrl, buildDashboardUrl } from '@/lib/links';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function LoginPage() {
         const data = await res.json();
         throw new Error(data.error || 'ERR_UNKNOWN');
       }
-      router.push('/setup?setupToken=1');
+      router.push(buildSetupUrl(true));
     } catch (err: any) {
       setError(tErrors(translateError(err.message)));
     } finally {
@@ -53,7 +54,7 @@ export default function LoginPage() {
         if (res.ok) {
           const creds = await res.json();
           if (creds.length === 0) {
-            router.replace('/setup');
+            router.replace(buildSetupUrl());
             return;
           }
         }
@@ -81,7 +82,7 @@ export default function LoginPage() {
       if (!beginRes.ok) {
         const data = await beginRes.json();
         if (beginRes.status === 409 && data.redirect === '/setup') {
-          router.push('/setup');
+          router.push(buildSetupUrl());
           return;
         }
         throw new Error(data.error);
@@ -105,7 +106,7 @@ export default function LoginPage() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push('/');
+        router.push(buildDashboardUrl());
         router.refresh();
       }, 2000);
     } catch (err: any) {
