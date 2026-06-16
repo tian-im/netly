@@ -10,34 +10,23 @@ import {
   updateCategory,
 } from '../actions';
 import { translateError } from '@/lib/translateError';
-import { Tags, Settings, Plus, Pencil, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { Tags, Settings } from 'lucide-react';
+import type { Category, Toast } from './types';
+import CategoryTable from './components/CategoryTable';
+import CreateCategoryForm from './components/CreateCategoryForm';
+import EditCategoryModal from './components/EditCategoryModal';
+import DeleteCategoryModal from './components/DeleteCategoryModal';
+import RulesPanel from './components/RulesPanel';
+import DeleteRuleModal from './components/DeleteRuleModal';
+import ToastContainer from './components/ToastContainer';
 
-interface Rule {
-  id: string;
-  pattern: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  type: string;
-  cashFlowType: string;
-  transactionsCount: number;
-  rulesCount: number;
-  rules: Rule[];
-}
+export type { Category, Toast };
 
 interface CategoriesClientProps {
   initialCategories: Category[];
 }
 
 type ActiveTab = 'categories' | 'rules';
-
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error';
-}
 
 export default function CategoriesClient({ initialCategories }: CategoriesClientProps) {
   const t = useTranslations('categories');
@@ -46,20 +35,8 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const [activeTab, setActiveTab] = useState<ActiveTab>('categories');
   const [categories, setCategories] = useState(initialCategories);
 
-  // Create category form state
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatType, setNewCatType] = useState('EXPENSE');
-  const [newCatCFType, setNewCatCFType] = useState('OPERATING');
-
-  // Create rule form state
-  const [newRulePattern, setNewRulePattern] = useState('');
-  const [newRuleCatId, setNewRuleCatId] = useState(() => initialCategories[0]?.id ?? '');
-
   // Edit category modal state
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editType, setEditType] = useState('EXPENSE');
-  const [editCFType, setEditCFType] = useState('OPERATING');
 
   // Delete category confirmation state
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
@@ -82,6 +59,9 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<'name' | 'type' | 'cashFlowType' | 'usage' | 'rules'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Tracks the most recently created category ID for rules form auto-selection
+  const [createdCategoryId, setCreatedCategoryId] = useState<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -121,8 +101,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       let valB: string | number = '';
 
       if (sortField === 'name') {
-        valA = a.name.toLowerCase();
-        valB = b.name.toLowerCase();
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) * (sortDirection === 'asc' ? 1 : -1);
       } else if (sortField === 'type') {
         valA = a.type;
         valB = b.type;
@@ -146,14 +125,11 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
   // ─── Category handlers ────────────────────────────────────────────────────
 
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCatName.trim()) return;
-
+  const handleCreateCategory = async (name: string, type: string, cfType: string) => {
     setIsCreatingCategory(true);
     startTransition(async () => {
       try {
-        const created = await createCategory(newCatName, newCatType, newCatCFType);
+        const created = await createCategory(name, type, cfType);
         const mappedCreated: Category = {
           id: created.id,
           name: created.name,
@@ -164,12 +140,8 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           rules: [],
         };
         setCategories((prev) => [...prev, mappedCreated]);
-        setNewCatName('');
-        setNewCatType('EXPENSE');
-        setNewCatCFType('OPERATING');
+        setCreatedCategoryId(created.id);
         showToast(t('createdSuccess', { name: created.name }));
-        // Make sure the new category is selectable in rule form if none selected
-        if (!newRuleCatId) setNewRuleCatId(created.id);
       } catch (err: any) {
         showToast(tErr(translateError(err)), 'error');
       } finally {
@@ -178,26 +150,11 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     });
   };
 
-  const handleOpenEdit = (cat: Category) => {
-    setEditingCategory(cat);
-    setEditName(cat.name);
-    setEditType(cat.type);
-    setEditCFType(cat.cashFlowType);
-  };
-
-  const handleUpdateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCategory || !editName.trim()) return;
-
+  const handleUpdateCategory = async (id: string, name: string, type: string, cfType: string) => {
     setIsUpdating(true);
     startTransition(async () => {
       try {
-        const updated = await updateCategory(
-          editingCategory.id,
-          editName,
-          editType,
-          editCFType
-        );
+        const updated = await updateCategory(id, name, type, cfType);
         setCategories((prev) =>
           prev.map((c) =>
             c.id === updated.id
@@ -218,20 +175,6 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         setIsUpdating(false);
       }
     });
-  };
-
-  const handleCancelEdit = () => {
-    if (!editingCategory) return;
-    const isDirty =
-      editName !== editingCategory.name ||
-      editType !== editingCategory.type ||
-      editCFType !== editingCategory.cashFlowType;
-    if (isDirty) {
-      if (!window.confirm(tCommon('discardChangesConfirm'))) {
-        return;
-      }
-    }
-    setEditingCategory(null);
   };
 
   const handleDeleteClick = (cat: Category) => {
@@ -263,19 +206,16 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
     });
   };
 
-  // ─── Rule handlers ────────────────────────────────────────────────────────
+  // ─── Rule handlers ──────────────────────────────────────────────────────
 
-  const handleCreateRule = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRulePattern.trim() || !newRuleCatId) return;
-
+  const handleCreateRule = async (pattern: string, categoryId: string) => {
     setIsCreatingRule(true);
     startTransition(async () => {
       try {
-        const rule = await createCategoryRule(newRulePattern, newRuleCatId);
+        const rule = await createCategoryRule(pattern, categoryId);
         setCategories((prev) =>
           prev.map((cat) =>
-            cat.id === newRuleCatId
+            cat.id === categoryId
               ? {
                   ...cat,
                   rules: [...cat.rules, rule],
@@ -284,7 +224,6 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
               : cat
           )
         );
-        setNewRulePattern('');
         showToast(t('ruleCreatedSuccess', { pattern: rule.pattern }));
       } catch (err: any) {
         showToast(tErr(translateError(err)), 'error');
@@ -329,16 +268,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
   const totalRules = categories.reduce((acc, c) => acc + (c.rules?.length ?? 0), 0);
 
-  const SortIndicator = ({ field }: { field: 'name' | 'type' | 'cashFlowType' | 'usage' | 'rules' }) => {
-    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="w-3.5 h-3.5 text-primary ml-1 inline-block" />
-    ) : (
-      <ArrowDown className="w-3.5 h-3.5 text-primary ml-1 inline-block" />
-    );
-  };
-
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6 relative">
@@ -357,7 +287,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           className={`tab tab-lg font-semibold gap-2 transition-all ${
             activeTab === 'categories' ? 'tab-active' : ''
           }`}
-          onClick={() => setActiveTab('categories')}
+          onClick={() => { setActiveTab('categories'); window.scrollTo(0, 0); }}
           aria-label={`View Categories tab. Total categories: ${categories.length}`}
         >
           <Tags className="h-5 w-5" /> {t('categories')}
@@ -367,7 +297,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
           className={`tab tab-lg font-semibold gap-2 transition-all ${
             activeTab === 'rules' ? 'tab-active' : ''
           }`}
-          onClick={() => setActiveTab('rules')}
+          onClick={() => { setActiveTab('rules'); window.scrollTo(0, 0); }}
           aria-label={`View Match Rules tab. Total rules: ${totalRules}`}
         >
           <Settings className="h-5 w-5" /> {t('matchRules')}
@@ -380,572 +310,82 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column: Categories List */}
           <div className="lg:col-span-2">
-            <div className="card bg-base-100 shadow-xl border border-base-200">
-              <div className="card-body">
-                <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-                  <Tags className="h-5 w-5" /> {t('storedCategories')}
-                </h2>
-
-                {categories.length > 0 && (
-                  <div className="form-control w-full max-w-xs mt-2 mb-4 relative">
-                    <input
-                      type="text"
-                      placeholder={t('searchPlaceholder')}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="input input-bordered input-sm w-full pr-8"
-                    />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content focus:outline-none"
-                        aria-label="Clear search query"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {categories.length === 0 ? (
-                  <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-4">
-                    <Tags className="h-12 w-12 text-base-content/30" />
-                    <div>
-                      <h3 className="font-bold text-lg text-base-content/75">{t('noCategoriesFound')}</h3>
-                      <p className="text-sm text-base-content/40 max-w-sm mt-1">
-                        {t('getStarted')}
-                      </p>
-                    </div>
-                  </div>
-                ) : sortedCategories.length === 0 ? (
-                  <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-2">
-                    <p className="font-bold text-lg text-base-content/75">{tCommon('noResults')}</p>
-                  </div>
-                ) : (
-                  <div className="max-h-[600px] overflow-y-auto overflow-x-auto w-full mt-4 relative">
-                    <table className="table w-full">
-                      <caption className="sr-only">List of transactions categories and actions</caption>
-                      <thead className="sticky top-0 bg-base-100 z-10 shadow-xs">
-                        <tr className="border-b border-base-200">
-                          <th>
-                            <button
-                              onClick={() => handleSort('name')}
-                              className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
-                              aria-label="Sort by category name"
-                            >
-                              <span className="truncate">{t('categoryName')}</span> <SortIndicator field="name" />
-                            </button>
-                          </th>
-                          <th>
-                            <button
-                              onClick={() => handleSort('type')}
-                              className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
-                              aria-label="Sort by category type"
-                            >
-                              <span>{t('type')}</span> <SortIndicator field="type" />
-                            </button>
-                          </th>
-                          <th>
-                            <button
-                              onClick={() => handleSort('cashFlowType')}
-                              className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
-                              aria-label="Sort by cash flow section"
-                            >
-                              <span className="truncate">{t('cashFlow')}</span> <SortIndicator field="cashFlowType" />
-                            </button>
-                          </th>
-                          <th className="text-center">
-                            <button
-                              onClick={() => handleSort('rules')}
-                              className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
-                              aria-label="Sort by match rules count"
-                            >
-                              <span>{t('matchRules')}</span> <SortIndicator field="rules" />
-                            </button>
-                          </th>
-                          <th className="text-center">
-                            <button
-                              onClick={() => handleSort('usage')}
-                              className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
-                              aria-label="Sort by transaction usage count"
-                            >
-                              <span>{t('usage')}</span> <SortIndicator field="usage" />
-                            </button>
-                          </th>
-                          <th className="text-center">{t('actions')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedCategories.map((cat) => {
-                          const isTransfer = cat.type === 'TRANSFER';
-                          const isDeleting = deletingCategoryId === cat.id;
-                          return (
-                            <tr key={cat.id} className="hover:bg-base-200/50 border-b border-base-200">
-                              <td className="whitespace-normal break-words">
-                                <div className="font-bold">{cat.name}</div>
-                              </td>
-                              <td className="whitespace-normal">
-                                <span
-                                  className={`badge badge-sm font-semibold block w-fit truncate ${
-                                    cat.type === 'INCOME'
-                                      ? 'badge-success text-success-content'
-                                      : cat.type === 'EXPENSE'
-                                      ? 'badge-error text-error-content'
-                                      : 'badge-warning text-warning-content'
-                                  }`}
-                                >
-                                  {cat.type}
-                                </span>
-                              </td>
-                              <td className="whitespace-normal">
-                                <span className="badge badge-outline badge-sm font-bold opacity-75 block w-fit truncate">
-                                  {cat.cashFlowType}
-                                </span>
-                              </td>
-                              <td className="text-center font-mono font-bold text-sm whitespace-normal">
-                                {t('rulesCount', { count: cat.rulesCount || 0 })}
-                              </td>
-                              <td className="text-center font-mono font-bold text-sm whitespace-normal">
-                                {t('txCount', { count: cat.transactionsCount })}
-                              </td>
-                              <td className="text-center whitespace-normal">
-                                <div className="flex justify-center gap-1">
-                                  <button
-                                    onClick={() => handleOpenEdit(cat)}
-                                    className="btn btn-ghost btn-xs text-info hover:bg-info/10 px-1"
-                                    disabled={isUpdating || deletingCategoryId !== null}
-                                    aria-label={`Edit ${cat.name}`}
-                                  >
-                                    {t('edit')}
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteClick(cat)}
-                                    className="btn btn-ghost btn-xs text-error hover:bg-error/10 px-1"
-                                    disabled={isUpdating || deletingCategoryId !== null || isTransfer}
-                                    aria-label={`Delete ${cat.name}`}
-                                  >
-                                    {isDeleting ? t('deleting') : t('delete')}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
+            <CategoryTable
+              categories={categories}
+              sortedCategories={sortedCategories}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              isUpdating={isUpdating}
+              deletingCategoryId={deletingCategoryId}
+              onEdit={setEditingCategory}
+              onDeleteClick={handleDeleteClick}
+            />
           </div>
 
           {/* Right column: Create Category Form */}
           <div>
-            <div className="card bg-base-100 shadow-xl border border-base-200">
-              <div className="card-body">
-                <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-                  <Plus className="h-5 w-5" /> {t('createCategory')}
-                </h2>
-                <form onSubmit={handleCreateCategory} className="space-y-4 mt-2">
-                  <div className="form-control w-full">
-                    <label className="label" htmlFor="new-category-name">
-                      <span className="label-text font-bold">{t('newCategoryName')}</span>
-                    </label>
-                    <input
-                      id="new-category-name"
-                      type="text"
-                      placeholder={t('newCategoryNamePlaceholder')}
-                      value={newCatName}
-                      onChange={(e) => setNewCatName(e.target.value)}
-                      className="input input-bordered w-full"
-                      required
-                      disabled={isCreatingCategory}
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className="form-control w-full">
-                    <label className="label" htmlFor="new-category-type">
-                      <span className="label-text font-bold">{t('newCategoryType')}</span>
-                    </label>
-                    <select
-                      id="new-category-type"
-                      value={newCatType}
-                      onChange={(e) => setNewCatType(e.target.value)}
-                      className="select select-bordered w-full"
-                      disabled={isCreatingCategory}
-                    >
-                      <option value="EXPENSE">{t('expenseOption')}</option>
-                      <option value="INCOME">{t('incomeOption')}</option>
-                      <option value="TRANSFER">{t('transferOption')}</option>
-                    </select>
-                  </div>
-
-                  <div className="form-control w-full">
-                    <label className="label" htmlFor="new-category-cf-type">
-                      <span className="label-text font-bold">{t('newCategoryCFType')}</span>
-                    </label>
-                    <select
-                      id="new-category-cf-type"
-                      value={newCatCFType}
-                      onChange={(e) => setNewCatCFType(e.target.value)}
-                      className="select select-bordered w-full"
-                      disabled={isCreatingCategory}
-                    >
-                      <option value="OPERATING">{t('operatingOption')}</option>
-                      <option value="INVESTING">{t('investingOption')}</option>
-                      <option value="FINANCING">{t('financingOption')}</option>
-                    </select>
-                  </div>
-
-                  <button
-                     type="submit"
-                     className="btn btn-primary w-full mt-2"
-                     disabled={isCreatingCategory || !newCatName.trim()}
-                  >
-                    {isCreatingCategory ? t('creating') : t('addCategory')}
-                  </button>
-                </form>
-              </div>
-            </div>
+            <CreateCategoryForm
+              isCreating={isCreatingCategory}
+              onSubmit={handleCreateCategory}
+            />
           </div>
         </div>
       )}
 
       {/* ── MATCH RULES TAB ── */}
       {activeTab === 'rules' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column: Rules List grouped by category */}
-          <div className="lg:col-span-2 space-y-4">
-            {categories.every((cat) => !cat.rules || cat.rules.length === 0) ? (
-              <div className="card bg-base-100 shadow border border-base-200">
-                <div className="card-body items-center text-center py-16">
-                  <Settings className="h-12 w-12 mb-4 text-base-content/30" />
-                  <h3 className="text-lg font-bold text-base-content/60">{t('noMatchRulesYet')}</h3>
-                  <p className="text-sm text-base-content/40 max-w-xs">
-                    {t('matchRulesInstructions')}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              categories.map((cat) => {
-                if (!cat.rules || cat.rules.length === 0) return null;
-                return (
-                  <div key={cat.id} className="card bg-base-100 shadow border border-base-200">
-                    <div className="card-body p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="font-bold text-base">{cat.name}</h3>
-                        <span
-                          className={`badge badge-sm font-semibold ${
-                            cat.type === 'INCOME'
-                              ? 'badge-success text-success-content'
-                              : cat.type === 'EXPENSE'
-                              ? 'badge-error text-error-content'
-                              : 'badge-warning text-warning-content'
-                          }`}
-                        >
-                          {cat.type}
-                        </span>
-                        <span className="badge badge-ghost badge-sm ml-auto">{t('rulesCount', { count: cat.rules.length })}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {cat.rules.map((rule) => {
-                          const isDeletingRule = deletingRuleId === rule.id;
-                          return (
-                            <div
-                              key={rule.id}
-                              className="flex justify-between items-center bg-base-200 px-3 py-2 rounded-lg text-sm"
-                            >
-                              <span className="font-mono font-semibold text-primary">"{rule.pattern}"</span>
-                              <button
-                                onClick={() => handleDeleteRuleClick(rule.id, cat.id, rule.pattern)}
-                                className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10 flex items-center justify-center"
-                                disabled={deletingRuleId !== null}
-                                title={t('delete')}
-                                aria-label={t('ruleDeleteWarning', { pattern: rule.pattern })}
-                              >
-                                {isDeletingRule ? '...' : <X className="h-3.5 w-3.5" />}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Right column: Create Rule Form */}
-          <div>
-            <div className="card bg-base-100 shadow-xl border border-base-200">
-              <div className="card-body p-6">
-                <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                  <Settings className="h-4 w-4" /> {t('createRule')}
-                </h2>
-                <p className="text-xs text-base-content/60">
-                  {t('matchRulesInstructions')}
-                </p>
-
-                <form onSubmit={handleCreateRule} className="space-y-4 mt-4">
-                  <div className="form-control">
-                    <label className="label" htmlFor="new-rule-pattern">
-                      <span className="label-text font-semibold text-xs">{t('merchantKeyword')}</span>
-                    </label>
-                    <input
-                      id="new-rule-pattern"
-                      type="text"
-                      placeholder={t('merchantKeywordPlaceholder')}
-                      value={newRulePattern}
-                      onChange={(e) => setNewRulePattern(e.target.value)}
-                      className="input input-bordered input-sm"
-                      required
-                      disabled={isCreatingRule || categories.length === 0}
-                      autoFocus
-                    />
-                    <label className="label py-0.5">
-                      <span className="label-text-alt text-base-content/50">{t('regexHint')}</span>
-                    </label>
-                  </div>
-
-                  <div className="form-control">
-                    <label className="label" htmlFor="new-rule-category">
-                      <span className="label-text font-semibold text-xs">{t('assignCategory')}</span>
-                    </label>
-                    <select
-                      id="new-rule-category"
-                      value={newRuleCatId}
-                      onChange={(e) => setNewRuleCatId(e.target.value)}
-                      className="select select-bordered select-sm"
-                      required
-                      disabled={isCreatingRule || categories.length === 0}
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-sm w-full mt-2"
-                    disabled={isCreatingRule || !newRulePattern.trim() || categories.length === 0}
-                  >
-                    {isCreatingRule ? t('creating') : t('createRule')}
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* Summary stats */}
-            <div className="card bg-base-100 shadow border border-base-200 mt-4">
-              <div className="card-body p-4">
-                <h3 className="font-bold text-sm text-base-content/60 uppercase tracking-wider mb-3">
-                  {t('summary')}
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-base-content/70">{t('totalRules')}</span>
-                    <span className="font-mono font-bold">{totalRules}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-base-content/70">{t('categoriesWithRules')}</span>
-                    <span className="font-mono font-bold">
-                      {categories.filter((c) => c.rules && c.rules.length > 0).length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-base-content/70">{t('categoriesWithoutRules')}</span>
-                    <span className="font-mono font-bold text-warning">
-                      {categories.filter((c) => !c.rules || c.rules.length === 0).length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <RulesPanel
+          categories={categories}
+          isCreatingRule={isCreatingRule}
+          deletingRuleId={deletingRuleId}
+          onCreateRule={handleCreateRule}
+          onDeleteRuleClick={handleDeleteRuleClick}
+          createdCategoryId={createdCategoryId}
+          onSelectCreatedCategory={() => setCreatedCategoryId(null)}
+        />
       )}
 
       {/* Edit Category Modal */}
       {editingCategory && (
-        <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="edit-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              <Pencil className="h-4 w-4" /> {t('editCategory')}
-            </h3>
-
-            <form onSubmit={handleUpdateCategory} className="space-y-4 mt-4">
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-category-name">
-                  <span className="label-text font-bold">{t('categoryName')}</span>
-                </label>
-                <input
-                  id="edit-category-name"
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="input input-bordered w-full"
-                  required
-                  disabled={isUpdating}
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-category-type">
-                  <span className="label-text font-bold">{t('newCategoryType')}</span>
-                </label>
-                <select
-                  id="edit-category-type"
-                  value={editType}
-                  onChange={(e) => setEditType(e.target.value)}
-                  className="select select-bordered w-full"
-                  disabled={isUpdating}
-                >
-                  <option value="EXPENSE">{t('expenseOption')}</option>
-                  <option value="INCOME">{t('incomeOption')}</option>
-                  <option value="TRANSFER">{t('transferOption')}</option>
-                </select>
-              </div>
-
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-category-cf-type">
-                  <span className="label-text font-bold">{t('newCategoryCFType')}</span>
-                </label>
-                <select
-                  id="edit-category-cf-type"
-                  value={editCFType}
-                  onChange={(e) => setEditCFType(e.target.value)}
-                  className="select select-bordered w-full"
-                  disabled={isUpdating}
-                >
-                  <option value="OPERATING">{t('operatingOption')}</option>
-                  <option value="INVESTING">{t('investingOption')}</option>
-                  <option value="FINANCING">{t('financingOption')}</option>
-                </select>
-              </div>
-
-              <div className="modal-action">
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="btn btn-ghost"
-                  disabled={isUpdating}
-                >
-                  {tCommon('cancel')}
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isUpdating || !editName.trim()}
-                >
-                  {isUpdating ? t('saving') : t('saveChanges')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditCategoryModal
+          key={editingCategory.id}
+          editingCategory={editingCategory}
+          isUpdating={isUpdating}
+          onSave={handleUpdateCategory}
+          onClose={() => setEditingCategory(null)}
+        />
       )}
 
       {/* Delete Category Confirmation Modal */}
       {categoryToDelete && (
-        <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="delete-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" /> {t('confirmDelete')}
-            </h3>
-            <p className="py-4 text-base-content/80 text-sm">
-              {categoryToDelete.transactionsCount > 0 ? (
-                <span>
-                  {t('deleteWarningUsage', { name: categoryToDelete.name, count: categoryToDelete.transactionsCount })}
-                </span>
-              ) : (
-                <span>
-                  {t('deleteWarningSimple', { name: categoryToDelete.name })}
-                </span>
-              )}
-            </p>
-            <div className="modal-action">
-              <button
-                type="button"
-                onClick={() => setCategoryToDelete(null)}
-                className="btn btn-ghost btn-sm"
-                disabled={deletingCategoryId !== null}
-              >
-                {tCommon('cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                className="btn btn-error btn-sm"
-                disabled={deletingCategoryId !== null}
-              >
-                {deletingCategoryId !== null ? t('deleting') : t('deleteCategoryBtn')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteCategoryModal
+          key={categoryToDelete.id}
+          categoryToDelete={categoryToDelete}
+          isDeleting={deletingCategoryId === categoryToDelete.id}
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setCategoryToDelete(null)}
+        />
       )}
 
       {/* Delete Rule Confirmation Modal */}
       {ruleToDelete && (
-        <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-rule-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="delete-rule-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" /> {t('ruleDeleteConfirm')}
-            </h3>
-            <p className="py-4 text-base-content/80 text-sm">
-              {t('ruleDeleteWarning', { pattern: ruleToDelete.pattern })}
-            </p>
-            <div className="modal-action">
-              <button
-                type="button"
-                onClick={() => setRuleToDelete(null)}
-                className="btn btn-ghost btn-sm"
-                disabled={deletingRuleId !== null}
-              >
-                {tCommon('cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteRuleConfirm}
-                className="btn btn-error btn-sm"
-                disabled={deletingRuleId !== null}
-              >
-                {deletingRuleId !== null ? t('deleting') : t('delete')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteRuleModal
+          key={ruleToDelete.id}
+          ruleToDelete={ruleToDelete}
+          isDeleting={deletingRuleId === ruleToDelete.id}
+          onConfirm={handleDeleteRuleConfirm}
+          onClose={() => setRuleToDelete(null)}
+        />
       )}
 
       {/* Toasts Notification Container */}
-      <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`alert ${toast.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg border border-white/10`}
-          >
-            <div className="flex justify-between items-center w-full gap-2">
-              <span>{toast.message}</span>
-              <button
-                onClick={() => {
-                  setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-                }}
-                className="btn btn-ghost btn-circle btn-xs hover:bg-white/20 text-white flex items-center justify-center focus:outline-none"
-                aria-label="Dismiss notification"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ToastContainer
+        toasts={toasts}
+        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }
