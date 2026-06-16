@@ -60,12 +60,15 @@ import { POST as consumeSetupToken } from './setup-token/consume/route';
 import { db } from '@/lib/db';
 import { NextRequest } from 'next/server';
 
-function mockRequest(url: string, body?: any, origin?: string, cookies?: Record<string, string>): NextRequest {
+function mockRequest(url: string, body?: any, origin?: string, cookies?: Record<string, string>, extraHeaders?: Record<string, string>): NextRequest {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (origin) headers['origin'] = origin;
   if (cookies) {
     const cookieStr = Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ');
     headers['Cookie'] = cookieStr;
+  }
+  if (extraHeaders) {
+    Object.assign(headers, extraHeaders);
   }
   return new NextRequest(url, {
     method: body ? 'POST' : 'GET',
@@ -93,6 +96,8 @@ const mockCredentialResponse = {
 beforeEach(async () => {
   await clearTestDb();
   vi.clearAllMocks();
+  const { resetRateLimiter } = await import('@/lib/rate-limiter');
+  resetRateLimiter();
 });
 
 afterAll(async () => {
@@ -281,6 +286,124 @@ describe('Auth API routes', () => {
       const stored = await db.passKeyCredential.findUnique({ where: { id: mockCredentialId } });
       expect(stored).not.toBeNull();
       expect(stored?.transports).toBe('[]');
+    });
+
+    it('seeds 23 default categories with English names after first registration', async () => {
+      const beginRes = await registerBegin(
+        mockRequest('http://localhost:3000/api/auth/register/begin', undefined, 'http://localhost:3000'),
+      );
+      const beginData = await beginRes.json();
+
+      const response = await registerComplete(
+        mockRequest(
+          'http://localhost:3000/api/auth/register/complete',
+          { ...mockCredentialResponse, state: beginData.state, deviceName: 'Seed Test EN' },
+          'http://localhost:3000',
+          undefined,
+          { 'Accept-Language': 'en-US,en;q=0.9' },
+        ),
+      );
+
+      expect(response.status).toBe(200);
+
+      const categories = await db.category.findMany({ orderBy: { name: 'asc' } });
+      expect(categories).toHaveLength(23);
+      expect(categories[0].name).toBe('Bank Fees');
+      expect(categories.filter((c) => c.type === 'TRANSFER')).toHaveLength(1);
+      expect(categories.find((c) => c.type === 'TRANSFER')?.name).toBe('Transfer');
+    });
+
+    it('seeds 23 default categories with Chinese names for zh locale', async () => {
+      const beginRes = await registerBegin(
+        mockRequest('http://localhost:3000/api/auth/register/begin', undefined, 'http://localhost:3000'),
+      );
+      const beginData = await beginRes.json();
+
+      const response = await registerComplete(
+        mockRequest(
+          'http://localhost:3000/api/auth/register/complete',
+          { ...mockCredentialResponse, state: beginData.state, deviceName: 'Seed Test ZH' },
+          'http://localhost:3000',
+          undefined,
+          { 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8' },
+        ),
+      );
+
+      expect(response.status).toBe(200);
+
+      const categories = await db.category.findMany({ orderBy: { name: 'asc' } });
+      expect(categories).toHaveLength(23);
+      expect(categories.find((c) => c.type === 'TRANSFER')?.name).toBe('转账');
+    });
+
+    it('does not re-seed categories on subsequent registration (idempotent)', async () => {
+      // First registration seeds categories
+      const beginRes1 = await registerBegin(
+        mockRequest('http://localhost:3000/api/auth/register/begin', undefined, 'http://localhost:3000'),
+      );
+      const beginData1 = await beginRes1.json();
+
+      vi.mocked(verifyRegistrationResponse).mockResolvedValueOnce({
+        verified: true,
+        registrationInfo: {
+          credential: {
+            id: 'cred-id-first',
+            publicKey: new Uint8Array([1, 2, 3, 4]),
+            counter: 1,
+          },
+        },
+      } as any);
+
+      const response1 = await registerComplete(
+        mockRequest(
+          'http://localhost:3000/api/auth/register/complete',
+          { ...mockCredentialResponse, id: 'cred-id-first', state: beginData1.state, deviceName: 'First' },
+          'http://localhost:3000',
+        ),
+      );
+      expect(response1.status).toBe(200);
+
+      const categoriesAfterFirst = await db.category.count();
+      expect(categoriesAfterFirst).toBe(23);
+
+      // Second registration should NOT add more categories
+      const { createSessionCookie } = await import('@/lib/auth-session');
+      const session = await createSessionCookie();
+
+      const beginRes2 = await registerBegin(
+        mockRequest(
+          'http://localhost:3000/api/auth/register/begin',
+          undefined,
+          'http://localhost:3000',
+          { netly_session: session },
+        ),
+      );
+      const beginData2 = await beginRes2.json();
+
+      const secondCredId = 'cred-id-second';
+      vi.mocked(verifyRegistrationResponse).mockResolvedValueOnce({
+        verified: true,
+        registrationInfo: {
+          credential: {
+            id: secondCredId,
+            publicKey: new Uint8Array([5, 6, 7, 8]),
+            counter: 1,
+          },
+        },
+      } as any);
+
+      const response2 = await registerComplete(
+        mockRequest(
+          'http://localhost:3000/api/auth/register/complete',
+          { ...mockCredentialResponse, id: secondCredId, state: beginData2.state, deviceName: 'Second' },
+          'http://localhost:3000',
+          { netly_session: session },
+        ),
+      );
+      expect(response2.status).toBe(200);
+
+      const categoriesAfterSecond = await db.category.count();
+      expect(categoriesAfterSecond).toBe(23); // Still 23 — not re-seeded
     });
   });
 

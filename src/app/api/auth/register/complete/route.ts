@@ -15,6 +15,7 @@ import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { auditLog } from '@/lib/audit';
+import { resolveLocale, getDefaultCategories } from '@/lib/locale';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -109,6 +110,16 @@ export async function POST(request: NextRequest) {
     maxAge: getSessionCookieMaxAge(),
   });
   response.cookies.set(SETUP_SESSION_COOKIE_NAME, '', { maxAge: 0, path: '/' });
+
+  // Seed default categories on first-time setup (idempotent)
+  const existingCategoryCount = await db.category.count();
+  if (existingCategoryCount === 0) {
+    const locale = resolveLocale(request);
+    const defaultCategories = getDefaultCategories(locale);
+    await db.category.createMany({
+      data: defaultCategories,
+    });
+  }
 
   return response;
 }
