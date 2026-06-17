@@ -270,7 +270,14 @@
     "dateFormatIso": "YYYY-MM-DD (ISO 格式)",
     "descriptionColumn": "描述列 (可选)",
     "noneOption": "-- 无 --",
-    "previewMappingFailed": "预览交易映射失败，请检查所选的列映射。"
+    "previewMappingFailed": "预览交易映射失败，请检查所选的列映射。",
+    "hasHeadersToggle": "我的 CSV 包含表头行",
+    "error": {
+      "missingParameters": "缺少必要参数：CSV 文本、账户和列映射。",
+      "accountNotFound": "未找到目标账户，请选择有效账户。",
+      "noTransactionsParsed": "未从 CSV 中找到或解析出交易记录。请检查文件格式。",
+      "internalError": "服务器发生意外错误，请稍后重试。"
+    }
   },
   "transactions": {
     "pageTitle": "交易流水账目",

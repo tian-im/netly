@@ -50,6 +50,39 @@ export function cleanAmount(value: string): number {
 }
 
 /**
+ * Calculates a signed amount from separate debit and credit column values.
+ *
+ * - Debit-only rows produce a negative amount (outflow).
+ * - Credit-only rows produce a positive amount (inflow).
+ * - When both are present and non-zero, credit minus debit is used.
+ * - Special case: debit non-zero and credit exactly 0 → negative outflow.
+ * - Special case: credit non-zero and debit exactly 0 → positive inflow.
+ *
+ * Returns NaN if neither column has a valid parsable value.
+ */
+export function debitCreditToAmount(debitVal: string, creditVal: string): number {
+  const debitAmt = debitVal ? cleanAmount(debitVal) : NaN;
+  const creditAmt = creditVal ? cleanAmount(creditVal) : NaN;
+
+  const hasDebit = !isNaN(debitAmt) && debitVal.trim() !== '';
+  const hasCredit = !isNaN(creditAmt) && creditVal.trim() !== '';
+
+  if (hasDebit && hasCredit) {
+    if (debitAmt !== 0 && creditAmt === 0) {
+      return -Math.abs(debitAmt);
+    } else if (creditAmt !== 0 && debitAmt === 0) {
+      return Math.abs(creditAmt);
+    }
+    return Math.round((creditAmt - debitAmt) * 100) / 100;
+  } else if (hasDebit) {
+    return -Math.abs(debitAmt);
+  } else if (hasCredit) {
+    return Math.abs(creditAmt);
+  }
+  return NaN;
+}
+
+/**
  * Parses bank statement dates with various formats.
  */
 export function parseBankDate(value: string, formatHint?: string): Date {
@@ -248,26 +281,7 @@ export function parseCSV(
         const debitVal = columnMapping.debit ? getRowValue(row, columnMapping.debit) : '';
         const creditVal = columnMapping.credit ? getRowValue(row, columnMapping.credit) : '';
 
-        const debitAmt = debitVal ? cleanAmount(debitVal) : NaN;
-        const creditAmt = creditVal ? cleanAmount(creditVal) : NaN;
-
-        const hasDebit = !isNaN(debitAmt) && debitVal.trim() !== '';
-        const hasCredit = !isNaN(creditAmt) && creditVal.trim() !== '';
-
-        if (hasDebit && hasCredit) {
-          if (debitAmt !== 0 && creditAmt === 0) {
-            amount = -Math.abs(debitAmt);
-          } else if (creditAmt !== 0 && debitAmt === 0) {
-            amount = Math.abs(creditAmt);
-          } else {
-            // Subtract debit from credit
-            amount = Math.round((creditAmt - debitAmt) * 100) / 100;
-          }
-        } else if (hasDebit) {
-          amount = -Math.abs(debitAmt);
-        } else if (hasCredit) {
-          amount = Math.abs(creditAmt);
-        }
+        amount = debitCreditToAmount(debitVal, creditVal);
       }
 
       if (isNaN(amount)) {

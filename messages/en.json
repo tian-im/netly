@@ -270,7 +270,14 @@
     "dateFormatIso": "YYYY-MM-DD (ISO Format)",
     "descriptionColumn": "Description Column (Optional)",
     "noneOption": "-- None --",
-    "previewMappingFailed": "Failed to map preview transactions. Check selected columns."
+    "previewMappingFailed": "Failed to map preview transactions. Check selected columns.",
+    "hasHeadersToggle": "My CSV has a header row",
+    "error": {
+      "missingParameters": "Missing required parameters: CSV text, account, and column mapping.",
+      "accountNotFound": "Target account not found. Please select a valid account.",
+      "noTransactionsParsed": "No transactions found or parsed from CSV. Check the file format.",
+      "internalError": "An unexpected server error occurred. Please try again."
+    }
   },
   "transactions": {
     "pageTitle": "Transaction Ledger",

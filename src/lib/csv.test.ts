@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCSV, cleanAmount, parseBankDate, getRowValue } from './csv';
+import { parseCSV, cleanAmount, parseBankDate, getRowValue, debitCreditToAmount } from './csv';
 
 describe('CSV Parser Core', () => {
   describe('getRowValue', () => {
@@ -64,6 +64,39 @@ describe('CSV Parser Core', () => {
     it('should throw or return NaN for invalid values', () => {
       expect(Number.isNaN(cleanAmount('abc'))).toBe(true);
       expect(Number.isNaN(cleanAmount(''))).toBe(true);
+    });
+  });
+
+  describe('debitCreditToAmount', () => {
+    it('should return negative amount for debit-only row', () => {
+      expect(debitCreditToAmount('15.50', '')).toBe(-15.5);
+      expect(debitCreditToAmount('15.50', '0.00')).toBe(-15.5);
+    });
+
+    it('should return positive amount for credit-only row', () => {
+      expect(debitCreditToAmount('', '2500.00')).toBe(2500);
+      expect(debitCreditToAmount('0.00', '2500.00')).toBe(2500);
+    });
+
+    it('should calculate credit - debit when both present', () => {
+      expect(debitCreditToAmount('10.00', '10.00')).toBe(0);
+      expect(debitCreditToAmount('10.00', '50.00')).toBe(40);
+      expect(debitCreditToAmount('50.00', '10.00')).toBe(-40);
+    });
+
+    it('should handle currency symbols in debit/credit', () => {
+      expect(debitCreditToAmount('$15.50', '')).toBe(-15.5);
+      expect(debitCreditToAmount('', '$50.00')).toBe(50);
+    });
+
+    it('should return NaN when both values are empty or invalid', () => {
+      expect(Number.isNaN(debitCreditToAmount('', ''))).toBe(true);
+      expect(Number.isNaN(debitCreditToAmount('abc', 'def'))).toBe(true);
+    });
+
+    it('should round amounts to 2 decimal places', () => {
+      expect(debitCreditToAmount('12.345', '')).toBe(-12.35);
+      expect(debitCreditToAmount('', '12.345')).toBe(12.35);
     });
   });
 

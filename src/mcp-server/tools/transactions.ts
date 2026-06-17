@@ -4,6 +4,8 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { parseCSV, type ColumnMapping } from "@/lib/csv";
 import { matchRule } from "@/lib/rules";
+import { makeHash, disambiguateDescriptions } from "@/lib/import-utils";
+import { seedDefaultCategoriesIfEmpty } from "@/lib/default-categories";
 
 export function registerTransactionTools(server: McpServer) {
   server.tool(
@@ -33,6 +35,9 @@ export function registerTransactionTools(server: McpServer) {
           };
         }
 
+        // Auto-seed default categories on first import (same behavior as REST API)
+        await seedDefaultCategoriesIfEmpty(db);
+
         const rules = await db.categoryRule.findMany({ include: { category: true } });
 
         const dateFormatHint = dateFormat === "auto" ? undefined : dateFormat;
@@ -47,25 +52,7 @@ export function registerTransactionTools(server: McpServer) {
         // Batch-level disambiguation: within a single CSV import, if two transactions
         // have the exact same (date, payee, amount, description), automatically append
         // " (2)", " (3)", etc. to the description to differentiate them.
-        {
-          const keyCounts = new Map<string, number>();
-          for (const tx of parsedTx) {
-            const key = `${tx.date.toISOString().split("T")[0]}_${tx.payee.toLowerCase().trim()}_${String(Math.round(tx.amount * 100) / 100)}_${(tx.description ?? "").toLowerCase().trim()}`;
-            keyCounts.set(key, (keyCounts.get(key) || 0) + 1);
-          }
-          const keyOccurrence = new Map<string, number>();
-          for (const tx of parsedTx) {
-            const key = `${tx.date.toISOString().split("T")[0]}_${tx.payee.toLowerCase().trim()}_${String(Math.round(tx.amount * 100) / 100)}_${(tx.description ?? "").toLowerCase().trim()}`;
-            const count = keyCounts.get(key)!;
-            if (count > 1) {
-              const occurrence = (keyOccurrence.get(key) || 0) + 1;
-              keyOccurrence.set(key, occurrence);
-              if (occurrence > 1) {
-                tx.description = `${tx.description ?? ""} (${occurrence})`;
-              }
-            }
-          }
-        }
+        disambiguateDescriptions(parsedTx);
 
         const dates = parsedTx.map((tx) => tx.date.getTime());
         const minDate = new Date(Math.min(...dates));
@@ -77,12 +64,6 @@ export function registerTransactionTools(server: McpServer) {
             date: { gte: minDate, lte: maxDate },
           },
         });
-
-        const makeHash = (date: Date, payee: string, amount: number, description: string | null | undefined) => {
-          const dateStr = date.toISOString().split("T")[0];
-          const roundedAmount = Math.round(amount * 100) / 100;
-          return `${dateStr}_${payee.toLowerCase().trim()}_${roundedAmount.toFixed(2)}_${(description ?? "").toLowerCase().trim()}`;
-        };
 
         const existingSet = new Set(
           existingTransactions.map((tx) => makeHash(tx.date, tx.payee, tx.amount, tx.description))

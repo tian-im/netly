@@ -471,6 +471,6 @@
   "permission": {
     "mcp_*": "ask",
     "npm *": "deny",
-    "npx_*": "deny"
+    "npx *": "deny"
   }
 }

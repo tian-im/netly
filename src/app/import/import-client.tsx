@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useTransition, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
-import { getAccounts } from '../actions';
 import Papa from 'papaparse';
-import { cleanAmount, parseBankDate } from '@/lib/csv';
+import { cleanAmount, parseBankDate, debitCreditToAmount } from '@/lib/csv';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
@@ -30,7 +29,6 @@ interface ImportClientProps {
 
 export default function ImportClient({ initialAccounts }: ImportClientProps) {
   const t = useTranslations('import');
-  const tCommon = useTranslations('common');
   const format = useFormatter();
   
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
@@ -51,6 +49,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
   const [descHeader, setDescHeader] = useState('');
   const [dateFormatHint, setDateFormatHint] = useState('DD/MM/YYYY');
   const [useSeparateDebitCredit, setUseSeparateDebitCredit] = useState(false);
+  const [hasHeaders, setHasHeaders] = useState(true);
 
   // Drag and Drop state
   const [isDragging, setIsDragging] = useState(false);
@@ -60,15 +59,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
   const currencySymbol = getCurrencySymbol(selectedCurrency);
 
   // Status state
-  const [isPending, startTransition] = useTransition();
+  const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
-
-  useEffect(() => {
-    if (accounts.length > 0 && !selectedAccountId) {
-      setSelectedAccountId(accounts[0].id);
-    }
-  }, [accounts, selectedAccountId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -114,31 +107,62 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
 
       setCsvText(text);
 
-      // Parse headers using PapaParse
+      // Parse CSV as arrays (header: false) so we handle both modes uniformly
       Papa.parse(text, {
+        header: false,
         skipEmptyLines: 'greedy',
         complete: (results) => {
           const rows = results.data as string[][];
           if (rows && rows.length > 0) {
-            const headers = rows[0].map(h => h.trim());
-            setCsvHeaders(headers);
-            
-            const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim() !== ''));
-            setCsvRows(dataRows);
-            setTotalRowsCount(dataRows.length);
+            if (hasHeaders) {
+              // First row contains header names
+              const headers = rows[0].map(h => h.trim());
+              setCsvHeaders(headers);
 
-            // Populate first row sample values
-            const samples: Record<string, string> = {};
-            const firstDataRow = dataRows[0];
-            if (headers && firstDataRow) {
-              headers.forEach((h, idx) => {
-                samples[h] = (firstDataRow[idx] || '').trim();
-              });
+              const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim() !== ''));
+              setCsvRows(dataRows);
+              setTotalRowsCount(dataRows.length);
+
+              // Populate first row sample values keyed by header name
+              const samples: Record<string, string> = {};
+              const firstDataRow = dataRows[0];
+              if (headers && firstDataRow) {
+                headers.forEach((h, idx) => {
+                  samples[h] = (firstDataRow[idx] || '').trim();
+                });
+              }
+              setCsvSampleValues(samples);
+
+              // Try to auto-detect mappings based on keyword matches
+              autoDetectHeaders(headers);
+            } else {
+              // No headers — use column indices as keys
+              const numCols = Math.max(...rows.map(r => r.length));
+              const colKeys = Array.from({ length: numCols }, (_, i) => String(i));
+              setCsvHeaders(colKeys);
+
+              setCsvRows(rows);
+              setTotalRowsCount(rows.length);
+
+              // Populate first row sample values keyed by column index
+              const samples: Record<string, string> = {};
+              const firstRow = rows[0];
+              if (firstRow) {
+                for (let i = 0; i < firstRow.length; i++) {
+                  samples[String(i)] = (firstRow[i] || '').trim();
+                }
+              }
+              setCsvSampleValues(samples);
+
+              // Reset mapping state for headerless mode (no header names to match)
+              setDateHeader('');
+              setPayeeHeader('');
+              setAmountHeader('');
+              setDebitHeader('');
+              setCreditHeader('');
+              setDescHeader('');
+              setUseSeparateDebitCredit(false);
             }
-            setCsvSampleValues(samples);
-
-            // Try to auto-detect mappings based on keyword matches
-            autoDetectHeaders(headers);
           } else {
             setErrorMessage(t('emptyCsv'));
           }
@@ -219,8 +243,8 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
     if (!useSeparateDebitCredit && amountIdx === -1) return [];
     if (useSeparateDebitCredit && debitIdx === -1 && creditIdx === -1) return [];
 
-    // Map first 5 rows
-    for (const row of csvRows.slice(0, 5)) {
+    // Map first 3 rows for preview
+    for (const row of csvRows.slice(0, 3)) {
       try {
         const dateVal = row[dateIdx];
         const payeeVal = row[payeeIdx];
@@ -234,25 +258,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
           const debitVal = debitIdx !== -1 ? row[debitIdx] : '';
           const creditVal = creditIdx !== -1 ? row[creditIdx] : '';
 
-          const debitAmt = debitVal ? cleanAmount(debitVal) : NaN;
-          const creditAmt = creditVal ? cleanAmount(creditVal) : NaN;
-
-          const hasDebit = !isNaN(debitAmt) && debitVal.trim() !== '';
-          const hasCredit = !isNaN(creditAmt) && creditVal.trim() !== '';
-
-          if (hasDebit && hasCredit) {
-            if (debitAmt !== 0 && creditAmt === 0) {
-              amount = -Math.abs(debitAmt);
-            } else if (creditAmt !== 0 && debitAmt === 0) {
-              amount = Math.abs(creditAmt);
-            } else {
-              amount = Math.round((creditAmt - debitAmt) * 100) / 100;
-            }
-          } else if (hasDebit) {
-            amount = -Math.abs(debitAmt);
-          } else if (hasCredit) {
-            amount = Math.abs(creditAmt);
-          }
+          amount = debitCreditToAmount(debitVal, creditVal);
         }
 
         let parsedDate: Date | null = null;
@@ -260,7 +266,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
           if (dateVal) {
             parsedDate = parseBankDate(dateVal, dateFormatHint);
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Date parsing failed in preview:', dateVal, e);
+        }
 
         previewList.push({
           rawDate: dateVal || '',
@@ -269,7 +277,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
           amount,
           description: descVal || '',
         });
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Row parsing failed in preview:', e);
+      }
     }
     return previewList;
   }, [csvRows, csvHeaders, dateHeader, payeeHeader, amountHeader, debitHeader, creditHeader, descHeader, useSeparateDebitCredit, dateFormatHint]);
@@ -294,6 +304,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
 
     setErrorMessage('');
     setImportResult(null);
+    setImporting(true);
 
     const headerMap = useSeparateDebitCredit
       ? {
@@ -310,46 +321,71 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
           description: descHeader || undefined
         };
 
-    startTransition(async () => {
-      try {
-        const response = await fetch('/api/import', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            csvText,
-            accountId: selectedAccountId,
-            headerMap,
-            dateFormatHint,
-          }),
-        });
+    try {
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvText,
+          accountId: selectedAccountId,
+          headerMap,
+          dateFormatHint,
+          hasHeaders,
+        }),
+      });
 
-        const result = await response.json();
-        if (result.success) {
-          setImportResult({ success: true, message: t('importSuccess', { count: result.importedCount }) });
-          // Reset file inputs but preserve mapping selections
-          setFile(null);
-          setCsvHeaders([]);
-          setCsvText('');
-          setCsvRows([]);
-          setTotalRowsCount(0);
-        } else {
-          setImportResult({ success: false, message: result.error || t('importFailed') });
-        }
-      } catch (err: any) {
-        setImportResult({ success: false, message: err.message || t('connectionError') });
+      const result = await response.json();
+      if (result.success) {
+        setImportResult({ success: true, message: t('importSuccess', { count: result.importedCount }) });
+        // Reset file inputs but preserve mapping selections
+        setFile(null);
+        setCsvHeaders([]);
+        setCsvText('');
+        setCsvRows([]);
+        setTotalRowsCount(0);
+      } else {
+        setImportResult({ success: false, message: result.error ? resolveErrorMessage(result.errorCode, result.error) : t('importFailed') });
       }
-    });
+    } catch (err: any) {
+      setImportResult({ success: false, message: err.message || t('connectionError') });
+    } finally {
+      setImporting(false);
+    }
   };
 
-  const renderDropdownOptionText = (headerName: string) => {
-    const sample = csvSampleValues[headerName];
-    if (sample) {
-      const truncatedSample = sample.length > 20 ? `${sample.substring(0, 17)}...` : sample;
-      return `${headerName} (${truncatedSample})`;
+  // Validation: all required mappings must be set, and file must be loaded
+  const isValid = useMemo(() => {
+    if (!selectedAccountId || !csvText || !dateHeader || !payeeHeader) return false;
+    if (!useSeparateDebitCredit && !amountHeader) return false;
+    if (useSeparateDebitCredit && !debitHeader && !creditHeader) return false;
+    return true;
+  }, [selectedAccountId, csvText, dateHeader, payeeHeader, amountHeader, debitHeader, creditHeader, useSeparateDebitCredit]);
+
+  // Map API error codes to i18n keys for localised error display
+  // WHY: Using structured errorCode instead of substring matching on English messages
+  // ensures robustness if API error text changes. Falls back to the raw error message
+  // if no code match is found, maintaining backward compatibility.
+  const resolveErrorMessage = (errorCode: string | undefined, fallback: string): string => {
+    switch (errorCode) {
+      case 'ERR_IMPORT_MISSING_PARAMS': return t('error.missingParameters');
+      case 'ERR_IMPORT_ACCOUNT_NOT_FOUND': return t('error.accountNotFound');
+      case 'ERR_IMPORT_NO_TRANSACTIONS': return t('error.noTransactionsParsed');
+      case 'ERR_IMPORT_INTERNAL': return t('error.internalError');
+      default: return fallback;
     }
-    return headerName;
+  };
+
+  const renderDropdownOptionText = (headerKey: string) => {
+    const label = hasHeaders ? headerKey : `Column ${headerKey}`;
+    const sample = csvSampleValues[headerKey];
+    if (sample) {
+      const chars = Array.from(sample);
+      const truncatedSample = chars.length > 20 ? `${chars.slice(0, 17).join('')}…` : sample;
+      return `${label} (${truncatedSample})`;
+    }
+    return label;
   };
 
   return (
@@ -397,10 +433,19 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     <span className="label-text font-bold text-base-content/80">{t('importCardTitle')}</span>
                   </label>
                   <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('dropzonePlaceholder')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        document.getElementById('file-input-field')?.click();
+                      }
+                    }}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-primary ${
                       isDragging
                         ? 'border-primary bg-primary/10 scale-[0.99]'
                         : file
@@ -509,6 +554,34 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                         <span className="label-text text-xs">{t('useSplitColumns')}</span>
                       </label>
                     </div>
+                  </div>
+
+                  {/* Toggle: CSV has headers or not */}
+                  <div className="form-control">
+                    <label className="label cursor-pointer justify-start gap-3 w-fit py-1">
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-primary toggle-sm"
+                        checked={hasHeaders}
+                        onChange={(e) => {
+                          setHasHeaders(e.target.checked);
+                          // Reset file so user re-uploads with the new mode
+                          setFile(null);
+                          setCsvHeaders([]);
+                          setCsvRows([]);
+                          setCsvSampleValues({});
+                          setTotalRowsCount(0);
+                          setCsvText('');
+                          setDateHeader('');
+                          setPayeeHeader('');
+                          setAmountHeader('');
+                          setDebitHeader('');
+                          setCreditHeader('');
+                          setDescHeader('');
+                        }}
+                      />
+                      <span className="label-text text-xs font-medium">{t('hasHeadersToggle')}</span>
+                    </label>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
@@ -698,19 +771,22 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     </div>
                   )}
 
-                  <div className="card-actions justify-end mt-6">
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={
-                        isPending || 
-                        !dateHeader || 
-                        !payeeHeader || 
-                        (!useSeparateDebitCredit ? !amountHeader : (!debitHeader && !creditHeader))
-                      }
-                    >
-                       {isPending ? t('importing') : t('importButton', { count: totalRowsCount })}
-                    </button>
+                  <div className="card-actions flex-col items-stretch mt-6">
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={!isValid || importing}
+                      >
+                         {importing ? t('importing') : t('importButton', { count: totalRowsCount })}
+                      </button>
+                    </div>
+                    {importing && (
+                      <progress
+                        className="progress progress-primary w-full"
+                        aria-label={t('importing')}
+                      />
+                    )}
                   </div>
                 </div>
               )}

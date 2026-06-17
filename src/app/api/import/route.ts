@@ -2,27 +2,16 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { parseCSV } from '@/lib/csv';
 import { matchRule } from '@/lib/rules';
-
-// Default categories configuration
-const DEFAULT_CATEGORIES = [
-  { name: 'Salary', type: 'INCOME', cashFlowType: 'OPERATING', patterns: ['salary', 'paycheck', 'payroll', 'direct deposit'] },
-  { name: 'Groceries', type: 'EXPENSE', cashFlowType: 'OPERATING', patterns: ['woolworths', 'coles', 'aldi', 'grocer', 'supermarket'] },
-  { name: 'Utilities & Internet', type: 'EXPENSE', cashFlowType: 'OPERATING', patterns: ['agl', 'electricity', 'water board', 'optus', 'telstra', 'tpg'] },
-  { name: 'Subscriptions', type: 'EXPENSE', cashFlowType: 'OPERATING', patterns: ['netflix', 'spotify', 'youtube premium', 'aws', 'github', 'icloud'] },
-  { name: 'Rent & Mortgage', type: 'EXPENSE', cashFlowType: 'OPERATING', patterns: ['rent', 'mortgage', 'real estate', 'housing'] },
-  { name: 'Transport & Travel', type: 'EXPENSE', cashFlowType: 'OPERATING', patterns: ['uber', 'taxi', 'petrol', 'caltex', 'shell', 'bp', 'opal', 'train', 'flight'] },
-  { name: 'Investments', type: 'EXPENSE', cashFlowType: 'INVESTING', patterns: ['brokerage', 'coinbase', 'shares', 'vanguard', 'stock'] },
-  { name: 'Loan Payments', type: 'EXPENSE', cashFlowType: 'FINANCING', patterns: ['loan repayment', 'repayment', 'loan interest'] },
-  { name: 'Transfer', type: 'TRANSFER', cashFlowType: 'OPERATING', patterns: ['transfer', 'internal transfer', 'tfr'] }
-];
+import { seedDefaultCategoriesIfEmpty } from '@/lib/default-categories';
+import { makeHash, disambiguateDescriptions } from '@/lib/import-utils';
 
 export async function POST(req: Request) {
   try {
-    const { csvText, accountId, headerMap, dateFormatHint } = await req.json();
+    const { csvText, accountId, headerMap, dateFormatHint, hasHeaders } = await req.json();
 
     if (!csvText || !accountId || !headerMap) {
       return NextResponse.json(
-        { success: false, error: 'Missing required parameters: csvText, accountId, headerMap' },
+        { success: false, error: 'Missing required parameters: csvText, accountId, headerMap', errorCode: 'ERR_IMPORT_MISSING_PARAMS' },
         { status: 400 }
       );
     }
@@ -33,36 +22,13 @@ export async function POST(req: Request) {
     });
     if (!account) {
       return NextResponse.json(
-        { success: false, error: 'Target account not found' },
+        { success: false, error: 'Target account not found', errorCode: 'ERR_IMPORT_ACCOUNT_NOT_FOUND' },
         { status: 404 }
       );
     }
 
     // 2. Self-healing categories seed
-    const categoryCount = await db.category.count();
-    if (categoryCount === 0) {
-      await db.$transaction(async (tx) => {
-        for (const defaultCat of DEFAULT_CATEGORIES) {
-          const cat = await tx.category.create({
-            data: {
-              name: defaultCat.name,
-              type: defaultCat.type,
-              cashFlowType: defaultCat.cashFlowType,
-            }
-          });
-          
-          // Seed initial keyword match rules
-          for (const pattern of defaultCat.patterns) {
-            await tx.categoryRule.create({
-              data: {
-                pattern,
-                categoryId: cat.id
-              }
-            });
-          }
-        }
-      });
-    }
+    await seedDefaultCategoriesIfEmpty(db);
 
     // 3. Load all categories and categorization rules for rule matching
     const categories = await db.category.findMany();
@@ -71,7 +37,7 @@ export async function POST(req: Request) {
     });
 
     // 4. Parse CSV text
-    const parsedTx = parseCSV(csvText, headerMap, dateFormatHint);
+    const parsedTx = parseCSV(csvText, headerMap, dateFormatHint, hasHeaders !== false);
     if (parsedTx.length === 0) {
       return NextResponse.json({
         success: true,
@@ -85,25 +51,7 @@ export async function POST(req: Request) {
     // have the exact same (date, payee, amount, description), automatically append
     // " (2)", " (3)", etc. to the description to differentiate them.
     // This handles bank CSVs where same-day same-merchant transactions have identical descriptions.
-    {
-      const keyCounts = new Map<string, number>();
-      for (const tx of parsedTx) {
-        const key = `${tx.date.toISOString().split('T')[0]}_${tx.payee.toLowerCase().trim()}_${String(Math.round(tx.amount * 100) / 100)}_${(tx.description ?? '').toLowerCase().trim()}`;
-        keyCounts.set(key, (keyCounts.get(key) || 0) + 1);
-      }
-      const keyOccurrence = new Map<string, number>();
-      for (const tx of parsedTx) {
-        const key = `${tx.date.toISOString().split('T')[0]}_${tx.payee.toLowerCase().trim()}_${String(Math.round(tx.amount * 100) / 100)}_${(tx.description ?? '').toLowerCase().trim()}`;
-        const count = keyCounts.get(key)!;
-        if (count > 1) {
-          const occurrence = (keyOccurrence.get(key) || 0) + 1;
-          keyOccurrence.set(key, occurrence);
-          if (occurrence > 1) {
-            tx.description = `${tx.description ?? ''} (${occurrence})`;
-          }
-        }
-      }
-    }
+    disambiguateDescriptions(parsedTx);
 
     // 6. Batch duplicate check: find min and max date to load existing records in date range
     const dates = parsedTx.map((tx) => tx.date.getTime());
@@ -119,14 +67,6 @@ export async function POST(req: Request) {
         }
       }
     });
-
-    // Generate unique lookup hash for existing transactions
-    // SQLite stores dates as ISO strings/integers, let's normalize check key
-    const makeHash = (date: Date, payee: string, amount: number, description: string | null | undefined) => {
-      const dateStr = date.toISOString().split('T')[0]; // compare purely by calendar day
-      const roundedAmount = Math.round(amount * 100) / 100;
-      return `${dateStr}_${payee.toLowerCase().trim()}_${roundedAmount.toFixed(2)}_${(description ?? '').toLowerCase().trim()}`;
-    };
 
     const existingSet = new Set(
       existingTransactions.map((tx) => makeHash(tx.date, tx.payee, tx.amount, tx.description))
@@ -184,7 +124,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Import API error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal Server Error' },
+      { success: false, error: error.message || 'Internal Server Error', errorCode: 'ERR_IMPORT_INTERNAL' },
       { status: 500 }
     );
   }
