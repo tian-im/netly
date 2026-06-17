@@ -7,20 +7,38 @@ import { PREFERENCES, getPreference, setPreference } from '@/lib/preferences';
 
 interface PreferencesCardProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
+  initialPreferences?: {
+    defaultCurrency?: string;
+    dateRange?: string;
+    dateFormat?: string;
+    ruleMode?: string;
+  };
 }
 
-export default function PreferencesCard({ showToast }: PreferencesCardProps) {
+export default function PreferencesCard({ showToast, initialPreferences }: PreferencesCardProps) {
   const { locale, setLocale } = useLocaleContext();
   const t = useTranslations('settings');
   const tReports = useTranslations('reports');
+  // WHY: Reusing the existing transactions.rulePrompt translations avoids duplicating
+  // the three option labels (Ask/Always/Never) in the settings namespace.
+  const tTxRulePrompt = useTranslations('transactions.rulePrompt');
 
-  // WHY: Use PREFERENCES defaults for SSR initial state. On mount, the useEffect
-  // reads actual values via getPreference (cookie → localStorage → default).
-  // Explicit <string> generics are needed because as const makes the defaults
-  // literal types (e.g. 'AUD'), which breaks setState with getPreference's string return.
-  const [defaultCurrency, setDefaultCurrency] = useState<string>(PREFERENCES.defaultCurrency.default);
-  const [defaultRange, setDefaultRange] = useState<string>(PREFERENCES.dateRange.default);
-  const [dateFormat, setDateFormat] = useState<string>(PREFERENCES.dateFormat.default);
+  // WHY: Use server-side cookies (via initialPreferences props) as initial state to
+  // eliminate the hydration disabled-flash. On mount, the useEffect re-reads via
+  // getPreference to handle the localStorage migration edge case (cookie missing but
+  // localStorage has a value).
+  const [defaultCurrency, setDefaultCurrency] = useState<string>(
+    initialPreferences?.defaultCurrency ?? PREFERENCES.defaultCurrency.default
+  );
+  const [defaultRange, setDefaultRange] = useState<string>(
+    initialPreferences?.dateRange ?? PREFERENCES.dateRange.default
+  );
+  const [dateFormat, setDateFormat] = useState<string>(
+    initialPreferences?.dateFormat ?? PREFERENCES.dateFormat.default
+  );
+  const [ruleMode, setRuleMode] = useState<string>(
+    initialPreferences?.ruleMode ?? PREFERENCES.ruleMode.default
+  );
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -30,6 +48,7 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
     setDefaultCurrency(getPreference(PREFERENCES.defaultCurrency));
     setDefaultRange(getPreference(PREFERENCES.dateRange));
     setDateFormat(getPreference(PREFERENCES.dateFormat));
+    setRuleMode(getPreference(PREFERENCES.ruleMode));
     setMounted(true);
   }, []);
 
@@ -51,6 +70,17 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
     setDateFormat(fmt);
     setPreference(PREFERENCES.dateFormat, fmt);
     showToast(t('dateFormatSet', { format: `${fmt} (${getFormatExample(fmt)})` }));
+  };
+
+  const handleRuleModeChange = (mode: string) => {
+    setRuleMode(mode);
+    setPreference(PREFERENCES.ruleMode, mode);
+    // WHY: Build a human-readable label for the toast from the transactions.rulePrompt
+    // namespace instead of duplicating mode labels in settings translations.
+    const label = mode === 'ask' ? tTxRulePrompt('rulePromptAsk')
+      : mode === 'always' ? tTxRulePrompt('rulePromptAlways')
+      : tTxRulePrompt('rulePromptNever');
+    showToast(t('ruleModeSet', { mode: label }));
   };
 
   const getFormatExample = (formatStr: string) => {
@@ -86,7 +116,6 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
               id="currency-select"
               value={mounted ? defaultCurrency : PREFERENCES.defaultCurrency.default}
               onChange={handleCurrencyChange}
-              disabled={!mounted}
               className="w-full"
               placeholder={t('currencyLabel')}
             />
@@ -103,7 +132,6 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
               value={mounted ? defaultRange : 'Month'}
               onChange={(e) => handleRangeChange(e.target.value)}
               className="select select-bordered select-sm w-full"
-              disabled={!mounted}
             >
               <option value="Month">{tReports('datePresets.month')}</option>
               <option value="3m">{tReports('datePresets.threeMonths')}</option>
@@ -124,11 +152,28 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
               value={mounted ? dateFormat : 'YYYY-MM-DD'}
               onChange={(e) => handleDateFormatChange(e.target.value)}
               className="select select-bordered select-sm w-full"
-              disabled={!mounted}
             >
               <option value="YYYY-MM-DD">YYYY-MM-DD ({getFormatExample('YYYY-MM-DD')})</option>
               <option value="DD/MM/YYYY">DD/MM/YYYY ({getFormatExample('DD/MM/YYYY')})</option>
               <option value="MM/DD/YYYY">MM/DD/YYYY ({getFormatExample('MM/DD/YYYY')})</option>
+            </select>
+          </div>
+
+          <div className="form-control w-full">
+            <label className="label py-1" htmlFor="rule-mode-select">
+              <span className="label-text text-xs font-bold text-base-content/75">
+                {t('ruleModeLabel')}
+              </span>
+            </label>
+            <select
+              id="rule-mode-select"
+              value={mounted ? ruleMode : PREFERENCES.ruleMode.default}
+              onChange={(e) => handleRuleModeChange(e.target.value)}
+              className="select select-bordered select-sm w-full"
+            >
+              <option value="ask">{tTxRulePrompt('rulePromptAsk')}</option>
+              <option value="always">{tTxRulePrompt('rulePromptAlways')}</option>
+              <option value="never">{tTxRulePrompt('rulePromptNever')}</option>
             </select>
           </div>
 

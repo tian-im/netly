@@ -2,10 +2,22 @@ import { db } from '@/lib/db';
 import { getDatabaseInfo } from '../actions';
 import SettingsClient from './settings-client';
 import { DEFAULT_USER_ID } from '@/lib/constants';
+import { cookies } from 'next/headers';
+import { PREFERENCES, getPreferenceFromCookies } from '@/lib/preferences';
 
 export const revalidate = 0;
 
 export default async function SettingsPage() {
+  const cookieStore = cookies();
+  // WHY: Reading preferences server-side from cookies lets us pass them as props,
+  // eliminating the client-side disabled-flash pattern during hydration.
+  const initialPreferences = {
+    defaultCurrency: getPreferenceFromCookies(cookieStore, PREFERENCES.defaultCurrency),
+    dateRange: getPreferenceFromCookies(cookieStore, PREFERENCES.dateRange),
+    dateFormat: getPreferenceFromCookies(cookieStore, PREFERENCES.dateFormat),
+    ruleMode: getPreferenceFromCookies(cookieStore, PREFERENCES.ruleMode),
+  };
+
   const [accountsCount, transactionsCount, rulesCount, dbInfo, credentials, mcpTokens, txRange] = await Promise.all([
     db.account.count(),
     db.transaction.count(),
@@ -61,6 +73,7 @@ export default async function SettingsPage() {
       initialMcpTokens={serializedMcpTokens}
       earliestTxDate={earliestTxDate}
       latestTxDate={latestTxDate}
+      initialPreferences={initialPreferences}
     />
   );
 }

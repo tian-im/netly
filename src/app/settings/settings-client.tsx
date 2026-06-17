@@ -34,6 +34,12 @@ interface SettingsClientProps {
   initialMcpTokens: McpTokenInfo[];
   earliestTxDate: string | null;
   latestTxDate: string | null;
+  initialPreferences?: {
+    defaultCurrency?: string;
+    dateRange?: string;
+    dateFormat?: string;
+    ruleMode?: string;
+  };
 }
 
 export default function SettingsClient({
@@ -45,6 +51,7 @@ export default function SettingsClient({
   initialMcpTokens,
   earliestTxDate,
   latestTxDate,
+  initialPreferences,
 }: SettingsClientProps) {
   const t = useTranslations('settings');
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -122,7 +129,7 @@ export default function SettingsClient({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* App Preferences Card */}
-        <PreferencesCard showToast={showToast} />
+        <PreferencesCard showToast={showToast} initialPreferences={initialPreferences} />
 
         {/* Database Info Card */}
         <DatabaseInfoCard dbInfo={dbInfo} showToast={showToast} />

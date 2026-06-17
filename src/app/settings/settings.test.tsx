@@ -221,6 +221,18 @@ describe('PreferencesCard', () => {
     await userEvent.selectOptions(langSelect, 'zh');
     expect(mockSetLocale).toHaveBeenCalledWith('zh');
   });
+
+  it('renders rule mode dropdown and updates preference on change', async () => {
+    renderSettingsClient();
+    const ruleModeSelect = screen.getByLabelText('Auto-Categorization Mode') as HTMLSelectElement;
+
+    await waitFor(() => expect(ruleModeSelect.disabled).toBe(false));
+    expect(ruleModeSelect.value).toBe('ask');
+
+    await userEvent.selectOptions(ruleModeSelect, 'always');
+    expect(localStorage.getItem('netly_rule_mode')).toBe('always');
+    expect(screen.getByText(/Auto-categorization mode set to/)).toBeDefined();
+  });
 });
 
 describe('DatabaseInfoCard', () => {

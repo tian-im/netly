@@ -618,6 +618,7 @@ export async function resetDatabase() {
   revalidatePath('/transactions');
   revalidatePath('/reports');
   revalidatePath('/import');
+  revalidatePath('/settings');
 }
 
 export async function createCategory(name: string, type: string, cashFlowType: string) {
