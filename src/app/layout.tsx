@@ -3,7 +3,7 @@ import './globals.css';
 import LayoutClient from './layout-client';
 import { cookies, headers } from 'next/headers';
 import { parseAcceptLanguage } from '@/lib/locale';
-import { PREFERENCES, getPreferenceFromCookies } from '@/lib/preferences';
+import { PREFERENCES } from '@/lib/preferences';
 
 export const metadata: Metadata = {
   title: 'Netly Ledger - Financial Statements & Bank CSV Analyzer',
@@ -23,17 +23,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const cookieStore = cookies();
-  // WHY: We read the cookie key from PREFERENCES to keep it centralised, but
-  // still fall back to Accept-Language for first-time visitors who haven't set
-  // a preference yet. getPreferenceFromCookies has a hardcoded default that
-  // would bypass the browser-language check, so we read the raw cookie instead.
+  // WHY: We read the raw cookie instead of using the unified preference reader
+  // because Accept-Language provides a better default than any hardcoded fallback.
   const cookieLocale = cookieStore.get(PREFERENCES.locale.key)?.value;
   const headerLocale = parseAcceptLanguage(headers().get('Accept-Language'));
   const locale = cookieLocale || headerLocale;
-  const theme = cookieStore.get('netly_theme')?.value || 'night';
-
   return (
-    <html lang={locale} data-theme={theme} className="h-full" suppressHydrationWarning>
+    <html lang={locale} data-theme="night" className="h-full">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -41,7 +37,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="h-full bg-base-300">
-        <LayoutClient ssrLocale={locale} ssrTheme={theme}>
+        <LayoutClient ssrLocale={locale}>
           {children}
         </LayoutClient>
       </body>

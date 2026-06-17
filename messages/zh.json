@@ -40,11 +40,7 @@
     "runningLocally": "本地运行中",
     "dbPath": "SQLite 数据库: prisma/dev.db",
     "languageLabel": "语言：",
-    "languageToggleAriaLabel": "切换语言",
-    "themeNight": "暗夜",
-    "themeLight": "明亮",
-    "themeToggleLight": "切换为浅色主题",
-    "themeToggleDark": "切换为深色主题"
+    "languageToggleAriaLabel": "切换语言"
   },
   "dashboard": {
     "title": "财务概览",

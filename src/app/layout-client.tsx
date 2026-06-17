@@ -16,20 +16,20 @@ function MobileNavBrand() {
   );
 }
 
-export default function LayoutClient({ children, ssrLocale, ssrTheme }: { children: React.ReactNode; ssrLocale?: string; ssrTheme?: string }) {
+export default function LayoutClient({ children, ssrLocale }: { children: React.ReactNode; ssrLocale?: string }) {
   const pathname = usePathname();
   const isPublicPage = pathname === '/login' || pathname === '/setup';
 
   if (isPublicPage) {
     return (
-      <LocaleProvider ssrLocale={ssrLocale} ssrTheme={ssrTheme}>
+      <LocaleProvider ssrLocale={ssrLocale}>
         {children}
       </LocaleProvider>
     );
   }
 
   return (
-    <LocaleProvider ssrLocale={ssrLocale} ssrTheme={ssrTheme}>
+    <LocaleProvider ssrLocale={ssrLocale}>
       <div className="drawer lg:drawer-open h-full">
         <input id="nav-drawer" type="checkbox" className="drawer-toggle" />
 

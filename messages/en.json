@@ -40,11 +40,7 @@
     "runningLocally": "Running Locally",
     "dbPath": "SQLite database: prisma/dev.db",
     "languageLabel": "Language:",
-    "languageToggleAriaLabel": "Language Toggler",
-    "themeNight": "Night",
-    "themeLight": "Light",
-    "themeToggleLight": "Switch to light theme",
-    "themeToggleDark": "Switch to dark theme"
+    "languageToggleAriaLabel": "Language Toggler"
   },
   "dashboard": {
     "title": "Dashboard Overview",
