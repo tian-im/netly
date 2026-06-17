@@ -4,11 +4,11 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { NextIntlClientProvider } from 'next-intl';
 import en from '../../messages/en.json';
 import zh from '../../messages/zh.json';
+import { PREFERENCES, setPreference } from '@/lib/preferences';
 
 type Locale = 'en' | 'zh';
 type Theme = 'night' | 'light';
 const messages: Record<Locale, any> = { en, zh };
-const LOCALE_COOKIE = 'netly_locale';
 const THEME_COOKIE = 'netly_theme';
 
 const LocaleContext = createContext<{
@@ -45,12 +45,15 @@ export function LocaleProvider({ children, ssrLocale = 'en', ssrTheme = 'night' 
     }
   }, [locale]);
 
+  // WHY: Using the unified setPreference ensures consistent dual-write to
+  // localStorage and cookie, with the cookie key defined in one place (PREFERENCES).
   const setAndPersist = (newLocale: Locale) => {
     setLocale(newLocale);
-    localStorage.setItem(LOCALE_COOKIE, newLocale);
-    document.cookie = `${LOCALE_COOKIE}=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
+    setPreference(PREFERENCES.locale, newLocale);
   };
 
+  // Theme is excluded from the preferences refactor (per plan). It already has
+  // cookie-first behavior via a different mechanism. The dual-write stays as-is.
   const setAndPersistTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem(THEME_COOKIE, newTheme);

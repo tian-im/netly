@@ -3,7 +3,7 @@ import { Sliders } from 'lucide-react';
 import { useLocaleContext } from '../../providers';
 import { useTranslations } from 'next-intl';
 import CurrencySelector from '@/app/components/CurrencySelector';
-import { DEFAULT_CURRENCY } from '@/lib/currencies';
+import { PREFERENCES, getPreference, setPreference } from '@/lib/preferences';
 
 interface PreferencesCardProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
@@ -14,39 +14,42 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
   const t = useTranslations('settings');
   const tReports = useTranslations('reports');
 
-  const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
-  const [defaultRange, setDefaultRange] = useState('Month');
-  const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
+  // WHY: Use PREFERENCES defaults for SSR initial state. On mount, the useEffect
+  // reads actual values via getPreference (cookie → localStorage → default).
+  // Explicit <string> generics are needed because as const makes the defaults
+  // literal types (e.g. 'AUD'), which breaks setState with getPreference's string return.
+  const [defaultCurrency, setDefaultCurrency] = useState<string>(PREFERENCES.defaultCurrency.default);
+  const [defaultRange, setDefaultRange] = useState<string>(PREFERENCES.dateRange.default);
+  const [dateFormat, setDateFormat] = useState<string>(PREFERENCES.dateFormat.default);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedCurrency = localStorage.getItem('netly_pref_default_currency') || DEFAULT_CURRENCY;
-    const savedRange = localStorage.getItem('netly_pref_default_date_range') || 'Month';
-    const savedFormat = localStorage.getItem('netly_pref_date_format') || 'YYYY-MM-DD';
-
-    setDefaultCurrency(savedCurrency);
-    setDefaultRange(savedRange);
-    setDateFormat(savedFormat);
+    // WHY: Using getPreference instead of raw localStorage.getItem ensures
+    // the read follows the unified cookie-first hierarchy and handles
+    // one-time migration for legacy localStorage-only values.
+    setDefaultCurrency(getPreference(PREFERENCES.defaultCurrency));
+    setDefaultRange(getPreference(PREFERENCES.dateRange));
+    setDateFormat(getPreference(PREFERENCES.dateFormat));
     setMounted(true);
   }, []);
 
+  // WHY: Using setPreference ensures dual-write to both localStorage and
+  // cookie, with the cookie key defined in one place (PREFERENCES).
   const handleCurrencyChange = (curr: string) => {
     setDefaultCurrency(curr);
-    localStorage.setItem('netly_pref_default_currency', curr);
+    setPreference(PREFERENCES.defaultCurrency, curr);
     showToast(t('currencySet', { currency: curr }));
   };
 
   const handleRangeChange = (range: string) => {
     setDefaultRange(range);
-    localStorage.setItem('netly_pref_default_date_range', range);
-    // Write cookie with 1-year max age so server components can read it on load
-    document.cookie = `netly_pref_default_date_range=${range}; path=/; max-age=31536000; SameSite=Lax`;
+    setPreference(PREFERENCES.dateRange, range);
     showToast(t('periodSet', { period: range }));
   };
 
   const handleDateFormatChange = (fmt: string) => {
     setDateFormat(fmt);
-    localStorage.setItem('netly_pref_date_format', fmt);
+    setPreference(PREFERENCES.dateFormat, fmt);
     showToast(t('dateFormatSet', { format: `${fmt} (${getFormatExample(fmt)})` }));
   };
 
@@ -81,7 +84,7 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
             </label>
             <CurrencySelector
               id="currency-select"
-              value={mounted ? defaultCurrency : DEFAULT_CURRENCY}
+              value={mounted ? defaultCurrency : PREFERENCES.defaultCurrency.default}
               onChange={handleCurrencyChange}
               disabled={!mounted}
               className="w-full"

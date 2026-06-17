@@ -5,6 +5,7 @@ import {
   isValidCurrencyCode,
   getCurrencyInfo,
 } from './iso-4217-data';
+import { PREFERENCES, getPreference } from './preferences';
 
 /**
  * Default currency code for the application (Australian Dollar).
@@ -46,18 +47,18 @@ export function getCurrencySymbol(currency: string): string {
 }
 
 /**
- * Read the user's preferred default currency from localStorage.
- * Falls back to DEFAULT_CURRENCY if nothing is stored or the stored value is invalid.
- * Only available in browser environments — returns DEFAULT_CURRENCY during SSR.
+ * Read the user's preferred default currency.
+ * Delegates to the unified preferences utility for cookie-first reads.
+ *
+ * @deprecated Use `getPreference(PREFERENCES.defaultCurrency)` from `@/lib/preferences`
+ *             for client-side reads, or the `preferredCurrency` prop from server components.
+ *             This wrapper is kept for backward compatibility and validates the value against
+ *             supported currencies.
  */
 export function getPreferredCurrency(): string {
-  if (typeof window === 'undefined') return DEFAULT_CURRENCY;
-  try {
-    const saved = localStorage.getItem('netly_pref_default_currency');
-    if (saved && SUPPORTED_CURRENCIES.has(saved)) return saved;
-  } catch {
-    // localStorage may throw in some environments (private browsing, storage full)
-  }
+  const val = getPreference(PREFERENCES.defaultCurrency);
+  // Validate the value against supported currencies (legacy behavior)
+  if (SUPPORTED_CURRENCIES.has(val)) return val;
   return DEFAULT_CURRENCY;
 }
 

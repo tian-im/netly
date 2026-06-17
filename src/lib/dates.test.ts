@@ -49,6 +49,13 @@ describe('getPreferredDateRange', () => {
   beforeEach(() => {
     vi.stubGlobal('window', undefined);
     vi.restoreAllMocks();
+    // Clear cookies and localStorage to prevent cross-test leakage
+    document.cookie.split(';').forEach((c) => {
+      const eqIdx = c.indexOf('=');
+      const name = eqIdx > 0 ? c.substring(0, eqIdx).trim() : c.trim();
+      document.cookie = `${name}=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    });
+    localStorage.clear();
   });
 
   it('returns Month during SSR (no window)', () => {

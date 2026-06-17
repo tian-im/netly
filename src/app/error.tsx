@@ -2,19 +2,18 @@
 
 import { useEffect } from 'react';
 import { buildDashboardUrl } from '@/lib/links';
+import { PREFERENCES, getPreference } from '@/lib/preferences';
 
 const TRANSLATIONS = {
   en: { title: 'Application Error', desc: 'An unexpected error occurred in the system.', tryAgain: 'Try Again', dashboard: 'Dashboard' },
   zh: { title: '应用错误', desc: '系统发生了意外错误，请稍后重试。', tryAgain: '重试', dashboard: '仪表盘' },
 } as const;
 
+// WHY: Using the unified getPreference instead of ad-hoc document.cookie regex.
+// This follows the cookie-first hierarchy and keeps the cookie key in one place.
 function getInitialLocale(): 'en' | 'zh' {
-  if (typeof document !== 'undefined') {
-    const match = document.cookie.match(/(?:^|;\s*)netly_locale=(\w+)/);
-    if (match && (match[1] === 'en' || match[1] === 'zh')) return match[1];
-    const saved = localStorage.getItem('netly_locale');
-    if (saved === 'en' || saved === 'zh') return saved;
-  }
+  const val = getPreference(PREFERENCES.locale);
+  if (val === 'zh') return 'zh';
   return 'en';
 }
 

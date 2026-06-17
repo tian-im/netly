@@ -6,6 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { updateTransactionCategory, bulkUpdateTransactionsCategory, exportAllTransactions } from '../actions';
 import { translateError } from '@/lib/translateError';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
+import { PREFERENCES, getPreference, setPreference } from '@/lib/preferences';
 import { Account, Category, Transaction, SortConfig } from './types';
 import FilterBar from './components/FilterBar';
 import TransactionTable from './components/TransactionTable';
@@ -25,6 +26,7 @@ interface TransactionsClientProps {
   initialTotalCount: number;
   initialAccounts: Account[];
   initialCategories: Category[];
+  preferredCurrency?: string;
 }
 
 export default function TransactionsClient({
@@ -32,6 +34,7 @@ export default function TransactionsClient({
   initialTotalCount,
   initialAccounts,
   initialCategories,
+  preferredCurrency,
 }: TransactionsClientProps) {
   const t = useTranslations('transactions');
   const tCommon = useTranslations('common');
@@ -105,9 +108,10 @@ export default function TransactionsClient({
     timeoutIdsRef.current.push(timer);
   };
 
-  // Initial load preferences
+  // WHY: Use the unified getPreference instead of raw localStorage.getItem.
+  // This follows the cookie-first hierarchy and keeps the cookie key in one place.
   useEffect(() => {
-    const saved = localStorage.getItem('netly_rule_mode');
+    const saved = getPreference(PREFERENCES.ruleMode);
     if (saved === 'always' || saved === 'never' || saved === 'ask') {
       setRuleMode(saved);
     }
@@ -140,7 +144,9 @@ export default function TransactionsClient({
 
   const handleRuleModeChange = (mode: 'ask' | 'always' | 'never') => {
     setRuleMode(mode);
-    localStorage.setItem('netly_rule_mode', mode);
+    // WHY: Using setPreference ensures dual-write to localStorage and cookie,
+    // replacing the previous localStorage-only write.
+    setPreference(PREFERENCES.ruleMode, mode);
     showToast(
       `${t('rulePrompt.rulePromptPrefs')}: ${
         mode === 'ask'
@@ -342,6 +348,7 @@ export default function TransactionsClient({
         ruleMode={ruleMode}
         onFilterChange={handleFilterChange}
         onRuleModeChange={handleRuleModeChange}
+        preferredCurrency={preferredCurrency}
       />
 
       {/* Ledger Table */}

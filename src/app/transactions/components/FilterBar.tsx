@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Search, Settings, Check } from 'lucide-react';
 import { Account, Category } from '../types';
 import { translateCategoryType } from '@/lib/translate-category';
-import { getPreferredCurrency, DEFAULT_CURRENCY } from '@/lib/currencies';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface FilterBarProps {
   accounts: Account[];
@@ -28,6 +28,7 @@ interface FilterBarProps {
     isReviewed?: string;
   }) => void;
   onRuleModeChange: (mode: 'ask' | 'always' | 'never') => void;
+  preferredCurrency?: string;
 }
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -45,6 +46,7 @@ export default function FilterBar({
   ruleMode,
   onFilterChange,
   onRuleModeChange,
+  preferredCurrency = DEFAULT_CURRENCY,
 }: FilterBarProps) {
   const t = useTranslations('transactions');
 
@@ -57,10 +59,10 @@ export default function FilterBar({
   const uniqueCurrencies = useMemo(() => {
     const fromAccounts = Array.from(new Set(accounts.map((a) => a.currency).filter(Boolean))).sort();
     if (fromAccounts.length === 0) {
-      return [mounted ? getPreferredCurrency() : DEFAULT_CURRENCY];
+      return [preferredCurrency];
     }
     return fromAccounts;
-  }, [accounts, mounted]);
+  }, [accounts, preferredCurrency]);
 
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);

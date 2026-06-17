@@ -3,6 +3,7 @@ import TransactionsClient from './transactions-client';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { mapPreferenceToTransactionPeriod } from '@/lib/dates';
+import { PREFERENCES, getPreferenceFromCookies } from '@/lib/preferences';
 
 export const revalidate = 0; // Always fresh
 
@@ -31,13 +32,17 @@ interface PageProps {
 }
 
 export default async function TransactionsPage({ searchParams }: PageProps) {
-  // WHY: Reading the date-range preference from a cookie instead of localStorage
-  // lets the server redirect with the correct default dateRange on first render,
-  // avoiding a client-side useEffect → URL-push → second-SSR cycle.
+  // WHY: Reading preferences from cookies instead of localStorage lets the server
+  // pass them as props to the client, eliminating client-side getPreferredCurrency()
+  // calls and avoiding a useEffect → URL-push → second-SSR cycle.
+  const cookieStore = cookies();
+  const preferredCurrency = getPreferenceFromCookies(cookieStore, PREFERENCES.defaultCurrency);
+
   const dateRange = searchParams.dateRange;
   if (dateRange === undefined) {
-    const cookieStore = cookies();
-    const prefRange = cookieStore.get('netly_pref_default_date_range')?.value || 'Month';
+    // WHY: Using PREFERENCES.dateRange.key instead of a raw string keeps the cookie
+    // key centralised — if the key changes in preferences.ts, this stays in sync.
+    const prefRange = cookieStore.get(PREFERENCES.dateRange.key)?.value || PREFERENCES.dateRange.default;
     const defaultRange = mapPreferenceToTransactionPeriod(prefRange);
 
     const params = new URLSearchParams();
@@ -85,6 +90,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
       initialTotalCount={totalCount}
       initialAccounts={serializedAccounts}
       initialCategories={serializedCategories}
+      preferredCurrency={preferredCurrency}
     />
   );
 }

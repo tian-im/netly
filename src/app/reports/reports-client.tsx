@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
-import { DEFAULT_CURRENCY, getPreferredCurrency } from '@/lib/currencies';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Download, RefreshCw } from 'lucide-react';
 
 // Custom components
@@ -24,7 +24,11 @@ interface Toast {
   type: 'success' | 'error';
 }
 
-export default function ReportsClient() {
+export default function ReportsClient({
+  preferredCurrency = DEFAULT_CURRENCY,
+}: {
+  preferredCurrency?: string;
+} = {}) {
   const t = useTranslations('reports');
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -39,10 +43,10 @@ export default function ReportsClient() {
   // lookups instead of a useMemo fallback — no dead code paths.
   const defaultStartStr = searchParams.get('start')!;
   const defaultEndStr = searchParams.get('end')!;
-  // Memoize currency fallback only (getPreferredCurrency reads localStorage)
+  // Memoize currency fallback using the server-provided preferredCurrency (from cookie)
   const defaultCur = useMemo(
-    () => searchParams.get('cur') || (mounted ? getPreferredCurrency() : DEFAULT_CURRENCY),
-    [searchParams, mounted],
+    () => searchParams.get('cur') || (mounted ? preferredCurrency : DEFAULT_CURRENCY),
+    [searchParams, mounted, preferredCurrency],
   );
 
   const urlComparePrior = searchParams.get('comparePrior') === 'true';
@@ -191,13 +195,13 @@ export default function ReportsClient() {
 
   // Available currencies
   const reportCurrencies = useMemo(() => {
-    if (!reports) return [mounted ? getPreferredCurrency() : DEFAULT_CURRENCY];
+    if (!reports) return [mounted ? preferredCurrency : DEFAULT_CURRENCY];
     return Array.from(new Set([
       ...Object.keys(reports.balanceSheet.totals),
       ...Object.keys(reports.incomeStatement.totals),
       ...Object.keys(reports.cashFlowStatement.totals)
     ]));
-  }, [reports, mounted]);
+  }, [reports, mounted, preferredCurrency]);
 
   // Auto-adjust currency selection if unavailable in current reports
   useEffect(() => {

@@ -12,6 +12,7 @@ import { getPeriodDates } from '@/lib/links';
 import type { PeriodType } from '@/lib/links';
 import { cookies } from 'next/headers';
 import { mapPreferenceToDashboardPeriod } from '@/lib/dates';
+import { PREFERENCES, getPreferenceFromCookies } from '@/lib/preferences';
 
 export const revalidate = 0; // Disable caching so dashboard is always up-to-date
 
@@ -26,7 +27,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // lets the server produce the correct default period on first render, avoiding a
   // client-side useEffect → URL-push → second-SSR cycle.
   const cookieStore = cookies();
-  const prefRange = cookieStore.get('netly_pref_default_date_range')?.value || 'Month';
+  // WHY: Using PREFERENCES.dateRange.key instead of a raw string keeps the cookie
+  // key centralised — if the key changes in preferences.ts, this stays in sync.
+  const prefRange = cookieStore.get(PREFERENCES.dateRange.key)?.value || PREFERENCES.dateRange.default;
   const resolvedDefault = mapPreferenceToDashboardPeriod(prefRange);
   const period = (searchParams.period || resolvedDefault) as PeriodType;
   const accountsList = await getAccounts();
@@ -99,6 +102,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       end: monthEnd,
     };
   });
+
+  // Read user's preferred default currency from cookie (set via PreferencesCard).
+  // This is used as a fallback in the client when no accounts exist, replacing
+  // the old client-side getPreferredCurrency() call.
+  const preferredCurrency = getPreferenceFromCookies(cookieStore, PREFERENCES.defaultCurrency);
 
   // Compute default currency (most common) so the client doesn't duplicate this logic
   const activeCurrencies = Array.from(new Set(mappedAccounts.map((a) => a.currency || DEFAULT_CURRENCY)));
@@ -191,6 +199,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       prevIS={prevIS}
       netWorthTrendByCurrency={netWorthTrendByCurrency}
       defaultCurrency={defaultCurrency}
+      preferredCurrency={preferredCurrency}
     />
   );
 }

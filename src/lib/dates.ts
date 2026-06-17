@@ -1,4 +1,5 @@
 import { PeriodType } from './links';
+import { PREFERENCES, getPreference } from './preferences';
 
 /**
  * Formats a Date object, string, or number representation of a date
@@ -21,22 +22,17 @@ export function formatDateISO(date: Date | string | number = new Date()): string
 export type PreferenceDateRange = 'Month' | '3m' | '6m' | 'ytd' | '12m';
 
 /**
- * Read the user's preferred default date range from localStorage.
- * Falls back to 'Month' if not set or invalid.
- * Only available in browser environments — returns 'Month' during SSR.
+ * Read the user's preferred default date range.
+ * Delegates to the unified preferences utility for cookie-first reads.
  *
- * WHY: Client components use getPreferredDateRange to read from localStorage for
- * UI state initialization or fallbacks when query params are unavailable.
+ * @deprecated Use `getPreference(PREFERENCES.dateRange)` from `@/lib/preferences`
+ *             for client-side reads. This wrapper is kept for backward compatibility
+ *             and validates the value against valid date ranges.
  */
 export function getPreferredDateRange(): PreferenceDateRange {
-  if (typeof window === 'undefined') return 'Month';
-  try {
-    const saved = localStorage.getItem('netly_pref_default_date_range');
-    if (saved === 'Month' || saved === '3m' || saved === '6m' || saved === 'ytd' || saved === '12m') {
-      return saved as PreferenceDateRange;
-    }
-  } catch {
-    // localStorage may throw in some environments
+  const val = getPreference(PREFERENCES.dateRange);
+  if (val === 'Month' || val === '3m' || val === '6m' || val === 'ytd' || val === '12m') {
+    return val as PreferenceDateRange;
   }
   return 'Month';
 }

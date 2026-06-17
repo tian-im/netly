@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getPeriodDates } from '@/lib/links';
 import { mapPreferenceToDashboardPeriod } from '@/lib/dates';
+import { PREFERENCES, getPreferenceFromCookies } from '@/lib/preferences';
 
 export const revalidate = 0; // Disable caching so reports are always fresh
 
@@ -23,9 +24,15 @@ export default function ReportsPage({ searchParams }: PageProps) {
   const start = searchParams.start;
   const end = searchParams.end;
 
+  const cookieStore = cookies();
+  // WHY: Reading the preferred currency from the cookie lets the server pass it
+  // as a prop to the client, eliminating the client-side getPreferredCurrency() call.
+  const preferredCurrency = getPreferenceFromCookies(cookieStore, PREFERENCES.defaultCurrency);
+
   if (!start || !end) {
-    const cookieStore = cookies();
-    const prefRange = cookieStore.get('netly_pref_default_date_range')?.value || 'Month';
+    // WHY: Using PREFERENCES.dateRange.key instead of a raw string keeps the cookie
+    // key centralised — if the key changes in preferences.ts, this stays in sync.
+    const prefRange = cookieStore.get(PREFERENCES.dateRange.key)?.value || PREFERENCES.dateRange.default;
     const periodKey = mapPreferenceToDashboardPeriod(prefRange);
     const now = new Date();
     const { firstDay, lastDay } = getPeriodDates(periodKey, now);
@@ -35,7 +42,8 @@ export default function ReportsPage({ searchParams }: PageProps) {
     const params = new URLSearchParams();
     params.set('start', startStr);
     params.set('end', endStr);
-    if (searchParams.cur) params.set('cur', searchParams.cur);
+    // If no cur param is present, use the preferred currency from the cookie
+    params.set('cur', searchParams.cur || preferredCurrency);
     if (searchParams.comparePrior) params.set('comparePrior', searchParams.comparePrior);
 
     redirect(`/reports?${params.toString()}`);
@@ -47,7 +55,7 @@ export default function ReportsPage({ searchParams }: PageProps) {
         <span className="loading loading-spinner loading-md text-primary"></span>
       </div>
     }>
-      <ReportsClient />
+      <ReportsClient preferredCurrency={preferredCurrency} />
     </Suspense>
   );
 }

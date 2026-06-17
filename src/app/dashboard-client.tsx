@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
-import { getCurrencySymbol, DEFAULT_CURRENCY, getPreferredCurrency } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
 import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl, buildDashboardUrl, buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 
@@ -78,6 +78,8 @@ interface DashboardClientProps {
   netWorthTrendByCurrency: Record<string, { date: string; value: number }[]>;
   /** Server-computed default currency (most common across accounts). */
   defaultCurrency: string;
+  /** User's preferred default currency from cookie (fallback when no accounts). */
+  preferredCurrency?: string;
 }
 
 export default function DashboardClient({
@@ -93,6 +95,7 @@ export default function DashboardClient({
   prevIS,
   netWorthTrendByCurrency,
   defaultCurrency: serverDefaultCurrency,
+  preferredCurrency = DEFAULT_CURRENCY,
 }: DashboardClientProps) {
   const t = useTranslations('dashboard');
   const tAccounts = useTranslations('accounts');
@@ -108,7 +111,7 @@ export default function DashboardClient({
   // Unified set of all active currencies across accounts
   const activeCurrencies = useMemo(() => {
     if (accounts.length === 0 && isClient) {
-      return [getPreferredCurrency()];
+      return [preferredCurrency];
     }
     if (accounts.length === 0) {
       return [DEFAULT_CURRENCY];
@@ -127,11 +130,12 @@ export default function DashboardClient({
     setSelectedVisualCurrency(defaultCurrency);
   }, [defaultCurrency]);
   const currentVisualCurrency = useMemo(() => {
-    const fallback = isClient ? getPreferredCurrency() : DEFAULT_CURRENCY;
+    // WHY: Use the server-provided preferredCurrency (from cookie) instead of
+    // the old client-side getPreferredCurrency() which read localStorage.
     return activeCurrencies.includes(selectedVisualCurrency)
       ? selectedVisualCurrency
-      : (activeCurrencies[0] || fallback);
-  }, [activeCurrencies, selectedVisualCurrency, isClient]);
+      : (activeCurrencies[0] || preferredCurrency);
+  }, [activeCurrencies, selectedVisualCurrency, preferredCurrency]);
   const symbol = getCurrencySymbol(currentVisualCurrency);
 
   const now = useMemo(() => new Date(), []);

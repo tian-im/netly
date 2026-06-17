@@ -89,7 +89,8 @@ function makeAccount(id: string, overrides: Record<string, any> = {}) {
 function renderAccountsClient(
   initialAccounts: any[] = [],
   transactionSums: Record<string, number> = {},
-  lastTxDates: Record<string, string | null> = {}
+  lastTxDates: Record<string, string | null> = {},
+  preferredCurrency?: string
 ) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
@@ -97,6 +98,7 @@ function renderAccountsClient(
         initialAccounts={initialAccounts}
         initialTransactionSums={transactionSums}
         initialLastTxDates={lastTxDates}
+        preferredCurrency={preferredCurrency}
       />
     </NextIntlClientProvider>
   );
@@ -700,9 +702,8 @@ describe('AccountsClient — create form currency sync', () => {
     expect(select.value).toBe(DEFAULT_CURRENCY);
   });
 
-  it('renders with localStorage preference after mount when set', async () => {
-    localStorage.setItem('netly_pref_default_currency', 'EUR');
-    renderAccountsClient();
+  it('renders with preferredCurrency prop after mount when set', async () => {
+    renderAccountsClient([], {}, {}, 'EUR');
     const select = await screen.findByTestId('new-account-currency') as HTMLSelectElement;
     expect(select.value).toBe('EUR');
   });

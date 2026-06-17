@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocaleContext } from '@/app/providers';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
-import { getCurrencySymbol, DEFAULT_CURRENCY, getPreferredCurrency } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import CurrencySelector from '@/app/components/CurrencySelector';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
@@ -22,6 +22,7 @@ interface AccountsClientProps {
   initialAccounts: Account[];
   initialTransactionSums: Record<string, number>;
   initialLastTxDates: Record<string, string | null>;
+  preferredCurrency?: string;
 }
 
 interface Toast {
@@ -34,6 +35,7 @@ export default function AccountsClient({
   initialAccounts,
   initialTransactionSums,
   initialLastTxDates,
+  preferredCurrency = DEFAULT_CURRENCY,
 }: AccountsClientProps) {
   const [accounts, setAccounts] = useState(initialAccounts);
   const [transactionSums, setTransactionSums] = useState(initialTransactionSums);
@@ -64,11 +66,11 @@ export default function AccountsClient({
   const [newAccBalance, setNewAccBalance] = useState('');
   const [newAccCurrency, setNewAccCurrency] = useState('');
 
-  // After mount, read user's preferred currency from localStorage
+  // After mount, initialize the create-form currency field to the user's preference
   useEffect(() => {
     setMounted(true);
-    setNewAccCurrency(getPreferredCurrency());
-  }, []);
+    setNewAccCurrency(preferredCurrency);
+  }, [preferredCurrency]);
 
   // Edit Modal State
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -220,7 +222,7 @@ export default function AccountsClient({
         setSearchTerm('');
         setNewAccName('');
         setNewAccBalance('');
-        setNewAccCurrency(getPreferredCurrency());
+        setNewAccCurrency(preferredCurrency);
         setNewAccType('ASSET');
         showToast(t('createdSuccess', { name: created.name }));
       } catch (err: any) {

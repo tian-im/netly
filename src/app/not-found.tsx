@@ -1,19 +1,18 @@
 'use client';
 
 import { buildDashboardUrl } from '@/lib/links';
+import { PREFERENCES, getPreference } from '@/lib/preferences';
 
 const TRANSLATIONS = {
   en: { title: 'Page Not Found', desc: 'The page you are looking for does not exist or has been moved.', goBack: 'Go back to Dashboard' },
   zh: { title: '页面未找到', desc: '您访问的页面不存在或已被移动。', goBack: '返回仪表盘' },
 } as const;
 
+// WHY: Using the unified getPreference instead of ad-hoc document.cookie regex.
+// This follows the cookie-first hierarchy and keeps the cookie key in one place.
 function getInitialLocale(): 'en' | 'zh' {
-  if (typeof document !== 'undefined') {
-    const match = document.cookie.match(/(?:^|;\s*)netly_locale=(\w+)/);
-    if (match && (match[1] === 'en' || match[1] === 'zh')) return match[1];
-    const saved = localStorage.getItem('netly_locale');
-    if (saved === 'en' || saved === 'zh') return saved;
-  }
+  const val = getPreference(PREFERENCES.locale);
+  if (val === 'zh') return 'zh';
   return 'en';
 }
 

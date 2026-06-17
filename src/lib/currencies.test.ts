@@ -8,10 +8,19 @@ import {
   getPreferredCurrency,
 } from './currencies';
 import { CURRENCY_LIST, isValidCurrencyCode } from './iso-4217-data';
+import { PREFERENCES } from './preferences';
 
 describe('DEFAULT_CURRENCY', () => {
   it('is AUD', () => {
     expect(DEFAULT_CURRENCY).toBe('AUD');
+  });
+
+  // WHY: Cross-check that DEFAULT_CURRENCY stays in sync with
+  // PREFERENCES.defaultCurrency.default. Both are 'AUD' by design (see
+  // preferences.ts circular-dependency comment). If one changes without the
+  // other, this test will fail loudly.
+  it('matches PREFERENCES.defaultCurrency.default to prevent drift', () => {
+    expect(DEFAULT_CURRENCY).toBe(PREFERENCES.defaultCurrency.default);
   });
 });
 
@@ -19,6 +28,13 @@ describe('getPreferredCurrency', () => {
   beforeEach(() => {
     vi.stubGlobal('window', undefined);
     vi.restoreAllMocks();
+    // Clear cookies and localStorage to prevent cross-test leakage
+    document.cookie.split(';').forEach((c) => {
+      const eqIdx = c.indexOf('=');
+      const name = eqIdx > 0 ? c.substring(0, eqIdx).trim() : c.trim();
+      document.cookie = `${name}=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    });
+    localStorage.clear();
   });
 
   it('returns DEFAULT_CURRENCY during SSR (no window)', () => {
