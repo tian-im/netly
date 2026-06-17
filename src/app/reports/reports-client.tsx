@@ -6,7 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
-import { Upload, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 
 // Custom components
 import DateRangePresets from './components/DateRangePresets';
@@ -128,11 +128,18 @@ export default function ReportsClient() {
           const priorStart = new Date(priorStartMs);
           const priorEnd = new Date(priorEndMs);
           
-          const priorStartStr = priorStart.toISOString().split('T')[0];
-          const priorEndStr = priorEnd.toISOString().split('T')[0];
-          
-          const compData = await getFinancialReports(priorStartStr, priorEndStr);
-          setComparisonReports(compData);
+          // WHY: For "All Time" preset (1970-01-01), subtracting 1 day produces Dec 1969
+          // (before the Unix epoch). The server handles this gracefully (returns empty)
+          // but we skip the comparison entirely since a pre-epoch prior period is meaningless.
+          const MIN_EPOCH_MS = Date.UTC(1970, 0, 1); // 0
+          if (priorStartMs >= MIN_EPOCH_MS && priorEndMs >= MIN_EPOCH_MS) {
+            const priorStartStr = priorStart.toISOString().split('T')[0];
+            const priorEndStr = priorEnd.toISOString().split('T')[0];
+            const compData = await getFinancialReports(priorStartStr, priorEndStr);
+            setComparisonReports(compData);
+          } else {
+            setComparisonReports(null);
+          }
         } else {
           setComparisonReports(null);
         }
@@ -242,7 +249,7 @@ export default function ReportsClient() {
           className="btn btn-outline btn-primary btn-sm gap-2"
           disabled={isPending}
         >
-          <Upload className="h-4 w-4" /> {t('exportLedger')}
+          <Download className="h-4 w-4" /> {t('exportLedger')}
         </button>
       </div>
 

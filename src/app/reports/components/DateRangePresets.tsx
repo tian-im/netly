@@ -71,6 +71,12 @@ export default function DateRangePresets({
         break;
       }
       case 'all-time': {
+        // WHY: 1970-01-01 (Unix epoch) is used as the earliest possible date since all
+        // real transaction dates are after this. An ideal implementation would query the
+        // earliest transaction date from the database, but that requires a server round-trip
+        // from this client-only component. For most users the difference is academic since
+        // no transactions exist before 1970. The only practical impact is the URL parameter
+        // showing 1970-01-01 instead of the actual earliest date.
         startStr = '1970-01-01';
         break;
       }

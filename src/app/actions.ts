@@ -530,6 +530,12 @@ export async function getFinancialReports(startDateStr: string, endDateStr: stri
   });
 
   // Fetch the aggregate sum of transaction amounts up to endDate for each account for the Balance Sheet
+  // WHY: We use Prisma groupBy to compute a single synthetic transaction per account (O(1) per account)
+  // instead of passing all raw transactions to generateBalanceSheet (O(n) per account). This makes the
+  // Balance Sheet query efficient even for accounts with thousands of transactions. The synthetic objects
+  // have placeholder IDs ("bs-summary-{accountId}") and no category relation. If generateBalanceSheet is
+  // ever extended to do per-transaction work (e.g. audit trail), this abstraction would break — in that
+  // case we'd need to pass raw transactions instead.
   const balanceSums = await db.transaction.groupBy({
     by: ['accountId'],
     where: {

@@ -46,6 +46,7 @@ export default function TransactionDrillDownModal({
   const tCommon = useTranslations('common');
   const { locale } = useLocaleContext();
   const [transactions, setTransactions] = useState<DisplayTransaction[]>([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState<{ name: string; amount: number }[]>([]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -79,6 +80,20 @@ export default function TransactionDrillDownModal({
         // Sort by date descending
         mapped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+        // Compute category breakdown for cash flow drill-downs
+        // WHY: When viewing cash flow sections (operating/investing/financing), users need to
+        // see which categories contributed to the inflow/outflow totals — not just individual
+        // transactions. The Income Statement panel already drills down per category, so this
+        // brings the same level of detail to the Cash Flow drill-down.
+        const breakdownMap = new Map<string, number>();
+        for (const tx of mapped) {
+          const key = tx.categoryName;
+          breakdownMap.set(key, (breakdownMap.get(key) || 0) + Math.abs(tx.amount));
+        }
+        const breakdown = Array.from(breakdownMap.entries())
+          .map(([name, amount]) => ({ name, amount }))
+          .sort((a, b) => b.amount - a.amount);
+        setCategoryBreakdown(breakdown);
         setTransactions(mapped);
       } catch (err) {
         console.error('Failed to load drill-down transactions:', err);
@@ -118,8 +133,41 @@ export default function TransactionDrillDownModal({
               {t('drillDown.noTransactions')}
             </div>
           ) : (
-            <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
-              <table className="table table-sm table-pin-rows w-full">
+            <>
+              {/* Category breakdown summary — shown when the drill-down spans multiple categories (cash flow) */}
+              {categoryBreakdown.length > 1 && cashFlowSection && (
+                <div className="mb-4 p-3 bg-base-200/50 rounded-lg border border-base-300">
+                  <div className="text-xs font-bold uppercase tracking-wider text-base-content/60 mb-2">
+                    {t('drillDown.categoryBreakdown')}
+                  </div>
+                  <div className="space-y-1.5">
+                    {categoryBreakdown.map((cat) => {
+                      const totalFromBreakdown = categoryBreakdown.reduce((sum, c) => sum + c.amount, 0);
+                      const pct = totalFromBreakdown > 0 ? Math.round((cat.amount / totalFromBreakdown) * 100) : 0;
+                      return (
+                        <div key={cat.name} className="flex justify-between items-center text-xs">
+                          <span className="font-medium truncate max-w-[200px]">{cat.name}</span>
+                          <span className="flex items-center gap-2">
+                            <span className="w-16 h-1.5 bg-base-300 rounded-full overflow-hidden inline-block">
+                              <span
+                                className="h-full bg-primary rounded-full block transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </span>
+                            <span className="font-mono font-semibold w-24 text-right">
+                              {symbol}{cat.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                            </span>
+                            <span className="text-base-content/40 w-8 text-right">({pct}%)</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto max-h-[350px] overflow-y-auto pr-1">
+                <table className="table table-sm table-pin-rows w-full">
                 <thead>
                   <tr className="border-b border-base-200 bg-base-100">
                     <th>{t('drillDown.date')}</th>
@@ -149,6 +197,7 @@ export default function TransactionDrillDownModal({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
 

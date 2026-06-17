@@ -425,7 +425,7 @@
       "liabilitiesDesc": "负债 (欠款、信用卡、贷款)",
       "noAssets": "暂无 {currency} 资产。",
       "noLiabilities": "暂无 {currency} 负债。",
-      "debtToAssetRatio": "资产负债率: {ratio}%",
+      "debtToAssetRatio": "资产负债率：{ratio}%",
       "prior": "上期: "
     },
     "incomeStatement": {
@@ -442,9 +442,11 @@
       "noIncome": "在此期间内未记录任何收入。",
       "noExpenses": "在此期间内未记录任何支出。",
       "savingsRate": "储蓄率: {rate}%",
+      "noIncomeData": "无收入数据 — 无法计算储蓄率。",
       "incomeShort": "收入",
       "expensesShort": "支出",
-      "netIncomeShort": "净收益"
+      "netIncomeShort": "净收益",
+      "priorLabel": "上期: "
     },
     "cashFlow": {
       "title": "现金流量表",
@@ -490,7 +492,8 @@
       "periodRange": "期间：{start} 至 {end}",
       "currencyLabel": "货币：{currency}",
       "loading": "正在检索账目条目...",
-      "uncategorized": "未分类"
+      "uncategorized": "未分类",
+      "categoryBreakdown": "分类明细汇总"
     }
   },
   "settings": {

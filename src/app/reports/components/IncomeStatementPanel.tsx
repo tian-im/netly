@@ -71,7 +71,7 @@ export default function IncomeStatementPanel({
           {t('incomeStatement.netIncomeShort')}: {symbol}{totals.netIncome.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           {priorTotals && (
             <span className="ml-2 pl-2 border-l border-base-300 text-xs text-base-content/50">
-              {t('balanceSheet.prior')}{symbol}{priorTotals.netIncome.toLocaleString(locale, { minimumFractionDigits: 2 })}
+              {t('incomeStatement.priorLabel')}{symbol}{priorTotals.netIncome.toLocaleString(locale, { minimumFractionDigits: 2 })}
             </span>
           )}
         </span>
@@ -91,9 +91,12 @@ export default function IncomeStatementPanel({
               <div className="bg-error h-full transition-all" style={{ width: `${expenseRatio}%` }}></div>
             </div>
             <div className="text-[10px] text-base-content/40 mt-1 text-center">
-              {t('incomeStatement.savingsRate', {
-                rate: totals.totalIncome > 0 ? ((totals.netIncome / totals.totalIncome) * 100).toFixed(1) : '0.0'
-              })}
+              {totals.totalIncome > 0
+                ? t('incomeStatement.savingsRate', {
+                    rate: ((totals.netIncome / totals.totalIncome) * 100).toFixed(1)
+                  })
+                : t('incomeStatement.noIncomeData')
+              }
             </div>
           </div>
         )}

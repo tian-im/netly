@@ -442,9 +442,11 @@
       "noIncome": "No income recorded in range.",
       "noExpenses": "No expenses recorded in range.",
       "savingsRate": "Savings Rate: {rate}%",
+      "noIncomeData": "No income data — savings rate unavailable.",
       "incomeShort": "Income",
       "expensesShort": "Expenses",
-      "netIncomeShort": "NET INCOME"
+      "netIncomeShort": "NET INCOME",
+      "priorLabel": "Prior: "
     },
     "cashFlow": {
       "title": "Statement of Cash Flows",
@@ -490,7 +492,8 @@
       "periodRange": "Period: {start} to {end}",
       "currencyLabel": "Currency: {currency}",
       "loading": "Retrieving ledger entries...",
-      "uncategorized": "Uncategorized"
+      "uncategorized": "Uncategorized",
+      "categoryBreakdown": "Category Breakdown"
     }
   },
   "settings": {
