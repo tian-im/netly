@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { PassKeyInfo, McpTokenInfo } from '@/types/settings';
+import { Sparkles } from 'lucide-react';
+import { buildAccountsUrl, buildImportUrl } from '@/lib/links';
 import PassKeySection from './components/PassKeySection';
 import McpSection from './components/McpSection';
 import PreferencesCard from './components/PreferencesCard';
@@ -29,6 +32,8 @@ interface SettingsClientProps {
   };
   passKeys: PassKeyInfo[];
   initialMcpTokens: McpTokenInfo[];
+  earliestTxDate: string | null;
+  latestTxDate: string | null;
 }
 
 export default function SettingsClient({
@@ -38,16 +43,20 @@ export default function SettingsClient({
   dbInfo,
   passKeys,
   initialMcpTokens,
+  earliestTxDate,
+  latestTxDate,
 }: SettingsClientProps) {
   const t = useTranslations('settings');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdRef = useRef(0);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const id = crypto.randomUUID();
+    toastIdRef.current += 1;
+    const id = `toast-${toastIdRef.current}`;
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 5000);
   };
 
   return (
@@ -61,6 +70,41 @@ export default function SettingsClient({
         </p>
       </div>
 
+      {/* Onboarding Empty State Banners */}
+      {accountsCount === 0 && (
+        <div className="card bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 shadow-lg p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:scale-[1.01] transition-transform duration-200">
+          <div>
+            <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary shrink-0 animate-pulse" />
+              {t('getStartedTitle')}
+            </h3>
+            <p className="text-sm text-base-content/80 mt-1">
+              {t('getStartedCreateAccount')}
+            </p>
+          </div>
+          <Link href={buildAccountsUrl()} className="btn btn-primary btn-sm whitespace-nowrap shadow-md hover:shadow-lg transition-shadow">
+            {t('goToAccounts')}
+          </Link>
+        </div>
+      )}
+
+      {accountsCount > 0 && transactionsCount === 0 && (
+        <div className="card bg-gradient-to-r from-secondary/10 to-accent/10 border border-secondary/20 shadow-lg p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:scale-[1.01] transition-transform duration-200">
+          <div>
+            <h3 className="text-lg font-bold text-secondary flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-secondary shrink-0 animate-pulse" />
+              {t('getStartedTitle')}
+            </h3>
+            <p className="text-sm text-base-content/80 mt-1">
+              {t('getStartedImport')}
+            </p>
+          </div>
+          <Link href={buildImportUrl()} className="btn btn-secondary btn-sm whitespace-nowrap shadow-md hover:shadow-lg transition-shadow">
+            {t('goToImport')}
+          </Link>
+        </div>
+      )}
+
       {/* PassKey Management Card */}
       <PassKeySection initialPassKeys={passKeys} showToast={showToast} />
 
@@ -72,6 +116,8 @@ export default function SettingsClient({
         accountsCount={accountsCount}
         transactionsCount={transactionsCount}
         rulesCount={rulesCount}
+        earliestTxDate={earliestTxDate}
+        latestTxDate={latestTxDate}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

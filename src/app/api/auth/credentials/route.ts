@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export async function GET() {
   const credentials = await db.passKeyCredential.findMany({
-    where: { userId: 'default' },
+    where: { userId: DEFAULT_USER_ID },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -33,7 +34,7 @@ export async function DELETE(request: Request) {
   }
 
   const totalCount = await db.passKeyCredential.count({
-    where: { userId: 'default' },
+    where: { userId: DEFAULT_USER_ID },
   });
 
   if (totalCount <= 1) {

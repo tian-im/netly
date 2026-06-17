@@ -10,15 +10,15 @@ interface PreferencesCardProps {
 }
 
 const THEMES = [
-  { id: 'night', name: 'Night (Default)' },
-  { id: 'dark', name: 'Dark' },
-  { id: 'light', name: 'Light' },
-  { id: 'luxury', name: 'Luxury' },
-  { id: 'retro', name: 'Retro' },
-  { id: 'cyberpunk', name: 'Cyberpunk' },
-  { id: 'forest', name: 'Forest' },
-  { id: 'synthwave', name: 'Synthwave' },
-  { id: 'coffee', name: 'Coffee' },
+  { id: 'night' },
+  { id: 'dark' },
+  { id: 'light' },
+  { id: 'luxury' },
+  { id: 'retro' },
+  { id: 'cyberpunk' },
+  { id: 'forest' },
+  { id: 'synthwave' },
+  { id: 'coffee' },
 ];
 
 export default function PreferencesCard({ showToast }: PreferencesCardProps) {
@@ -60,14 +60,25 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
   const handleDateFormatChange = (fmt: string) => {
     setDateFormat(fmt);
     localStorage.setItem('netly_pref_date_format', fmt);
-    showToast(t('dateFormatSet', { format: fmt }));
+    showToast(t('dateFormatSet', { format: `${fmt} (${getFormatExample(fmt)})` }));
   };
 
   const handleThemeChange = (theme: string) => {
     setCurrentTheme(theme);
     localStorage.setItem('netly_pref_theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
-    showToast(t('themeSet', { theme }));
+    showToast(t('themeSet', { theme: t(`themes.${theme}`) }));
+  };
+
+  const getFormatExample = (formatStr: string) => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+    const dd = d.getDate().toString().padStart(2, '0');
+    if (formatStr === 'YYYY-MM-DD') return `${yyyy}-${mm}-${dd}`;
+    if (formatStr === 'DD/MM/YYYY') return `${dd}/${mm}/${yyyy}`;
+    if (formatStr === 'MM/DD/YYYY') return `${mm}/${dd}/${yyyy}`;
+    return '';
   };
 
   return (
@@ -97,7 +108,7 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
             >
               {THEMES.map((theme) => (
                 <option key={theme.id} value={theme.id}>
-                  {theme.id === 'night' ? t('themeDefault') : theme.name}
+                  {t(`themes.${theme.id}`)}
                 </option>
               ))}
             </select>
@@ -153,9 +164,9 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
               className="select select-bordered select-sm w-full"
               disabled={!mounted}
             >
-              <option value="YYYY-MM-DD">YYYY-MM-DD (2026-06-09)</option>
-              <option value="DD/MM/YYYY">DD/MM/YYYY (09/06/2026)</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY (06/09/2026)</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD ({getFormatExample('YYYY-MM-DD')})</option>
+              <option value="DD/MM/YYYY">DD/MM/YYYY ({getFormatExample('DD/MM/YYYY')})</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY ({getFormatExample('MM/DD/YYYY')})</option>
             </select>
           </div>
 
@@ -172,8 +183,8 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
               className="select select-bordered select-sm w-full"
               aria-label={t('languageToggleAriaLabel')}
             >
-              <option value="en">English</option>
-              <option value="zh">中文 (简体)</option>
+              <option value="en">{t('languages.en')}</option>
+              <option value="zh">{t('languages.zh')}</option>
             </select>
           </div>
         </div>

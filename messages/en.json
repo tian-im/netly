@@ -19,6 +19,7 @@
     "error": "Error",
     "unknown": "Unknown",
     "copy": "Copy",
+    "copiedSuccess": "Copied to clipboard",
     "currencyLabel": "{code} ({name})",
     "currencyCodeOnly": "{code}",
     "currencySymbol": "{symbol}",
@@ -510,7 +511,6 @@
     "preferencesTitle": "App Preferences",
     "preferencesDesc": "Configure local dashboard defaults. Preferences are saved in your browser storage.",
     "themeLabel": "Interface Theme",
-    "themeDefault": "Night (Default)",
     "currencyLabel": "Default Currency",
     "dateRangeLabel": "Default Date Range",
     "dateFormatLabel": "Preferred Date Format",
@@ -562,7 +562,7 @@
     "mcpTokenLabel": "Access Token",
     "mcpNameLabel": "Token Name",
     "mcpNamePlaceholder": "e.g. OpenCode Client",
-    "mcpInstruction": "Add this token to your OpenCode config under `mcpServers.netly-ledger.headers.Authorization` as `Bearer <token>`.",
+    "mcpInstruction": "Add this token to your OpenCode config under `mcpServers.netly-ledger.headers.Authorization` as `Bearer [token]`.",
     "mcpRevokeBtn": "Revoke",
     "mcpCreatedSuccess": "MCP token generated successfully",
     "mcpRevokedSuccess": "MCP token revoked successfully",
@@ -572,7 +572,31 @@
     "mcpNeverUsed": "Never used",
     "signOutLabel": "Sign out of your account",
     "signOutBtn": "Sign Out",
-    "copiedSuccess": "Copied to clipboard"
+    "themes": {
+      "night": "Night (Default)",
+      "dark": "Dark",
+      "light": "Light",
+      "luxury": "Luxury",
+      "retro": "Retro",
+      "cyberpunk": "Cyberpunk",
+      "forest": "Forest",
+      "synthwave": "Synthwave",
+      "coffee": "Coffee"
+    },
+    "languages": {
+      "en": "English",
+      "zh": "中文 (简体)"
+    },
+    "mcpRevokeConfirmTitle": "Confirm Token Revocation",
+    "mcpRevokeConfirmDesc": "Are you sure you want to revoke the MCP access token \"{name}\"? If this token is currently in use by an active AI agent integration, it will stop working immediately.",
+    "mcpRevokeConfirmBtn": "Revoke Token",
+    "getStartedTitle": "Welcome to Netly Ledger!",
+    "getStartedCreateAccount": "Get started by creating your first account in the Accounts Manager.",
+    "getStartedImport": "Get started by importing a bank statement CSV to populate your ledger.",
+    "goToAccounts": "Go to Accounts",
+    "goToImport": "Go to Import",
+    "dbDataRange": "Data range: {start} to {end}",
+    "noDataRange": "No transactions imported yet"
   },
   "errorPage": {
     "title": "Application Error",
@@ -670,7 +694,9 @@
       "setupUrlLabel": "Setup Link",
       "setupTokenExpires": "This code is single-use and will expire in 15 minutes.",
       "copyBtn": "Copy",
-      "copiedSuccess": "Copied to clipboard",
+      "removeConfirmTitle": "Confirm PassKey Removal",
+      "removeConfirmWarning": "Are you sure you want to remove the PassKey \"{name}\"? You will not be able to use this security key to sign in on this device anymore.",
+      "removeConfirmBtn": "Remove Key",
       "generatingToken": "Generating..."
     }
   }

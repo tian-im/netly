@@ -1,4 +1,4 @@
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { AlertTriangle, Trash2, LogOut, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,20 @@ export default function DangerZoneCard({
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [wipeConfirmInput, setWipeConfirmInput] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowWipeModal(false);
+        setWipeConfirmInput('');
+      }
+    };
+    if (showWipeModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showWipeModal]);
 
   const handleResetDbConfirm = async () => {
     if (wipeConfirmInput.trim().toUpperCase() !== 'WIPE') return;

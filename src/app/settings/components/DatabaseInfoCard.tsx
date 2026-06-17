@@ -19,10 +19,10 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
   const tCommon = useTranslations('common');
   const format = useFormatter();
   const router = useRouter();
-  const [isVacuuming, setIsVacuuming] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   const handleVacuum = async () => {
-    setIsVacuuming(true);
+    setIsPending(true);
     try {
       await vacuumDatabase();
       showToast(t('dbVacuumSuccess'));
@@ -31,7 +31,7 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
       const msg = err instanceof Error ? err.message : String(err);
       showToast(msg || t('dbVacuumFailed'), 'error');
     } finally {
-      setIsVacuuming(false);
+      setIsPending(false);
     }
   };
 
@@ -107,9 +107,9 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
           <button
             onClick={handleVacuum}
             className="btn btn-outline btn-primary btn-sm w-full gap-2"
-            disabled={isVacuuming}
+            disabled={isPending}
           >
-            {isVacuuming ? (
+            {isPending ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
               <RefreshCw className="h-4 w-4" />

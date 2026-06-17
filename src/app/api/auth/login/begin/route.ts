@@ -4,7 +4,7 @@ import { setChallenge, generateState } from '@/lib/challenge-store';
 import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
 import { checkRateLimit } from '@/lib/rate-limiter';
-import { auditLog } from '@/lib/audit';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const { origin, rpID } = getWebAuthnConfig(request);
 
   const credentials = await db.passKeyCredential.findMany({
-    where: { userId: 'default' },
+    where: { userId: DEFAULT_USER_ID },
   });
 
   if (credentials.length === 0) {

@@ -4,6 +4,7 @@ import { setChallenge, generateState } from '@/lib/challenge-store';
 import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
 import { verifySessionCookie, SESSION_COOKIE_NAME, SETUP_SESSION_COOKIE_NAME } from '@/lib/auth-session';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 import { checkRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   const { origin, rpID } = getWebAuthnConfig(request);
 
   const existingCredentials = await db.passKeyCredential.findMany({
-    where: { userId: 'default' },
+    where: { userId: DEFAULT_USER_ID },
   });
 
   if (existingCredentials.length > 0) {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
   const options = await generateRegistrationOptions({
     rpName: 'Netly Ledger',
     rpID,
-    userName: 'default',
+    userName: DEFAULT_USER_ID,
     userDisplayName: 'Netly User',
     attestationType: 'none',
     excludeCredentials: existingCredentials.map((cred) => ({

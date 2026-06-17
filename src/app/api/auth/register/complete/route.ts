@@ -16,6 +16,7 @@ import { getWebAuthnConfig } from '@/lib/webauthn';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { auditLog } from '@/lib/audit';
 import { resolveLocale, getDefaultCategories } from '@/lib/locale';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   const { origin, rpID } = getWebAuthnConfig(request);
 
   const existingCount = await db.passKeyCredential.count({
-    where: { userId: 'default' },
+    where: { userId: DEFAULT_USER_ID },
   });
 
   if (existingCount > 0) {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       counter: BigInt(credential.counter),
       transports: JSON.stringify(transports),
       deviceName: body.deviceName.trim(),
-      userId: 'default',
+      userId: DEFAULT_USER_ID,
     },
   });
 

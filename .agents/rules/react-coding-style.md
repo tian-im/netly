@@ -107,3 +107,9 @@ components/UserCard/
 ```
 
 Inline single-file components are fine for trivial presentational pieces.
+
+## Iconography (No Emojis)
+
+- NEVER use emoji characters (e.g. `✨`, `🔥`, `🚨`, `⚠`) in UI components, rendering logic, or text content.
+- ALWAYS use `lucide-react` icons for consistent, accessible, and clean iconography.
+

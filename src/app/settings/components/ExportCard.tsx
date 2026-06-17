@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Download, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { exportAllTransactions, exportAllAccounts } from '../../actions';
+import { formatDateISO } from '@/lib/dates';
 
 interface ExportCardProps {
   accountsCount: number;
@@ -11,37 +12,38 @@ interface ExportCardProps {
 
 export default function ExportCard({ accountsCount, transactionsCount, showToast }: ExportCardProps) {
   const t = useTranslations('settings');
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingTransactions, setIsExportingTransactions] = useState(false);
+  const [isExportingAccounts, setIsExportingAccounts] = useState(false);
 
   const handleExportTransactions = async () => {
-    setIsExporting(true);
+    setIsExportingTransactions(true);
     try {
       const txs = await exportAllTransactions();
       const { generateLedgerCSV, downloadCSV } = await import('@/lib/csv-export');
       const csvContent = generateLedgerCSV(txs);
-      downloadCSV(csvContent, `netly_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+      downloadCSV(csvContent, `netly_transactions_${formatDateISO()}.csv`);
       showToast(t('exportSuccess'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(msg || t('exportFailed'), 'error');
     } finally {
-      setIsExporting(false);
+      setIsExportingTransactions(false);
     }
   };
 
   const handleExportAccounts = async () => {
-    setIsExporting(true);
+    setIsExportingAccounts(true);
     try {
       const accs = await exportAllAccounts();
       const { generateAccountCSV, downloadCSV } = await import('@/lib/csv-export');
       const csvContent = generateAccountCSV(accs);
-      downloadCSV(csvContent, `netly_accounts_${new Date().toISOString().split('T')[0]}.csv`);
+      downloadCSV(csvContent, `netly_accounts_${formatDateISO()}.csv`);
       showToast(t('exportSuccess'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(msg || t('exportFailed'), 'error');
     } finally {
-      setIsExporting(false);
+      setIsExportingAccounts(false);
     }
   };
 
@@ -60,20 +62,28 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
           <button
             onClick={handleExportTransactions}
             className="btn btn-neutral btn-md gap-2"
-            disabled={isExporting || transactionsCount === 0}
+            disabled={isExportingTransactions || transactionsCount === 0}
             aria-label={t('exportTransactionsBtn', { count: transactionsCount })}
           >
-            <FileSpreadsheet className="h-5 w-5 text-success" />
+            {isExportingTransactions ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              <FileSpreadsheet className="h-5 w-5 text-success" />
+            )}
             {t('exportTransactionsBtn', { count: transactionsCount })}
           </button>
 
           <button
             onClick={handleExportAccounts}
             className="btn btn-neutral btn-md gap-2"
-            disabled={isExporting || accountsCount === 0}
+            disabled={isExportingAccounts || accountsCount === 0}
             aria-label={t('exportAccountsBtn', { count: accountsCount })}
           >
-            <FileSpreadsheet className="h-5 w-5 text-info" />
+            {isExportingAccounts ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              <FileSpreadsheet className="h-5 w-5 text-info" />
+            )}
             {t('exportAccountsBtn', { count: accountsCount })}
           </button>
         </div>

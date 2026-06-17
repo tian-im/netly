@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
-import { Bot, Trash2, Plus, Copy } from 'lucide-react';
+import { Bot, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
 import { McpTokenInfo } from '@/types/settings';
 
 interface McpSectionProps {
@@ -18,10 +18,10 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
   const [mcpTokens, setMcpTokens] = useState<McpTokenInfo[]>(initialMcpTokens);
   const [showAddMcpModal, setShowAddMcpModal] = useState(false);
   const [newMcpName, setNewMcpName] = useState('');
-  const [isCreatingMcpToken, setIsCreatingMcpToken] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [generatedMcpToken, setGeneratedMcpToken] = useState<{ token: string; name: string } | null>(null);
   const [copiedMcpToken, setCopiedMcpToken] = useState(false);
-  const [isRevokingMcpId, setIsRevokingMcpId] = useState<string | null>(null);
+  const [mcpTokenToRevoke, setMcpTokenToRevoke] = useState<McpTokenInfo | null>(null);
 
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -30,6 +30,25 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showAddMcpModal) {
+          setShowAddMcpModal(false);
+          setGeneratedMcpToken(null);
+          setNewMcpName('');
+        } else if (mcpTokenToRevoke) {
+          setMcpTokenToRevoke(null);
+        }
+      }
+    };
+    if (showAddMcpModal || mcpTokenToRevoke) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showAddMcpModal, mcpTokenToRevoke]);
 
   const handleCopyToken = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -40,7 +59,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
 
   const handleCreateMcpToken = async () => {
     if (!newMcpName.trim()) return;
-    setIsCreatingMcpToken(true);
+    setIsPending(true);
     try {
       const res = await fetch('/api/mcp/tokens', {
         method: 'POST',
@@ -63,12 +82,12 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
       const msg = err instanceof Error ? err.message : String(err);
       showToast(tErrors(translateError(msg)) || t('mcpCreateFailed'), 'error');
     } finally {
-      setIsCreatingMcpToken(false);
+      setIsPending(false);
     }
   };
 
   const handleRevokeMcpToken = async (id: string) => {
-    setIsRevokingMcpId(id);
+    setIsPending(true);
     try {
       const res = await fetch('/api/mcp/tokens', {
         method: 'DELETE',
@@ -85,7 +104,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
       const msg = err instanceof Error ? err.message : String(err);
       showToast(tErrors(translateError(msg)) || t('mcpRevokeFailed'), 'error');
     } finally {
-      setIsRevokingMcpId(null);
+      setIsPending(false);
     }
   };
 
@@ -130,17 +149,13 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRevokeMcpToken(token.id)}
-                      disabled={isRevokingMcpId === token.id}
+                      onClick={() => setMcpTokenToRevoke(token)}
+                      disabled={isPending}
                       className="btn btn-ghost btn-xs text-error gap-1"
                       title={t('mcpRevokeBtn')}
                       aria-label={`${t('mcpRevokeBtn')} - ${token.name}`}
                     >
-                      {isRevokingMcpId === token.id ? (
-                        <span className="loading loading-spinner loading-xs"></span>
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
-                      )}
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
@@ -162,6 +177,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                 setShowAddMcpModal(true);
               }}
               className="btn btn-outline btn-primary btn-sm gap-2"
+              disabled={isPending}
             >
               <Plus className="h-4 w-4" />
               {t('mcpCreateBtn')}
@@ -194,7 +210,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                     value={newMcpName}
                     onChange={(e) => setNewMcpName(e.target.value)}
                     className="input input-bordered w-full"
-                    disabled={isCreatingMcpToken}
+                    disabled={isPending}
                     autoFocus
                   />
                 </div>
@@ -223,7 +239,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                         aria-label={tCommon('copy')}
                       >
                         {copiedMcpToken ? (
-                          <span className="text-xs font-bold">{t('copiedSuccess')}</span>
+                          <span className="text-xs font-bold">{tCommon('copiedSuccess')}</span>
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -248,7 +264,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                       setNewMcpName('');
                     }}
                     className="btn btn-ghost btn-sm"
-                    disabled={isCreatingMcpToken}
+                    disabled={isPending}
                   >
                     {tCommon('cancel')}
                   </button>
@@ -256,9 +272,9 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                     type="button"
                     onClick={handleCreateMcpToken}
                     className="btn btn-primary btn-sm gap-2"
-                    disabled={isCreatingMcpToken || !newMcpName.trim()}
+                    disabled={isPending || !newMcpName.trim()}
                   >
-                    {isCreatingMcpToken ? (
+                    {isPending ? (
                       <span className="loading loading-spinner loading-xs"></span>
                     ) : (
                       <Plus className="h-4 w-4" />
@@ -279,6 +295,46 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                   {tCommon('close')}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revocation Confirmation Modal */}
+      {mcpTokenToRevoke && (
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="revoke-mcp-title">
+          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
+            <h3 id="revoke-mcp-title" className="font-bold text-lg text-error flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              {t('mcpRevokeConfirmTitle')}
+            </h3>
+            <p className="py-4 text-base-content/80 text-sm">
+              {t('mcpRevokeConfirmDesc', { name: mcpTokenToRevoke.name })}
+            </p>
+            <div className="modal-action">
+              <button
+                type="button"
+                onClick={() => setMcpTokenToRevoke(null)}
+                className="btn btn-ghost btn-sm"
+                disabled={isPending}
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleRevokeMcpToken(mcpTokenToRevoke.id);
+                  setMcpTokenToRevoke(null);
+                }}
+                className="btn btn-error btn-sm"
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  t('mcpRevokeConfirmBtn')
+                )}
+              </button>
             </div>
           </div>
         </div>

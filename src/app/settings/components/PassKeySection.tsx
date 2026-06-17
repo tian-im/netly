@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
-import { startRegistration } from '@simplewebauthn/browser';
 import { KeyRound, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
 import { PassKeyInfo } from '@/types/settings';
 
@@ -12,21 +10,19 @@ interface PassKeySectionProps {
 }
 
 export default function PassKeySection({ initialPassKeys, showToast }: PassKeySectionProps) {
-  const router = useRouter();
   const tPasskey = useTranslations('passkey.settings');
   const tCommon = useTranslations('common');
   const tErrors = useTranslations('errors');
   const format = useFormatter();
 
   const [passKeys, setPassKeys] = useState<PassKeyInfo[]>(initialPassKeys);
-  const [isAddingPassKey, setIsAddingPassKey] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState('');
   const [showAddPassKeyModal, setShowAddPassKeyModal] = useState(false);
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [passKeyToDelete, setPassKeyToDelete] = useState<PassKeyInfo | null>(null);
   
   const [setupToken, setSetupToken] = useState<{ token: string; url: string; expiresAt: number } | null>(null);
   const [showSetupTokenModal, setShowSetupTokenModal] = useState(false);
-  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -40,6 +36,27 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       if (urlTimeoutRef.current) clearTimeout(urlTimeoutRef.current);
     };
   }, []);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showAddPassKeyModal) {
+          setShowAddPassKeyModal(false);
+          setNewDeviceName('');
+        } else if (showSetupTokenModal) {
+          setShowSetupTokenModal(false);
+          setSetupToken(null);
+        } else if (passKeyToDelete) {
+          setPassKeyToDelete(null);
+        }
+      }
+    };
+    if (showAddPassKeyModal || showSetupTokenModal || passKeyToDelete) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showAddPassKeyModal, showSetupTokenModal, passKeyToDelete]);
 
   const handleCopyToken = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -58,7 +75,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
   const handleAddPassKey = async () => {
     if (!newDeviceName.trim()) return;
 
-    setIsAddingPassKey(true);
+    setIsPending(true);
     try {
       const beginRes = await fetch('/api/auth/register/begin', { method: 'POST' });
       if (!beginRes.ok) {
@@ -68,6 +85,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       const options = await beginRes.json();
       const { state, ...regOptions } = options;
 
+      const { startRegistration } = await import('@simplewebauthn/browser');
       const regResponse = await startRegistration(regOptions);
 
       const completeRes = await fetch('/api/auth/register/complete', {
@@ -89,18 +107,18 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       if (credRes.ok) {
         setPassKeys(await credRes.json());
       } else {
-        router.refresh();
+        console.warn('Failed to refresh credentials list');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(tErrors(translateError(msg)), 'error');
     } finally {
-      setIsAddingPassKey(false);
+      setIsPending(false);
     }
   };
 
   const handleGenerateSetupToken = async () => {
-    setIsGeneratingToken(true);
+    setIsPending(true);
     try {
       const res = await fetch('/api/auth/setup-token/generate', { method: 'POST' });
       if (!res.ok) {
@@ -115,13 +133,13 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       const msg = err instanceof Error ? err.message : String(err);
       showToast(tErrors(translateError(msg)), 'error');
     } finally {
-      setIsGeneratingToken(false);
+      setIsPending(false);
     }
   };
 
   const handleDeletePassKey = async (id: string) => {
     if (passKeys.length <= 1) return;
-    setIsDeletingId(id);
+    setIsPending(true);
     try {
       const res = await fetch('/api/auth/credentials', {
         method: 'DELETE',
@@ -140,7 +158,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       const msg = err instanceof Error ? err.message : String(err);
       showToast(tErrors(translateError(msg)), 'error');
     } finally {
-      setIsDeletingId(null);
+      setIsPending(false);
     }
   };
 
@@ -184,17 +202,13 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                   data-tip={passKeys.length <= 1 ? tPasskey('cannotRemoveLast') : undefined}
                 >
                   <button
-                    onClick={() => handleDeletePassKey(pk.id)}
-                    disabled={isDeletingId === pk.id || passKeys.length <= 1}
+                    onClick={() => setPassKeyToDelete(pk)}
+                    disabled={isPending || passKeys.length <= 1}
                     className="btn btn-ghost btn-xs text-error gap-1"
                     title={passKeys.length <= 1 ? tPasskey('cannotRemoveLast') : tPasskey('remove')}
                     aria-label={tPasskey('remove') + ' - ' + (pk.deviceName || tPasskey('unnamed'))}
                   >
-                    {isDeletingId === pk.id ? (
-                      <span className="loading loading-spinner loading-xs"></span>
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -211,16 +225,17 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
             <button
               onClick={() => setShowAddPassKeyModal(true)}
               className="btn btn-outline btn-primary btn-sm gap-2"
+              disabled={isPending}
             >
               <Plus className="h-4 w-4" />
               {tPasskey('addBtn')}
             </button>
             <button
               onClick={handleGenerateSetupToken}
-              disabled={isGeneratingToken}
+              disabled={isPending}
               className="btn btn-outline btn-secondary btn-sm gap-2"
             >
-              {isGeneratingToken ? (
+              {isPending ? (
                 <span className="loading loading-spinner loading-xs"></span>
               ) : (
                 <Plus className="h-4 w-4" />
@@ -233,9 +248,9 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
 
       {/* Add PassKey Modal */}
       {showAddPassKeyModal && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true">
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="add-passkey-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 className="font-bold text-lg text-primary flex items-center gap-2">
+            <h3 id="add-passkey-title" className="font-bold text-lg text-primary flex items-center gap-2">
               <KeyRound className="h-5 w-5" />
               {tPasskey('modalTitle')}
             </h3>
@@ -254,7 +269,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                   value={newDeviceName}
                   onChange={(e) => setNewDeviceName(e.target.value)}
                   className="input input-bordered w-full"
-                  disabled={isAddingPassKey}
+                  disabled={isPending}
                   autoFocus
                 />
               </div>
@@ -267,7 +282,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                   setNewDeviceName('');
                 }}
                 className="btn btn-ghost btn-sm"
-                disabled={isAddingPassKey}
+                disabled={isPending}
               >
                 {tCommon('cancel')}
               </button>
@@ -275,14 +290,14 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                 type="button"
                 onClick={handleAddPassKey}
                 className="btn btn-primary btn-sm gap-2"
-                disabled={isAddingPassKey || !newDeviceName.trim()}
+                disabled={isPending || !newDeviceName.trim()}
               >
-                {isAddingPassKey ? (
+                {isPending ? (
                   <span className="loading loading-spinner loading-xs"></span>
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                {isAddingPassKey ? tPasskey('registering') : tPasskey('registerBtn')}
+                {isPending ? tPasskey('registering') : tPasskey('registerBtn')}
               </button>
             </div>
           </div>
@@ -291,9 +306,9 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
 
       {/* Setup Token Modal */}
       {showSetupTokenModal && setupToken && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true">
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="setup-token-title">
           <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 className="font-bold text-lg text-primary flex items-center gap-2">
+            <h3 id="setup-token-title" className="font-bold text-lg text-primary flex items-center gap-2">
               <KeyRound className="h-5 w-5" />
               {tPasskey('setupTokenModalTitle')}
             </h3>
@@ -317,11 +332,11 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                       type="button"
                       onClick={() => handleCopyToken(setupToken.token)}
                       className="btn btn-primary btn-square"
-                      title={tPasskey('copyBtn')}
-                      aria-label={tPasskey('copyBtn')}
+                      title={tCommon('copy')}
+                      aria-label={tCommon('copy')}
                     >
                       {copiedToken ? (
-                        <span className="text-xs font-bold">{tPasskey('copiedSuccess')}</span>
+                        <span className="text-xs font-bold">{tCommon('copiedSuccess')}</span>
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
@@ -345,11 +360,11 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                       type="button"
                       onClick={() => handleCopyUrl(setupToken.url)}
                       className="btn btn-primary btn-square"
-                      title={tPasskey('copyBtn')}
-                      aria-label={tPasskey('copyBtn')}
+                      title={tCommon('copy')}
+                      aria-label={tCommon('copy')}
                     >
                       {copiedUrl ? (
-                        <span className="text-xs font-bold">{tPasskey('copiedSuccess')}</span>
+                        <span className="text-xs font-bold">{tCommon('copiedSuccess')}</span>
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
@@ -375,6 +390,46 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                 className="btn btn-sm"
               >
                 {tCommon('close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete PassKey Confirmation Modal */}
+      {passKeyToDelete && (
+        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="delete-passkey-title">
+          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
+            <h3 id="delete-passkey-title" className="font-bold text-lg text-error flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              {tPasskey('removeConfirmTitle')}
+            </h3>
+            <p className="py-4 text-base-content/80 text-sm">
+              {tPasskey('removeConfirmWarning', { name: passKeyToDelete.deviceName || tPasskey('unnamed') })}
+            </p>
+            <div className="modal-action">
+              <button
+                type="button"
+                onClick={() => setPassKeyToDelete(null)}
+                className="btn btn-ghost btn-sm"
+                disabled={isPending}
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleDeletePassKey(passKeyToDelete.id);
+                  setPassKeyToDelete(null);
+                }}
+                className="btn btn-error btn-sm"
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  tPasskey('removeConfirmBtn')
+                )}
               </button>
             </div>
           </div>

@@ -223,7 +223,7 @@ export default function FilterBar({
               aria-label="Filter transactions by category"
             >
               <option value="">{t('filter.allCategories')}</option>
-              <option value="UNCATEGORIZED">⚠ {t('filter.uncategorizedOnly')}</option>
+              <option value="UNCATEGORIZED">{t('filter.uncategorizedOnly')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({translateCategoryType(t, c.type)})

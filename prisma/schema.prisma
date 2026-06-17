@@ -103,3 +103,9 @@ model McpToken {
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
 }
+
+model SetupToken {
+  token     String   @id
+  createdAt DateTime @default(now())
+}
+

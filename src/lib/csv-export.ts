@@ -1,4 +1,5 @@
 import { Transaction } from '@/app/transactions/types';
+import { formatDateISO } from '@/lib/dates';
 
 /**
  * Converts a list of transactions to a CSV string.
@@ -7,7 +8,7 @@ export function generateLedgerCSV(transactions: Transaction[]): string {
   const csvRows = ['Date,Account,Currency,Payee,Category,Type,Amount,Description'];
   
   for (const tx of transactions) {
-    const dateStr = new Date(tx.date).toISOString().split('T')[0];
+    const dateStr = formatDateISO(tx.date);
     const categoryName = tx.category ? tx.category.name : 'Uncategorized';
     const categoryType = tx.category ? tx.category.type : 'N/A';
     const cleanDesc = tx.description ? tx.description.replace(/"/g, '""') : '';
@@ -28,7 +29,7 @@ export function generateAccountCSV(accounts: any[]): string {
   const csvRows = ['ID,Name,Type,Starting Balance,Currency,Created At'];
   for (const acc of accounts) {
     const cleanName = acc.name.replace(/"/g, '""');
-    const dateStr = acc.createdAt ? new Date(acc.createdAt).toISOString().split('T')[0] : '';
+    const dateStr = acc.createdAt ? formatDateISO(acc.createdAt) : '';
     csvRows.push(`"${acc.id}","${cleanName}","${acc.type}",${acc.startingBalance},"${acc.currency}","${dateStr}"`);
   }
   return csvRows.join('\n');

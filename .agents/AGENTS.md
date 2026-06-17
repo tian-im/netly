@@ -86,11 +86,14 @@ Use parallel execution for independent operations — launch multiple agents sim
 
 **Input validation:** Validate all user input at system boundaries. Use schema-based validation. Fail fast with clear messages. Never trust external data.
 
+**No Emoji in UI/Code:** Never use emojis (e.g. `✨`, `🔥`, `🚨`) in UI components, texts, or code. Always use `lucide-react` icons for consistent and professional iconography.
+
 **Code quality checklist:**
 - Functions small (<50 lines), files focused (<800 lines)
 - No deep nesting (>4 levels)
 - Proper error handling, no hardcoded values
 - Readable, well-named identifiers
+- No emojis used in UI or code; use `lucide-react` instead
 
 ## Testing Requirements
 

@@ -19,6 +19,7 @@
     "error": "错误",
     "unknown": "未知",
     "copy": "复制",
+    "copiedSuccess": "已复制到剪贴板",
     "currencyLabel": "{code}（{name}）",
     "currencyCodeOnly": "{code}",
     "currencySymbol": "{symbol}",
@@ -510,7 +511,6 @@
     "preferencesTitle": "应用偏好设置",
     "preferencesDesc": "设置本地仪表盘的默认选项。这些设置会保存在您的浏览器中。",
     "themeLabel": "界面主题",
-    "themeDefault": "暗夜 (默认)",
     "currencyLabel": "默认本位币",
     "dateRangeLabel": "默认分析周期",
     "dateFormatLabel": "偏好日期格式",
@@ -562,7 +562,7 @@
     "mcpTokenLabel": "访问令牌",
     "mcpNameLabel": "令牌名称",
     "mcpNamePlaceholder": "例如：OpenCode 客户端",
-    "mcpInstruction": "将此令牌作为 `Bearer <token>` 添加到您的 OpenCode 配置中的 `mcpServers.netly-ledger.headers.Authorization`。",
+    "mcpInstruction": "将此令牌作为 `Bearer [token]` 添加到您的 OpenCode 配置中的 `mcpServers.netly-ledger.headers.Authorization`。",
     "mcpRevokeBtn": "撤销",
     "mcpCreatedSuccess": "成功生成 MCP 访问令牌",
     "mcpRevokedSuccess": "成功撤销 MCP 访问令牌",
@@ -572,7 +572,31 @@
     "mcpNeverUsed": "从未被使用",
     "signOutLabel": "登出您的账户",
     "signOutBtn": "登出",
-    "copiedSuccess": "已复制到剪贴板"
+    "themes": {
+      "night": "暗夜 (默认)",
+      "dark": "深色",
+      "light": "浅色",
+      "luxury": "奢华",
+      "retro": "复古",
+      "cyberpunk": "赛博朋克",
+      "forest": "森林",
+      "synthwave": "合成波",
+      "coffee": "咖啡"
+    },
+    "languages": {
+      "en": "English",
+      "zh": "中文 (简体)"
+    },
+    "mcpRevokeConfirmTitle": "确认撤销访问令牌",
+    "mcpRevokeConfirmDesc": "您确定要撤销 MCP 访问令牌 \"{name}\" 吗？如果当前有活跃的 AI 代理集成正在使用此令牌，该集成将立即失效。",
+    "mcpRevokeConfirmBtn": "撤销令牌",
+    "getStartedTitle": "欢迎使用 Netly Ledger！",
+    "getStartedCreateAccount": "请先在账户管理器中创建您的第一个账户以开始使用。",
+    "getStartedImport": "导入银行对账单 CSV 文件以开始记录您的账目流水。",
+    "goToAccounts": "去账户管理器",
+    "goToImport": "去导入页面",
+    "dbDataRange": "数据范围：{start} 至 {end}",
+    "noDataRange": "暂无导入的交易流水"
   },
   "errorPage": {
     "title": "应用错误",
@@ -670,7 +694,9 @@
       "setupUrlLabel": "设置链接",
       "setupTokenExpires": "此设置码为一次性使用，将在 15 分钟内失效。",
       "copyBtn": "复制",
-      "copiedSuccess": "已复制到剪贴板",
+      "removeConfirmTitle": "确认删除 PassKey",
+      "removeConfirmWarning": "您确定要删除 PassKey \"{name}\" 吗？您将无法再使用此安全密钥登录此设备。",
+      "removeConfirmBtn": "删除密钥",
       "generatingToken": "生成中..."
     }
   }

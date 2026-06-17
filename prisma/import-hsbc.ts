@@ -211,7 +211,7 @@ async function main() {
   const audTotalsCF = cashFlowStatement.totals['AUD'] || { operating: { net: 0, inflow: 0, outflow: 0 }, investing: { net: 0 }, financing: { net: 0 }, netCashFlow: 0 };
 
   console.log('\n=========================================');
-  console.log('📊 THREE-ACCOUNT CONSOLIDATED LEDGER REPORT');
+  console.log('THREE-ACCOUNT CONSOLIDATED LEDGER REPORT');
   console.log('=========================================');
   
   console.log('\n--- BALANCE SHEET (As of 30 Jun 2026) ---');
