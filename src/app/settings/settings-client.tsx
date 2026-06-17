@@ -13,6 +13,7 @@ import DatabaseInfoCard from './components/DatabaseInfoCard';
 import ExportCard from './components/ExportCard';
 import DangerZoneCard from './components/DangerZoneCard';
 import DatabaseMetricsCard from './components/DatabaseMetricsCard';
+import SupportCard from './components/SupportCard';
 
 interface Toast {
   id: string;
@@ -79,34 +80,34 @@ export default function SettingsClient({
 
       {/* Onboarding Empty State Banners */}
       {accountsCount === 0 && (
-        <div className="card bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 shadow-lg p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:scale-[1.01] transition-transform duration-200">
+        <div className="card bg-base-100 shadow-xl border border-base-200 border-l-4 border-l-primary p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 className="text-lg font-bold text-primary flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary shrink-0 animate-pulse" />
               {t('getStartedTitle')}
             </h3>
-            <p className="text-sm text-base-content/80 mt-1">
+            <p className="text-sm text-base-content/70 mt-1">
               {t('getStartedCreateAccount')}
             </p>
           </div>
-          <Link href={buildAccountsUrl()} className="btn btn-primary btn-sm whitespace-nowrap shadow-md hover:shadow-lg transition-shadow">
+          <Link href={buildAccountsUrl()} className="btn btn-primary btn-sm whitespace-nowrap">
             {t('goToAccounts')}
           </Link>
         </div>
       )}
 
       {accountsCount > 0 && transactionsCount === 0 && (
-        <div className="card bg-gradient-to-r from-secondary/10 to-accent/10 border border-secondary/20 shadow-lg p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:scale-[1.01] transition-transform duration-200">
+        <div className="card bg-base-100 shadow-xl border border-base-200 border-l-4 border-l-secondary p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 className="text-lg font-bold text-secondary flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-secondary shrink-0 animate-pulse" />
               {t('getStartedTitle')}
             </h3>
-            <p className="text-sm text-base-content/80 mt-1">
+            <p className="text-sm text-base-content/70 mt-1">
               {t('getStartedImport')}
             </p>
           </div>
-          <Link href={buildImportUrl()} className="btn btn-secondary btn-sm whitespace-nowrap shadow-md hover:shadow-lg transition-shadow">
+          <Link href={buildImportUrl()} className="btn btn-secondary btn-sm whitespace-nowrap">
             {t('goToImport')}
           </Link>
         </div>
@@ -141,6 +142,9 @@ export default function SettingsClient({
         transactionsCount={transactionsCount}
         showToast={showToast}
       />
+
+      {/* Support Card — warm, positive card placed before DangerZone */}
+      <SupportCard />
 
       {/* Danger Zone Card */}
       <DangerZoneCard

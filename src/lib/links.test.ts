@@ -13,6 +13,7 @@ import {
   buildSetupUrl,
   buildCategoriesUrl,
   buildSettingsUrl,
+  buildKoFiUrl,
 } from './links';
 
 describe('getPeriodDates', () => {
@@ -246,5 +247,21 @@ describe('buildCategoriesUrl', () => {
 describe('buildSettingsUrl', () => {
   it('should return /settings', () => {
     expect(buildSettingsUrl()).toBe('/settings');
+  });
+});
+
+describe('buildKoFiUrl', () => {
+  it('should return a valid ko-fi URL with the placeholder username', () => {
+    const url = buildKoFiUrl();
+    expect(url).toMatch(/^https:\/\/ko-fi\.com\/.+$/);
+  });
+
+  it('should return the exact configured ko-fi URL', () => {
+    expect(buildKoFiUrl()).toBe('https://ko-fi.com/tianim');
+  });
+
+  it('should return a valid URL format', () => {
+    const url = buildKoFiUrl();
+    expect(() => new URL(url)).not.toThrow();
   });
 });

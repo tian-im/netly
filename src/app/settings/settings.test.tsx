@@ -120,6 +120,7 @@ describe('SettingsClient — structure and rendering', () => {
     expect(screen.getByText('App Preferences')).toBeDefined();
     expect(screen.getByText('Database Information')).toBeDefined();
     expect(screen.getByText('Data Export & Backup')).toBeDefined();
+    expect(screen.getByText('Support Netly Ledger')).toBeDefined();
     expect(screen.getByText('Danger Zone')).toBeDefined();
   });
 });

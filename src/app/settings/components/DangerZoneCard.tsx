@@ -93,7 +93,7 @@ export default function DangerZoneCard({
             </div>
             <button
               onClick={() => setShowWipeModal(true)}
-              className="btn btn-error btn-md gap-2"
+              className="btn btn-outline btn-error btn-md gap-2"
               disabled={isPending}
             >
               <Trash2 className="h-4 w-4" />
@@ -174,7 +174,7 @@ export default function DangerZoneCard({
               <button
                 type="button"
                 onClick={handleResetDbConfirm}
-                className="btn btn-error btn-sm gap-2"
+                className="btn btn-outline btn-error btn-sm gap-2"
                 disabled={isPending || wipeConfirmInput.trim().toUpperCase() !== 'WIPE'}
               >
                 {isPending && <span className="loading loading-spinner loading-xs"></span>}

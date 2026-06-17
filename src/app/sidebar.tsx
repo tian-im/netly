@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings } from 'lucide-react';
+import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Heart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   buildDashboardUrl,
@@ -12,6 +12,7 @@ import {
   buildImportUrl,
   buildReportsUrl,
   buildSettingsUrl,
+  buildKoFiUrl,
 } from '@/lib/links';
 
 // WHY: navItems is a module-level const array. The builder functions are pure and
@@ -73,16 +74,31 @@ export default function Sidebar() {
         </ul>
       </div>
 
-      <div className="px-4 py-4 bg-base-200/50 rounded-xl">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 bg-success rounded-full animate-pulse"></span>
-          <span className="text-xs font-semibold text-success uppercase tracking-wider">
-            {t('runningLocally')}
-          </span>
+      <div className="border-t border-base-300/50 pt-3 space-y-2">
+        {/* Support link — subtle, directly above the status bar */}
+        <div className="px-4">
+          <a
+            href={buildKoFiUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs text-base-content/50 hover:text-pink-400 transition-colors"
+          >
+            <Heart className="w-3.5 h-3.5" />
+            {t('supportLink')}
+          </a>
         </div>
-        <p className="text-[10px] text-base-content/50 mt-1">
-          {t('dbPath')}
-        </p>
+
+        <div className="px-4 py-4 bg-base-200/50 rounded-xl">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-success rounded-full animate-pulse"></span>
+            <span className="text-xs font-semibold text-success uppercase tracking-wider">
+              {t('runningLocally')}
+            </span>
+          </div>
+          <p className="text-[10px] text-base-content/50 mt-1">
+            {t('dbPath')}
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -37,6 +37,7 @@
     "reports": "Financial Statements",
     "import": "Bank CSV Import",
     "settings": "Settings",
+    "supportLink": "Support",
     "runningLocally": "Running Locally",
     "dbPath": "SQLite database: prisma/dev.db",
     "languageLabel": "Language:",
@@ -586,6 +587,12 @@
     "goToImport": "Go to Import",
     "dbDataRange": "Data range: {start} to {end}",
     "noDataRange": "No transactions imported yet"
+  },
+  "support": {
+    "cardTitle": "Support Netly Ledger",
+    "cardDescription": "Netly Ledger is a free, open-source personal finance tool built by a solo developer. It runs 100% on your device — no cloud, no ads, no tracking.",
+    "cardMessage": "If Netly Ledger helps you stay on top of your finances, consider buying me a coffee. Your support fuels late-night coding sessions and keeps the project independent.",
+    "ctaButton": "Buy me a coffee on Ko-fi"
   },
   "errorPage": {
     "title": "Application Error",

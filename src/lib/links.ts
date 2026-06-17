@@ -197,3 +197,13 @@ export function buildLoginUrl(): string {
 export function buildSetupUrl(withToken?: boolean): string {
   return withToken ? '/setup?setupToken=1' : '/setup';
 }
+
+// WHY: Ko-fi URL is an external link tied to the project owner's account.
+// Centralising it here means updating it in one place instead of hunting
+// down every hardcoded string across components.
+const KOFI_USERNAME = 'tianim'; // TODO: replace with real username
+
+/** Build a URL to the Ko-fi support page. */
+export function buildKoFiUrl(): string {
+  return `https://ko-fi.com/${KOFI_USERNAME}`;
+}
