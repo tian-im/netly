@@ -12,7 +12,6 @@
     "saving": "保存中...",
     "deleting": "删除中...",
     "actions": "操作",
-
     "discardChangesConfirm": "您有未保存的修改。确定要放弃修改吗？",
     "discardChanges": "放弃修改",
     "discard": "放弃",
@@ -237,7 +236,6 @@
     "fallbackInvalid": "无效",
     "importCardTitle": "导入交易记录",
     "dropzonePlaceholder": "拖拽您的银行 CSV 文件到此处，或者点击浏览文件",
-
     "totalRowsDetected": "检测到的总行数：{count}",
     "columnMappingTitle": "列字段映射",
     "columnMappingDesc": "将您的 CSV 列与 Netly Ledger 的交易字段进行映射。",
@@ -245,14 +243,11 @@
     "dateField": "交易日期 (必填)",
     "payeeField": "商户 / 交易描述 (必填)",
     "amountField": "金额 (单列存储借记/贷记)",
-
     "creditColumnField": "贷记列 (存款/收入)",
     "debitColumnField": "借记列 (取款/支出)",
     "useSplitColumns": "我的 CSV 包含独立的“贷记”和“借记”两列",
     "selectAccountField": "目标账户",
-
     "previewDataTitle": "预览数据 (前3行)",
-
     "noAccountError": "请选择目标账户",
     "noMappingError": "请映射“日期”和“商户/描述”列",
     "noAmountMappingError": "请映射“金额”列或分别映射“贷记/借记”两列",
@@ -320,7 +315,8 @@
       "ytd": "今年以来 (YTD)",
       "allStatus": "全部状态",
       "reviewed": "仅已复核",
-      "needsReview": "仅待复核"
+      "needsReview": "仅待复核",
+      "allCurrencies": "全部币种"
     },
     "table": {
       "date": "日期",
@@ -359,8 +355,6 @@
     },
     "pagination": {
       "showing": "显示第 {start}–{end} 笔，共 {total} 笔",
-      "prev": "上一页",
-      "next": "下一页",
       "firstPage": "第一页",
       "prevPage": "上一页",
       "nextPage": "下一页",
@@ -380,7 +374,9 @@
       "rulePromptAsk": "提示是否创建规则",
       "rulePromptAlways": "自动创建规则",
       "rulePromptNever": "从不创建规则"
-    }
+    },
+    "exportSuccess": "导出成功",
+    "exportFailed": "导出 CSV 失败"
   },
   "reports": {
     "pageTitle": "财务报表",
@@ -536,7 +532,6 @@
     "wipeConfirmRules": "所有自动分类匹配规则 ({count} 条)",
     "wipeConfirmPermanent": "此操作是永久性的，无法被撤销或恢复。",
     "wipeConfirmPrompt": "输入 <word>WIPE</word> 以确认：",
-
     "wipeAllBtn": "清空全部数据",
     "wiping": "清空中...",
     "wipeSuccess": "数据库已成功清空。",
@@ -547,7 +542,6 @@
     "themeSet": "主题已更改为 {theme}",
     "exportSuccess": "导出成功",
     "exportFailed": "导出 CSV 失败",
-
     "mcpTitle": "Model Context Protocol (MCP) 外部接入",
     "mcpDesc": "配置安全的外部 AI 代理集成。生成令牌以允许通过 SSE 传输协议访问工具。",
     "mcpActiveTokens": "活跃访问令牌",

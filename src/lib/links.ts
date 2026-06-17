@@ -157,15 +157,22 @@ export function buildImportUrl(): string {
 /**
  * Build a URL to the Transaction Ledger.
  *
- * The optional `filter` parameter sets `?filter=<value>` (e.g. `'uncategorized'`).
+ * The optional `filter` parameter maps to a recognised preset:
+ *   - `'uncategorized'` → `?isReviewed=false`
+ *
+ * Unknown filter values are silently ignored (return bare `/transactions`)
+ * because the page does not accept a generic `?filter=` param.
  * For account- or category-scoped URLs use `buildAccountTransactionsUrl()` or
- * `buildCategoryTransactionsUrl()` instead — this builder only handles the
- * top-level `filter` query param, not the full set of filter params that the
- * transactions page supports (accountId, categoryId, search, dateFrom, etc.).
+ * `buildCategoryTransactionsUrl()` instead.
  */
 export function buildTransactionsUrl(filter?: string): string {
   const base = '/transactions';
-  return filter ? `${base}?filter=${encodeURIComponent(filter)}` : base;
+  if (!filter) return base;
+  if (filter === 'uncategorized') {
+    return `${base}?isReviewed=false`;
+  }
+  // Unknown filter value – no matching param on the transactions page
+  return base;
 }
 
 /** Build a URL to the Categories management page. */

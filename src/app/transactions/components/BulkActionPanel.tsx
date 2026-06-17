@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { X, Tag } from 'lucide-react';
 import { Category } from '../types';
+import { translateCategoryType } from '@/lib/translate-category';
 
 interface BulkActionPanelProps {
   selectedCount: number;
@@ -20,15 +21,6 @@ export default function BulkActionPanel({
   onBulkCategorize,
 }: BulkActionPanelProps) {
   const t = useTranslations('transactions');
-
-  const translateCategoryType = (type: string) => {
-    switch (type) {
-      case 'INCOME': return t('table.income');
-      case 'EXPENSE': return t('table.expense');
-      case 'TRANSFER': return t('table.transfer');
-      default: return type;
-    }
-  };
 
   if (selectedCount === 0) return null;
 
@@ -67,7 +59,7 @@ export default function BulkActionPanel({
             <option value="UNCATEGORIZED">{t('table.uncategorized')}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name} ({translateCategoryType(c.type)})
+                {c.name} ({translateCategoryType(t, c.type)})
               </option>
             ))}
           </select>

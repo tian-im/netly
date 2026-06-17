@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Search, Settings, Check } from 'lucide-react';
 import { Account, Category } from '../types';
+import { translateCategoryType } from '@/lib/translate-category';
 
 interface FilterBarProps {
   accounts: Account[];
   categories: Category[];
   selectedAccountId: string;
   selectedCategoryId: string;
+  selectedCurrency: string;
   searchTerm: string;
   pageSize: number;
   dateRange: string;
@@ -18,6 +20,7 @@ interface FilterBarProps {
   onFilterChange: (updates: {
     accountId?: string;
     categoryId?: string;
+    currency?: string;
     searchTerm?: string;
     pageSize?: number;
     dateRange?: string;
@@ -33,6 +36,7 @@ export default function FilterBar({
   categories,
   selectedAccountId,
   selectedCategoryId,
+  selectedCurrency,
   searchTerm,
   pageSize,
   dateRange,
@@ -43,14 +47,8 @@ export default function FilterBar({
 }: FilterBarProps) {
   const t = useTranslations('transactions');
 
-  const translateCategoryType = (type: string) => {
-    switch (type) {
-      case 'INCOME': return t('table.income');
-      case 'EXPENSE': return t('table.expense');
-      case 'TRANSFER': return t('table.transfer');
-      default: return type;
-    }
-  };
+  // Derive unique currencies from the accounts list
+  const uniqueCurrencies = Array.from(new Set(accounts.map((a) => a.currency).filter(Boolean))).sort();
 
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -181,7 +179,7 @@ export default function FilterBar({
         </div>
 
         {/* Row 2: Select Filters (Grid format) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full border-t border-base-200/50 pt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full border-t border-base-200/50 pt-3">
           {/* Account filter */}
           <div className="w-full">
             <select
@@ -199,6 +197,23 @@ export default function FilterBar({
             </select>
           </div>
 
+          {/* Currency filter */}
+          <div className="w-full">
+            <select
+              value={selectedCurrency}
+              onChange={(e) => onFilterChange({ currency: e.target.value })}
+              className="select select-bordered select-sm w-full"
+              aria-label="Filter transactions by currency"
+            >
+              <option value="">{t('filter.allCurrencies')}</option>
+              {uniqueCurrencies.map((cur) => (
+                <option key={cur} value={cur}>
+                  {cur}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Category filter */}
           <div className="w-full">
             <select
@@ -211,7 +226,7 @@ export default function FilterBar({
               <option value="UNCATEGORIZED">⚠ {t('filter.uncategorizedOnly')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({translateCategoryType(c.type)})
+                  {c.name} ({translateCategoryType(t, c.type)})
                 </option>
               ))}
             </select>

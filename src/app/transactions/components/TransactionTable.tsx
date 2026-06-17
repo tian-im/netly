@@ -5,6 +5,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload } from 'lucide-react';
 import { Transaction, Category, SortConfig } from '../types';
 import { useLocaleContext } from '@/app/providers';
+import { translateCategoryType, translateAccountType } from '@/lib/translate-category';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { buildImportUrl } from '@/lib/links';
 import Pagination from './Pagination';
@@ -48,24 +49,9 @@ export default function TransactionTable({
   const format = useFormatter();
   const { locale } = useLocaleContext();
 
-  const COLUMN_COUNT = 6; // checkbox + date + account + payee + category + amount
-
-  const translateCategoryType = (type: string) => {
-    switch (type) {
-      case 'INCOME': return t('table.income');
-      case 'EXPENSE': return t('table.expense');
-      case 'TRANSFER': return t('table.transfer');
-      default: return type;
-    }
-  };
-
-  const translateAccountType = (type: string) => {
-    switch (type) {
-      case 'ASSET': return t('table.asset');
-      case 'LIABILITY': return t('table.liability');
-      default: return type;
-    }
-  };
+  // Column headers (checkbox + date + account + payee + category + amount)
+  const COLUMNS = ['checkbox', 'date', 'account', 'payee', 'category', 'amount'] as const;
+  const COLUMN_COUNT = COLUMNS.length;
 
   const isAllSelected =
     transactions.length > 0 &&
@@ -252,7 +238,7 @@ export default function TransactionTable({
                           <option value="">{t('table.uncategorized')}</option>
                           {categories.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.name} ({translateCategoryType(c.type)})
+                              {c.name} ({translateCategoryType(t, c.type)})
                             </option>
                           ))}
                         </select>

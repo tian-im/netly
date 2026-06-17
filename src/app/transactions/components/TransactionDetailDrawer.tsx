@@ -4,6 +4,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { X, Calendar, Landmark, Tag, DollarSign, Info } from 'lucide-react';
 import { Transaction, Category } from '../types';
 import { useLocaleContext } from '@/app/providers';
+import { translateCategoryType, translateAccountType } from '@/lib/translate-category';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface TransactionDetailDrawerProps {
@@ -24,23 +25,6 @@ export default function TransactionDetailDrawer({
   const t = useTranslations('transactions');
   const format = useFormatter();
   const { locale } = useLocaleContext();
-
-  const translateCategoryType = (type: string) => {
-    switch (type) {
-      case 'INCOME': return t('table.income');
-      case 'EXPENSE': return t('table.expense');
-      case 'TRANSFER': return t('table.transfer');
-      default: return type;
-    }
-  };
-
-  const translateAccountType = (type: string) => {
-    switch (type) {
-      case 'ASSET': return t('table.asset');
-      case 'LIABILITY': return t('table.liability');
-      default: return type;
-    }
-  };
 
   if (!transaction) return null;
 
@@ -130,7 +114,7 @@ export default function TransactionDetailDrawer({
                       <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider">{t('detail.account')}</span>
                       <span className="text-sm font-medium text-base-content">
                         {transaction.account.name}{' '}
-                        <span className="text-xs opacity-60">({translateAccountType(transaction.account.type)})</span>
+                        <span className="text-xs opacity-60">({translateAccountType(t, transaction.account.type)})</span>
                       </span>
                     </div>
                   </div>
@@ -151,7 +135,7 @@ export default function TransactionDetailDrawer({
                         <option value="">{t('table.uncategorized')}</option>
                         {categories.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.name} ({translateCategoryType(c.type)})
+                            {c.name} ({translateCategoryType(t, c.type)})
                           </option>
                         ))}
                       </select>

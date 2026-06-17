@@ -12,7 +12,7 @@ import TransactionTable from './components/TransactionTable';
 import RulePromptModal from './components/RulePromptModal';
 import TransactionDetailDrawer from './components/TransactionDetailDrawer';
 import BulkActionPanel from './components/BulkActionPanel';
-import { Upload } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 interface Toast {
   id: string;
@@ -36,7 +36,6 @@ export default function TransactionsClient({
   const t = useTranslations('transactions');
   const tCommon = useTranslations('common');
   const tErr = useTranslations('errors');
-  const tSettings = useTranslations('settings');
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -75,6 +74,7 @@ export default function TransactionsClient({
   const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
   const dateRange = searchParams.get('dateRange') || '';
   const isReviewed = searchParams.get('isReviewed') || 'all';
+  const currency = searchParams.get('currency') || '';
 
   const query = {
     accountId,
@@ -84,6 +84,7 @@ export default function TransactionsClient({
     pageSize,
     dateRange,
     isReviewed,
+    currency,
   };
 
   const sortConfig: SortConfig = {
@@ -95,7 +96,7 @@ export default function TransactionsClient({
   const activeTx = selectedTx ? (initialTransactions.find(t => t.id === selectedTx.id) || selectedTx) : null;
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const id = Math.random().toString(36).substring(2, 9);
+    const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
     const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -291,11 +292,11 @@ export default function TransactionsClient({
         showToast(tCommon('noResults'), 'error');
         return;
       }
-      const csvContent = generateLedgerCSV(txs as any);
+      const csvContent = generateLedgerCSV(txs);
       downloadCSV(csvContent, `financial_ledger_${new Date().toISOString().split('T')[0]}.csv`);
-      showToast(tSettings('exportSuccess'));
+      showToast(t('exportSuccess'));
     } catch (err: any) {
-      showToast(tSettings('exportFailed'), 'error');
+      showToast(t('exportFailed'), 'error');
     }
   };
 
@@ -318,7 +319,7 @@ export default function TransactionsClient({
             onClick={handleExportCSV}
             className="btn btn-outline btn-primary btn-sm gap-2"
           >
-            <Upload className="h-4 w-4" />
+            <Download className="h-4 w-4" />
             <span>{t('exportCsv')}</span>
           </button>
           <span className="badge badge-neutral badge-lg font-mono font-bold py-3">
@@ -333,6 +334,7 @@ export default function TransactionsClient({
         categories={initialCategories}
         selectedAccountId={query.accountId}
         selectedCategoryId={query.categoryId}
+        selectedCurrency={query.currency}
         searchTerm={query.searchTerm}
         pageSize={query.pageSize}
         dateRange={query.dateRange}

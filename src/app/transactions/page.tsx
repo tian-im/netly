@@ -23,6 +23,7 @@ interface PageProps {
     sortOrder?: 'asc' | 'desc';
     dateRange?: string;
     isReviewed?: 'true' | 'false' | 'all';
+    currency?: string;
   };
 }
 
@@ -36,6 +37,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
   const searchTerm = searchParams.searchTerm || undefined;
   const dateRange = searchParams.dateRange || undefined;
   const isReviewed = searchParams.isReviewed === 'true' ? true : searchParams.isReviewed === 'false' ? false : undefined;
+  const currency = searchParams.currency || undefined;
 
   const { transactions, totalCount } = await getTransactions({
     accountId,
@@ -47,6 +49,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
     sortOrder,
     dateRange,
     isReviewed,
+    currency,
   });
 
   const accounts = await getAccounts();

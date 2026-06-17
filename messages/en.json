@@ -12,7 +12,6 @@
     "saving": "Saving...",
     "deleting": "Deleting...",
     "actions": "Actions",
-
     "discardChangesConfirm": "You have unsaved changes. Are you sure you want to discard them?",
     "discardChanges": "Discard Changes",
     "discard": "Discard",
@@ -237,7 +236,6 @@
     "fallbackInvalid": "Invalid",
     "importCardTitle": "Import Transactions",
     "dropzonePlaceholder": "Drag and drop your bank CSV here, or click to browse",
-
     "totalRowsDetected": "Total rows detected: {count}",
     "columnMappingTitle": "Column Mapping",
     "columnMappingDesc": "Map the columns from your CSV to Netly Ledger's transaction fields.",
@@ -245,14 +243,11 @@
     "dateField": "Transaction Date (Required)",
     "payeeField": "Payee / Description (Required)",
     "amountField": "Amount (Single Credit/Debit Column)",
-
     "creditColumnField": "Credit Column (Deposits/Income)",
     "debitColumnField": "Debit Column (Withdrawals/Expenses)",
     "useSplitColumns": "My CSV has separate Credit and Debit columns",
     "selectAccountField": "Target Account",
-
     "previewDataTitle": "Preview Data (First 3 Rows)",
-
     "noAccountError": "Please select a target account",
     "noMappingError": "Please map Date and Payee columns",
     "noAmountMappingError": "Please map either Amount column or Credit/Debit columns",
@@ -307,6 +302,8 @@
     "assignedRule": "Assigned category and created automation rule.",
     "assignedCategory": "Assigned category to transaction.",
     "bulkUncategorizeConfirm": "Are you sure you want to uncategorize the {count} selected transactions?",
+    "exportSuccess": "Export successful",
+    "exportFailed": "Failed to export CSV",
     "filter": {
       "searchPlaceholder": "Search payees, categories, accounts...",
       "allAccounts": "All Accounts",
@@ -320,7 +317,8 @@
       "ytd": "Year to Date (YTD)",
       "allStatus": "All Statuses",
       "reviewed": "Reviewed Only",
-      "needsReview": "Needs Review Only"
+      "needsReview": "Needs Review Only",
+      "allCurrencies": "All Currencies"
     },
     "table": {
       "date": "Date",
@@ -359,8 +357,6 @@
     },
     "pagination": {
       "showing": "Showing {start}–{end} of {total}",
-      "prev": "Previous",
-      "next": "Next",
       "firstPage": "First page",
       "prevPage": "Previous page",
       "nextPage": "Next page",
@@ -536,7 +532,6 @@
     "wipeConfirmRules": "All auto-matching payee rules ({count})",
     "wipeConfirmPermanent": "This action is permanent and cannot be rolled back.",
     "wipeConfirmPrompt": "Type <word>WIPE</word> to confirm:",
-
     "wipeAllBtn": "Wipe All Data",
     "wiping": "Wiping...",
     "wipeSuccess": "Database successfully wiped.",
@@ -547,7 +542,6 @@
     "themeSet": "Theme changed to {theme}",
     "exportSuccess": "Export successful",
     "exportFailed": "Failed to export CSV",
-
     "mcpTitle": "Model Context Protocol (MCP) Access",
     "mcpDesc": "Configure secure external AI agent integrations. Generate tokens to allow tools access over SSE.",
     "mcpActiveTokens": "Active Access Tokens",

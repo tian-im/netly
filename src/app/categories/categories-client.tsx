@@ -64,7 +64,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const [createdCategoryId, setCreatedCategoryId] = useState<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const id = Math.random().toString(36).substring(2, 9);
+    const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));

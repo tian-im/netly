@@ -207,12 +207,13 @@ describe('buildTransactionsUrl', () => {
     expect(buildTransactionsUrl()).toBe('/transactions');
   });
 
-  it('should append filter param when provided', () => {
-    expect(buildTransactionsUrl('uncategorized')).toBe('/transactions?filter=uncategorized');
+  it('should map uncategorized to isReviewed=false', () => {
+    expect(buildTransactionsUrl('uncategorized')).toBe('/transactions?isReviewed=false');
   });
 
-  it('should encode special chars in filter', () => {
-    expect(buildTransactionsUrl('needs review')).toBe('/transactions?filter=needs%20review');
+  it('should ignore unknown filter values and return bare /transactions', () => {
+    expect(buildTransactionsUrl('needs review')).toBe('/transactions');
+    expect(buildTransactionsUrl('foo')).toBe('/transactions');
   });
 });
 

@@ -344,7 +344,7 @@ export async function getTransactions(
     );
     where.id = { in: matchingIds.map(t => t.id) };
   }
-  if (dateRange && dateRange !== 'allPeriods') {
+  if (dateRange) {
     const now = new Date();
     let startDate: Date | undefined;
     let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
