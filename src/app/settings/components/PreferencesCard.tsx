@@ -9,18 +9,6 @@ interface PreferencesCardProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
 }
 
-const THEMES = [
-  { id: 'night' },
-  { id: 'dark' },
-  { id: 'light' },
-  { id: 'luxury' },
-  { id: 'retro' },
-  { id: 'cyberpunk' },
-  { id: 'forest' },
-  { id: 'synthwave' },
-  { id: 'coffee' },
-];
-
 export default function PreferencesCard({ showToast }: PreferencesCardProps) {
   const { locale, setLocale } = useLocaleContext();
   const t = useTranslations('settings');
@@ -29,19 +17,16 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
   const [defaultCurrency, setDefaultCurrency] = useState(DEFAULT_CURRENCY);
   const [defaultRange, setDefaultRange] = useState('Month');
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
-  const [currentTheme, setCurrentTheme] = useState('night');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const savedCurrency = localStorage.getItem('netly_pref_default_currency') || DEFAULT_CURRENCY;
     const savedRange = localStorage.getItem('netly_pref_default_date_range') || 'Month';
     const savedFormat = localStorage.getItem('netly_pref_date_format') || 'YYYY-MM-DD';
-    const savedTheme = localStorage.getItem('netly_pref_theme') || 'night';
 
     setDefaultCurrency(savedCurrency);
     setDefaultRange(savedRange);
     setDateFormat(savedFormat);
-    setCurrentTheme(savedTheme);
     setMounted(true);
   }, []);
 
@@ -61,13 +46,6 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
     setDateFormat(fmt);
     localStorage.setItem('netly_pref_date_format', fmt);
     showToast(t('dateFormatSet', { format: `${fmt} (${getFormatExample(fmt)})` }));
-  };
-
-  const handleThemeChange = (theme: string) => {
-    setCurrentTheme(theme);
-    localStorage.setItem('netly_pref_theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    showToast(t('themeSet', { theme: t(`themes.${theme}`) }));
   };
 
   const getFormatExample = (formatStr: string) => {
@@ -93,27 +71,6 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
         </p>
 
         <div className="space-y-4">
-          <div className="form-control w-full">
-            <label className="label py-1" htmlFor="theme-select">
-              <span className="label-text text-xs font-bold text-base-content/75">
-                {t('themeLabel')}
-              </span>
-            </label>
-            <select
-              id="theme-select"
-              value={mounted ? currentTheme : 'night'}
-              onChange={(e) => handleThemeChange(e.target.value)}
-              className="select select-bordered select-sm w-full"
-              disabled={!mounted}
-            >
-              {THEMES.map((theme) => (
-                <option key={theme.id} value={theme.id}>
-                  {t(`themes.${theme.id}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="form-control w-full">
             <label className="label py-1" htmlFor="currency-select">
               <span className="label-text text-xs font-bold text-base-content/75">

@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import enMessages from '../../../messages/en.json';
 import SettingsClient from './settings-client';
+import { buildAccountsUrl, buildTransactionsUrl, buildCategoriesUrl } from '@/lib/links';
 
 // Make React Testing Library aware
 // @ts-ignore
@@ -37,7 +38,6 @@ vi.mock('next/navigation', () => ({
 const mockSetLocale = vi.fn();
 vi.mock('@/app/providers', () => ({
   useLocaleContext: () => ({ locale: 'en', setLocale: mockSetLocale }),
-  useThemeContext: () => ({ theme: 'night', toggleTheme: vi.fn() }),
 }));
 
 // Mock simplewebauthn browser
@@ -172,13 +172,13 @@ describe('DatabaseMetricsCard', () => {
 
     // Check stats links exist
     const accountsLink = screen.getByText('Managed Accounts').closest('a');
-    expect(accountsLink?.getAttribute('href')).toBe('/accounts');
+    expect(accountsLink?.getAttribute('href')).toBe(buildAccountsUrl());
 
     const transactionsLink = screen.getByText('Total Transactions').closest('a');
-    expect(transactionsLink?.getAttribute('href')).toBe('/transactions');
+    expect(transactionsLink?.getAttribute('href')).toBe(buildTransactionsUrl());
 
     const rulesLink = screen.getByText('Matching Rules').closest('a');
-    expect(rulesLink?.getAttribute('href')).toBe('/categories?tab=rules');
+    expect(rulesLink?.getAttribute('href')).toBe(`${buildCategoriesUrl()}?tab=rules`);
   });
 
   it('renders derived transaction date ranges correctly', () => {
@@ -201,20 +201,6 @@ describe('PreferencesCard', () => {
     vi.clearAllMocks();
     cleanup();
     localStorage.clear();
-  });
-
-  it('renders inputs and updates local storage on theme change', async () => {
-    renderSettingsClient();
-    
-    const themeSelect = screen.getByLabelText('Interface Theme') as HTMLSelectElement;
-    expect(themeSelect).toBeDefined();
-    
-    // Wait for client-side mounting hydration
-    await waitFor(() => expect(themeSelect.disabled).toBe(false));
-
-    await userEvent.selectOptions(themeSelect, 'cyberpunk');
-    expect(localStorage.getItem('netly_pref_theme')).toBe('cyberpunk');
-    expect(screen.getByText('Theme changed to Cyberpunk')).toBeDefined();
   });
 
   it('updates preference on date format change', async () => {

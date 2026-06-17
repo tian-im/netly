@@ -78,11 +78,11 @@ export default function Sidebar() {
       <div className="space-y-4">
         {/* Theme Toggle */}
         <div className="px-4 py-3 bg-base-200/30 rounded-xl flex items-center justify-between">
-          <span className="text-xs font-semibold opacity-60">{theme === 'night' ? 'Night' : 'Light'}</span>
+          <span className="text-xs font-semibold opacity-60">{theme === 'night' ? t('themeNight') : t('themeLight')}</span>
           <button
             onClick={toggleTheme}
             className="btn btn-ghost btn-xs btn-square"
-            aria-label={theme === 'night' ? 'Switch to light theme' : 'Switch to dark theme'}
+            aria-label={theme === 'night' ? t('themeToggleLight') : t('themeToggleDark')}
           >
             {theme === 'night' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>

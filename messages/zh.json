@@ -40,7 +40,11 @@
     "runningLocally": "本地运行中",
     "dbPath": "SQLite 数据库: prisma/dev.db",
     "languageLabel": "语言：",
-    "languageToggleAriaLabel": "切换语言"
+    "languageToggleAriaLabel": "切换语言",
+    "themeNight": "暗夜",
+    "themeLight": "明亮",
+    "themeToggleLight": "切换为浅色主题",
+    "themeToggleDark": "切换为深色主题"
   },
   "dashboard": {
     "title": "财务概览",
@@ -510,7 +514,6 @@
     "rulesDesc": "用于商户名称自动归类的规则",
     "preferencesTitle": "应用偏好设置",
     "preferencesDesc": "设置本地仪表盘的默认选项。这些设置会保存在您的浏览器中。",
-    "themeLabel": "界面主题",
     "currencyLabel": "默认本位币",
     "dateRangeLabel": "默认分析周期",
     "dateFormatLabel": "偏好日期格式",
@@ -549,7 +552,6 @@
     "currencySet": "默认货币已设置为 {currency}",
     "periodSet": "默认分析周期已设置为 {period}",
     "dateFormatSet": "偏好日期格式已更新为 {format}",
-    "themeSet": "主题已更改为 {theme}",
     "exportSuccess": "导出成功",
     "exportFailed": "导出 CSV 失败",
     "mcpTitle": "Model Context Protocol (MCP) 外部接入",
@@ -572,17 +574,6 @@
     "mcpNeverUsed": "从未被使用",
     "signOutLabel": "登出您的账户",
     "signOutBtn": "登出",
-    "themes": {
-      "night": "暗夜 (默认)",
-      "dark": "深色",
-      "light": "浅色",
-      "luxury": "奢华",
-      "retro": "复古",
-      "cyberpunk": "赛博朋克",
-      "forest": "森林",
-      "synthwave": "合成波",
-      "coffee": "咖啡"
-    },
     "languages": {
       "en": "English",
       "zh": "中文 (简体)"

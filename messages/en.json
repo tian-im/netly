@@ -40,7 +40,11 @@
     "runningLocally": "Running Locally",
     "dbPath": "SQLite database: prisma/dev.db",
     "languageLabel": "Language:",
-    "languageToggleAriaLabel": "Language Toggler"
+    "languageToggleAriaLabel": "Language Toggler",
+    "themeNight": "Night",
+    "themeLight": "Light",
+    "themeToggleLight": "Switch to light theme",
+    "themeToggleDark": "Switch to dark theme"
   },
   "dashboard": {
     "title": "Dashboard Overview",
@@ -510,7 +514,6 @@
     "rulesDesc": "Payee auto-categorization maps",
     "preferencesTitle": "App Preferences",
     "preferencesDesc": "Configure local dashboard defaults. Preferences are saved in your browser storage.",
-    "themeLabel": "Interface Theme",
     "currencyLabel": "Default Currency",
     "dateRangeLabel": "Default Date Range",
     "dateFormatLabel": "Preferred Date Format",
@@ -549,7 +552,6 @@
     "currencySet": "Default currency set to {currency}",
     "periodSet": "Default analysis period set to {period}",
     "dateFormatSet": "Date format preference updated to {format}",
-    "themeSet": "Theme changed to {theme}",
     "exportSuccess": "Export successful",
     "exportFailed": "Failed to export CSV",
     "mcpTitle": "Model Context Protocol (MCP) Access",
@@ -572,17 +574,6 @@
     "mcpNeverUsed": "Never used",
     "signOutLabel": "Sign out of your account",
     "signOutBtn": "Sign Out",
-    "themes": {
-      "night": "Night (Default)",
-      "dark": "Dark",
-      "light": "Light",
-      "luxury": "Luxury",
-      "retro": "Retro",
-      "cyberpunk": "Cyberpunk",
-      "forest": "Forest",
-      "synthwave": "Synthwave",
-      "coffee": "Coffee"
-    },
     "languages": {
       "en": "English",
       "zh": "中文 (简体)"
