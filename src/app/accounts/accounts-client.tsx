@@ -77,7 +77,11 @@ export default function AccountsClient({
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<'ASSET' | 'LIABILITY'>('ASSET');
   const [editBalance, setEditBalance] = useState('');
-  const [editCurrency, setEditCurrency] = useState(DEFAULT_CURRENCY);
+  // WHY: Use preferredCurrency as the default instead of hardcoded DEFAULT_CURRENCY so
+  // the currency field respects the user's saved preference even before the edit modal
+  // opens. When handleOpenEdit is called, editCurrency is overwritten with acc.currency
+  // anyway, so this only affects the initial/inert state.
+  const [editCurrency, setEditCurrency] = useState(preferredCurrency);
 
   // Discard changes confirm Modal State
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);

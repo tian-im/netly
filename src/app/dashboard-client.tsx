@@ -103,21 +103,17 @@ export default function DashboardClient({
   const { locale } = useLocaleContext();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   // Unified set of all active currencies across accounts
   const activeCurrencies = useMemo(() => {
-    if (accounts.length === 0 && isClient) {
+    // WHY: When there are no accounts, we use preferredCurrency directly (server-computed
+    // from cookie, available during SSR). Previously this was gated behind an `isClient`
+    // state which caused a flash from DEFAULT_CURRENCY → preferredCurrency after hydration.
+    // The server-provided prop is the correct value even during SSR.
+    if (accounts.length === 0) {
       return [preferredCurrency];
     }
-    if (accounts.length === 0) {
-      return [DEFAULT_CURRENCY];
-    }
     return Array.from(new Set(accounts.map((a) => a.currency || DEFAULT_CURRENCY)));
-  }, [accounts, isClient]);
+  }, [accounts, preferredCurrency]);
 
   // Use the server-computed default currency (most common across accounts).
   // This eliminates a duplicate computation that was fragile and could drift (Fix #4).

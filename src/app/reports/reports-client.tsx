@@ -33,20 +33,18 @@ export default function ReportsClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // WHY: The server component always redirects with start/end params before rendering
   // ReportsClient, so urlStart and urlEnd are guaranteed present. We use simple string
   // lookups instead of a useMemo fallback — no dead code paths.
   const defaultStartStr = searchParams.get('start')!;
   const defaultEndStr = searchParams.get('end')!;
-  // Memoize currency fallback using the server-provided preferredCurrency (from cookie)
+  // WHY: We use preferredCurrency directly (server-computed from cookie, available during SSR)
+  // instead of gating behind a `mounted` flag. The `mounted` gate caused a flash from
+  // DEFAULT_CURRENCY → preferredCurrency after hydration because the state was sealed at
+  // DEFAULT_CURRENCY during SSR and only updated after the useEffect fired.
   const defaultCur = useMemo(
-    () => searchParams.get('cur') || (mounted ? preferredCurrency : DEFAULT_CURRENCY),
-    [searchParams, mounted, preferredCurrency],
+    () => searchParams.get('cur') || preferredCurrency,
+    [searchParams, preferredCurrency],
   );
 
   const urlComparePrior = searchParams.get('comparePrior') === 'true';
@@ -157,7 +155,7 @@ export default function ReportsClient({
   // searchParams is the single source of truth; defaultXxx values are memoised from it
   // and do not need to be listed as separate deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, mounted]);
+  }, [searchParams]);
 
   // Sync currency changes to URL
   const handleCurrencyChange = (cur: string) => {
@@ -193,15 +191,16 @@ export default function ReportsClient({
     syncParams(startDateStr, endDateStr, cur, comparePrior);
   };
 
-  // Available currencies
+  // WHY: Same rationale as `defaultCur` above — preferredCurrency is available during SSR,
+  // so no need for the mounted gate. This prevents a flash when reports are null.
   const reportCurrencies = useMemo(() => {
-    if (!reports) return [mounted ? preferredCurrency : DEFAULT_CURRENCY];
+    if (!reports) return [preferredCurrency];
     return Array.from(new Set([
       ...Object.keys(reports.balanceSheet.totals),
       ...Object.keys(reports.incomeStatement.totals),
       ...Object.keys(reports.cashFlowStatement.totals)
     ]));
-  }, [reports, mounted, preferredCurrency]);
+  }, [reports, preferredCurrency]);
 
   // Auto-adjust currency selection if unavailable in current reports
   useEffect(() => {
