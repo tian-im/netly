@@ -39,6 +39,8 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
   const handleRangeChange = (range: string) => {
     setDefaultRange(range);
     localStorage.setItem('netly_pref_default_date_range', range);
+    // Write cookie with 1-year max age so server components can read it on load
+    document.cookie = `netly_pref_default_date_range=${range}; path=/; max-age=31536000; SameSite=Lax`;
     showToast(t('periodSet', { period: range }));
   };
 

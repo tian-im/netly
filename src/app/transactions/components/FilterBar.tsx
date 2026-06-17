@@ -247,12 +247,12 @@ export default function FilterBar({
           {/* Date Range filter */}
           <div className="w-full">
             <select
-              value={dateRange}
+              value={dateRange || 'all'}
               onChange={(e) => onFilterChange({ dateRange: e.target.value })}
               className="select select-bordered select-sm w-full"
               aria-label="Filter transactions by date range"
             >
-              <option value="">{t('filter.allPeriods')}</option>
+              <option value="all">{t('filter.allPeriods')}</option>
               <option value="month">{t('filter.month')}</option>
               <option value="threeMonths">{t('filter.threeMonths')}</option>
               <option value="sixMonths">{t('filter.sixMonths')}</option>

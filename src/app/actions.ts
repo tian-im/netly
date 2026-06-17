@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from '@/lib/reports';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Prisma } from '@prisma/client';
+import { getPeriodDates } from '@/lib/links';
+import { DATE_RANGE_TO_PERIOD_TYPE } from '@/lib/dates';
 
 export async function getAccounts() {
   return db.account.findMany({
@@ -346,23 +348,12 @@ export async function getTransactions(
   }
   if (dateRange) {
     const now = new Date();
-    let startDate: Date | undefined;
-    let endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    
-    if (dateRange === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    } else if (dateRange === 'threeMonths') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate(), 0, 0, 0, 0);
-    } else if (dateRange === 'sixMonths') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate(), 0, 0, 0, 0);
-    } else if (dateRange === 'twelveMonths') {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate(), 0, 0, 0, 0);
-    } else if (dateRange === 'ytd') {
-      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-    }
+    const periodKey = DATE_RANGE_TO_PERIOD_TYPE[dateRange as keyof typeof DATE_RANGE_TO_PERIOD_TYPE] ?? null;
 
-    if (startDate) {
+    if (periodKey) {
+      const { firstDay, lastDay } = getPeriodDates(periodKey, now);
+      const startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate(), 0, 0, 0, 0);
+      const endDate = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate(), 23, 59, 59, 999);
       where.date = {
         gte: startDate,
         lte: endDate,

@@ -34,19 +34,16 @@ export default function ReportsClient() {
     setMounted(true);
   }, []);
 
-  // Read initial URL params or fall back to defaults (Memoized to prevent recreation on every render)
-  const { defaultStartStr, defaultEndStr, defaultCur } = useMemo(() => {
-    const urlStart = searchParams.get('start');
-    const urlEnd = searchParams.get('end');
-    const urlCur = searchParams.get('cur');
-    const d = new Date();
-    const fallbackCur = mounted ? getPreferredCurrency() : DEFAULT_CURRENCY;
-    return {
-      defaultStartStr: urlStart || new Date(d.getFullYear(), 0, 1).toISOString().split('T')[0],
-      defaultEndStr: urlEnd || d.toISOString().split('T')[0],
-      defaultCur: urlCur || fallbackCur,
-    };
-  }, [searchParams, mounted]);
+  // WHY: The server component always redirects with start/end params before rendering
+  // ReportsClient, so urlStart and urlEnd are guaranteed present. We use simple string
+  // lookups instead of a useMemo fallback — no dead code paths.
+  const defaultStartStr = searchParams.get('start')!;
+  const defaultEndStr = searchParams.get('end')!;
+  // Memoize currency fallback only (getPreferredCurrency reads localStorage)
+  const defaultCur = useMemo(
+    () => searchParams.get('cur') || (mounted ? getPreferredCurrency() : DEFAULT_CURRENCY),
+    [searchParams, mounted],
+  );
 
   const urlComparePrior = searchParams.get('comparePrior') === 'true';
 

@@ -72,7 +72,7 @@ export default function TransactionsClient({
   const pageSize = Math.max(1, Number(searchParams.get('pageSize')) || 25);
   const sortBy = searchParams.get('sortBy') || 'date';
   const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
-  const dateRange = searchParams.get('dateRange') || '';
+  const dateRange = searchParams.get('dateRange') || 'all';
   const isReviewed = searchParams.get('isReviewed') || 'all';
   const currency = searchParams.get('currency') || '';
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { getPeriodDates } from '@/lib/links';
 
 interface DateRangePresetsProps {
   onSelectRange: (start: string, end: string) => void;
@@ -22,8 +23,9 @@ export default function DateRangePresets({
 
     switch (preset) {
       case 'this-month': {
-        const startOfCurMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        startStr = startOfCurMonth.toISOString().split('T')[0];
+        const { firstDay, lastDay } = getPeriodDates('current', now);
+        startStr = firstDay.toISOString().split('T')[0];
+        endStr = lastDay.toISOString().split('T')[0];
         break;
       }
       case 'last-month': {
@@ -34,23 +36,27 @@ export default function DateRangePresets({
         break;
       }
       case 'three-months': {
-        const start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-        startStr = start.toISOString().split('T')[0];
+        const { firstDay, lastDay } = getPeriodDates('3m', now);
+        startStr = firstDay.toISOString().split('T')[0];
+        endStr = lastDay.toISOString().split('T')[0];
         break;
       }
       case 'six-months': {
-        const start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-        startStr = start.toISOString().split('T')[0];
+        const { firstDay, lastDay } = getPeriodDates('6m', now);
+        startStr = firstDay.toISOString().split('T')[0];
+        endStr = lastDay.toISOString().split('T')[0];
         break;
       }
       case 'twelve-months': {
-        const start = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
-        startStr = start.toISOString().split('T')[0];
+        const { firstDay, lastDay } = getPeriodDates('12m', now);
+        startStr = firstDay.toISOString().split('T')[0];
+        endStr = lastDay.toISOString().split('T')[0];
         break;
       }
       case 'ytd': {
-        const startOfCurYear = new Date(now.getFullYear(), 0, 1);
-        startStr = startOfCurYear.toISOString().split('T')[0];
+        const { firstDay, lastDay } = getPeriodDates('ytd', now);
+        startStr = firstDay.toISOString().split('T')[0];
+        endStr = lastDay.toISOString().split('T')[0];
         break;
       }
       case 'last-quarter': {

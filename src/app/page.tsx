@@ -10,6 +10,8 @@ import {
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { getPeriodDates } from '@/lib/links';
 import type { PeriodType } from '@/lib/links';
+import { cookies } from 'next/headers';
+import { mapPreferenceToDashboardPeriod } from '@/lib/dates';
 
 export const revalidate = 0; // Disable caching so dashboard is always up-to-date
 
@@ -20,7 +22,13 @@ interface PageProps {
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
-  const period = (searchParams.period || 'current') as PeriodType;
+  // WHY: Reading the date-range preference from a cookie instead of localStorage
+  // lets the server produce the correct default period on first render, avoiding a
+  // client-side useEffect → URL-push → second-SSR cycle.
+  const cookieStore = cookies();
+  const prefRange = cookieStore.get('netly_pref_default_date_range')?.value || 'Month';
+  const resolvedDefault = mapPreferenceToDashboardPeriod(prefRange);
+  const period = (searchParams.period || resolvedDefault) as PeriodType;
   const accountsList = await getAccounts();
   const categoriesList = await getCategories();
   const uncategorizedCount = await db.transaction.count({ where: { categoryId: null } });

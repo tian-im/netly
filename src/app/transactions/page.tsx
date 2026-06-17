@@ -1,5 +1,8 @@
 import { getTransactions, getAccounts, getCategories } from '../actions';
 import TransactionsClient from './transactions-client';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { mapPreferenceToTransactionPeriod } from '@/lib/dates';
 
 export const revalidate = 0; // Always fresh
 
@@ -28,6 +31,23 @@ interface PageProps {
 }
 
 export default async function TransactionsPage({ searchParams }: PageProps) {
+  // WHY: Reading the date-range preference from a cookie instead of localStorage
+  // lets the server redirect with the correct default dateRange on first render,
+  // avoiding a client-side useEffect → URL-push → second-SSR cycle.
+  const dateRange = searchParams.dateRange;
+  if (dateRange === undefined) {
+    const cookieStore = cookies();
+    const prefRange = cookieStore.get('netly_pref_default_date_range')?.value || 'Month';
+    const defaultRange = mapPreferenceToTransactionPeriod(prefRange);
+
+    const params = new URLSearchParams();
+    Object.entries(searchParams).forEach(([key, val]) => {
+      if (val !== undefined) params.set(key, val);
+    });
+    params.set('dateRange', defaultRange);
+    redirect(`/transactions?${params.toString()}`);
+  }
+
   const page = searchParams.page ? Math.max(1, parseInt(searchParams.page, 10) || 1) : 1;
   const pageSize = searchParams.pageSize ? Math.max(1, parseInt(searchParams.pageSize, 10) || 25) : 25;
   const sortBy = searchParams.sortBy || 'date';
@@ -35,7 +55,6 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
   const accountId = searchParams.accountId || undefined;
   const categoryId = searchParams.categoryId || undefined;
   const searchTerm = searchParams.searchTerm || undefined;
-  const dateRange = searchParams.dateRange || undefined;
   const isReviewed = searchParams.isReviewed === 'true' ? true : searchParams.isReviewed === 'false' ? false : undefined;
   const currency = searchParams.currency || undefined;
 
