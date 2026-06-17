@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface StatCardProps {
   title: string;
@@ -31,7 +31,7 @@ export default function StatCard({
   title,
   icon,
   value,
-  currency = 'AUD',
+  currency = DEFAULT_CURRENCY,
   valueClass = '',
   locale,
   href,

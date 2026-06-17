@@ -11,7 +11,7 @@ import {
   Tooltip,
   Cell,
 } from 'recharts';
-import { getCurrencySymbol, formatCompactNumber } from '@/lib/currencies';
+import { getCurrencySymbol, formatCompactNumber, DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface IncomeVsExpensesChartProps {
   title: string;
@@ -36,7 +36,7 @@ export default function IncomeVsExpensesChart({
   expenseLabel,
   chartIncomeLabel,
   chartExpenseLabel,
-  currency = 'AUD',
+  currency = DEFAULT_CURRENCY,
   locale,
   tooltipLabel = 'Amount',
 }: IncomeVsExpensesChartProps) {

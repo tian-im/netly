@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { generateBalanceSheet, generateIncomeStatement, generateCashFlowStatement } from "@/lib/reports";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 import { fetchAndMapData } from "../data";
 
 export function registerReportTools(server: McpServer) {
@@ -9,7 +10,7 @@ export function registerReportTools(server: McpServer) {
     "get_dashboard_summary",
     "Calculate current month's high-level financial metrics: Net Worth (and delta vs prior month), Net Income (and delta), Savings Rate, and Cash Runway.",
     {
-      currency: z.string().optional().default("AUD").describe("Visual currency for calculation"),
+      currency: z.string().optional().default(DEFAULT_CURRENCY).describe("Visual currency for calculation"),
     },
     async ({ currency }) => {
       try {
@@ -182,12 +183,12 @@ export function registerReportTools(server: McpServer) {
     "Query historical net worth data points over trailing periods (months or quarters).",
     {
       months: z.number().optional().default(12).describe("Lookback window in months"),
-      currency: z.string().optional().default("AUD").describe("Visual currency for calculation"),
+      currency: z.string().optional().default(DEFAULT_CURRENCY).describe("Visual currency for calculation"),
     },
     async ({ months, currency }) => {
       try {
         const lookbackMonths = months ?? 12;
-        const visualCurrency = (currency ?? "AUD").toUpperCase();
+        const visualCurrency = (currency ?? DEFAULT_CURRENCY).toUpperCase();
         const { mappedAccounts, mappedTransactions } = await fetchAndMapData();
 
         const now = new Date();
@@ -227,7 +228,7 @@ export function registerReportTools(server: McpServer) {
       startDate: z.string().describe("ISO start date string"),
       endDate: z.string().describe("ISO end date string"),
       type: z.enum(["INCOME", "EXPENSE"]).describe("Filter categories by type"),
-      currency: z.string().optional().default("AUD").describe("visual currency"),
+      currency: z.string().optional().default(DEFAULT_CURRENCY).describe("visual currency"),
     },
     async ({ startDate, endDate, type, currency }) => {
       try {

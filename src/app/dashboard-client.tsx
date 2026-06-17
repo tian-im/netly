@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
-import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY, getPreferredCurrency } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
 import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl, buildDashboardUrl, buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 
@@ -107,8 +107,14 @@ export default function DashboardClient({
 
   // Unified set of all active currencies across accounts
   const activeCurrencies = useMemo(() => {
+    if (accounts.length === 0 && isClient) {
+      return [getPreferredCurrency()];
+    }
+    if (accounts.length === 0) {
+      return [DEFAULT_CURRENCY];
+    }
     return Array.from(new Set(accounts.map((a) => a.currency || DEFAULT_CURRENCY)));
-  }, [accounts]);
+  }, [accounts, isClient]);
 
   // Use the server-computed default currency (most common across accounts).
   // This eliminates a duplicate computation that was fragile and could drift (Fix #4).
@@ -121,10 +127,11 @@ export default function DashboardClient({
     setSelectedVisualCurrency(defaultCurrency);
   }, [defaultCurrency]);
   const currentVisualCurrency = useMemo(() => {
+    const fallback = isClient ? getPreferredCurrency() : DEFAULT_CURRENCY;
     return activeCurrencies.includes(selectedVisualCurrency)
       ? selectedVisualCurrency
-      : (activeCurrencies[0] || DEFAULT_CURRENCY);
-  }, [activeCurrencies, selectedVisualCurrency]);
+      : (activeCurrencies[0] || fallback);
+  }, [activeCurrencies, selectedVisualCurrency, isClient]);
   const symbol = getCurrencySymbol(currentVisualCurrency);
 
   const now = useMemo(() => new Date(), []);
@@ -425,7 +432,7 @@ export default function DashboardClient({
           </Link>
         </div>
 
-        {activeCurrencies.length > 1 && (
+        {activeCurrencies.length >= 1 && (
           <div className="flex items-center gap-2 justify-end">
             <span className="text-xs font-bold opacity-60">{t('currencyLabel')}</span>
             <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('currencyLabel')}>

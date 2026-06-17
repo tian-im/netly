@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { generateBalanceSheet } from "@/lib/reports";
-import { SUPPORTED_CURRENCIES } from "@/lib/currencies";
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "@/lib/currencies";
 import { fetchAndMapData } from "../data";
 
 export function registerAccountTools(server: McpServer) {
@@ -94,7 +94,7 @@ export function registerAccountTools(server: McpServer) {
       name: z.string().describe("Display name for the account (e.g. 'Checking Account', 'Credit Card')"),
       type: z.enum(["ASSET", "LIABILITY"]).describe("Account type: Asset (bank accounts, investments) or Liability (credit cards, loans)"),
       startingBalance: z.number().optional().default(0).describe("Opening balance for the account (default: 0)"),
-      currency: z.string().optional().default("AUD").describe("ISO 4217 currency code (e.g. 'AUD', 'USD', 'EUR'). Default: 'AUD'"),
+      currency: z.string().optional().default(DEFAULT_CURRENCY).describe(`ISO 4217 currency code (e.g. 'AUD', 'USD', 'EUR'). Default: '${DEFAULT_CURRENCY}'`),
     },
     async ({ name, type, startingBalance, currency }) => {
       try {
@@ -108,7 +108,7 @@ export function registerAccountTools(server: McpServer) {
 
         // Zod defaults guarantee these are defined, but guard for direct mock calls
         const balance = startingBalance ?? 0;
-        const rawCurrency = currency ?? 'AUD';
+        const rawCurrency = currency ?? DEFAULT_CURRENCY;
         const currencyCode = rawCurrency.toUpperCase().trim();
         if (!currencyCode || currencyCode.length !== 3) {
           return {

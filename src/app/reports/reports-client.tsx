@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
-import { DEFAULT_CURRENCY } from '@/lib/currencies';
+import { DEFAULT_CURRENCY, getPreferredCurrency } from '@/lib/currencies';
 import { Download, RefreshCw } from 'lucide-react';
 
 // Custom components
@@ -29,6 +29,10 @@ export default function ReportsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Read initial URL params or fall back to defaults (Memoized to prevent recreation on every render)
   const { defaultStartStr, defaultEndStr, defaultCur } = useMemo(() => {
@@ -36,12 +40,13 @@ export default function ReportsClient() {
     const urlEnd = searchParams.get('end');
     const urlCur = searchParams.get('cur');
     const d = new Date();
+    const fallbackCur = mounted ? getPreferredCurrency() : DEFAULT_CURRENCY;
     return {
       defaultStartStr: urlStart || new Date(d.getFullYear(), 0, 1).toISOString().split('T')[0],
       defaultEndStr: urlEnd || d.toISOString().split('T')[0],
-      defaultCur: urlCur || DEFAULT_CURRENCY,
+      defaultCur: urlCur || fallbackCur,
     };
-  }, [searchParams]);
+  }, [searchParams, mounted]);
 
   const urlComparePrior = searchParams.get('comparePrior') === 'true';
 
@@ -151,7 +156,7 @@ export default function ReportsClient() {
   // searchParams is the single source of truth; defaultXxx values are memoised from it
   // and do not need to be listed as separate deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, mounted]);
 
   // Sync currency changes to URL
   const handleCurrencyChange = (cur: string) => {
@@ -189,13 +194,13 @@ export default function ReportsClient() {
 
   // Available currencies
   const reportCurrencies = useMemo(() => {
-    if (!reports) return ['AUD'];
+    if (!reports) return [mounted ? getPreferredCurrency() : DEFAULT_CURRENCY];
     return Array.from(new Set([
       ...Object.keys(reports.balanceSheet.totals),
       ...Object.keys(reports.incomeStatement.totals),
       ...Object.keys(reports.cashFlowStatement.totals)
     ]));
-  }, [reports]);
+  }, [reports, mounted]);
 
   // Auto-adjust currency selection if unavailable in current reports
   useEffect(() => {

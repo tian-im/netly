@@ -79,7 +79,7 @@ export default function PreferencesCard({ showToast }: PreferencesCardProps) {
             </label>
             <CurrencySelector
               id="currency-select"
-              value={mounted ? defaultCurrency : 'AUD'}
+              value={mounted ? defaultCurrency : DEFAULT_CURRENCY}
               onChange={handleCurrencyChange}
               disabled={!mounted}
               className="w-full"

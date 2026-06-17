@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Search, Settings, Check } from 'lucide-react';
 import { Account, Category } from '../types';
 import { translateCategoryType } from '@/lib/translate-category';
+import { getPreferredCurrency, DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface FilterBarProps {
   accounts: Account[];
@@ -47,8 +48,19 @@ export default function FilterBar({
 }: FilterBarProps) {
   const t = useTranslations('transactions');
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Derive unique currencies from the accounts list
-  const uniqueCurrencies = Array.from(new Set(accounts.map((a) => a.currency).filter(Boolean))).sort();
+  const uniqueCurrencies = useMemo(() => {
+    const fromAccounts = Array.from(new Set(accounts.map((a) => a.currency).filter(Boolean))).sort();
+    if (fromAccounts.length === 0) {
+      return [mounted ? getPreferredCurrency() : DEFAULT_CURRENCY];
+    }
+    return fromAccounts;
+  }, [accounts, mounted]);
 
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);

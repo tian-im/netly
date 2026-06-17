@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowDownRight, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 
 interface CashFlowMetricsProps {
   title: string;
@@ -31,7 +31,7 @@ export default function CashFlowMetrics({
   financingLabel,
   detailedStatementsLabel,
   detailedStatementsHref = '/reports',
-  currency = 'AUD',
+  currency = DEFAULT_CURRENCY,
   locale,
 }: CashFlowMetricsProps) {
   const symbol = getCurrencySymbol(currency);

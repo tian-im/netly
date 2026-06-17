@@ -83,7 +83,7 @@ export async function getAccountsWithBalances() {
   };
 }
 
-export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = 'AUD') {
+export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', startingBalance: number, currency: string = DEFAULT_CURRENCY) {
   if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
 
   // Check for duplicate account name (case-insensitive — SQLite LOWER)
@@ -133,7 +133,7 @@ export async function updateAccount(
   name: string,
   type: 'ASSET' | 'LIABILITY',
   startingBalance: number,
-  currency: string = 'AUD'
+  currency: string = DEFAULT_CURRENCY
 ) {
   if (!name.trim()) throw new Error('ERR_ACCOUNT_NAME_REQUIRED');
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Tag } from 'lucide-react';
-import { getCurrencySymbol } from '@/lib/currencies';
+import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 
 export interface BreakdownItem {
   name: string;
@@ -27,7 +27,7 @@ export default function BreakdownList({
   totalAmount,
   emptyMessage,
   progressColorClass,
-  currency = 'AUD',
+  currency = DEFAULT_CURRENCY,
   locale,
 }: BreakdownListProps) {
   const symbol = getCurrencySymbol(currency);
