@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { getPeriodDates } from '@/lib/links';
 
+import { Button } from '@/app/components/ui';
+
 interface DateRangePresetsProps {
   onSelectRange: (start: string, end: string) => void;
   startDateStr: string;
@@ -120,13 +122,15 @@ export default function DateRangePresets({
     <div className="flex flex-wrap gap-2 items-center justify-start mt-2">
       <span className="text-xs font-bold text-base-content/60">{t('datePresets.presetsLabel')}</span>
       {presetList.map((preset) => (
-        <button
+        <Button
           key={preset.key}
           onClick={() => handlePreset(preset.key)}
-          className={`btn btn-xs ${isActive(preset.key) ? 'btn-primary' : 'btn-outline hover:btn-primary'}`}
+          size="xs"
+          variant={isActive(preset.key) ? 'primary' : 'outline'}
+          className={isActive(preset.key) ? '' : 'hover:btn-primary'}
         >
           {preset.label}
-        </button>
+        </Button>
       ))}
     </div>
   );

@@ -6,6 +6,7 @@ import { X, Trash2 } from 'lucide-react';
 import { Category } from '../types';
 import { translateCategoryType } from '@/lib/translate-category';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import { Button } from '@/app/components/ui';
 
 interface BulkActionPanelProps {
   selectedCount: number;
@@ -75,27 +76,30 @@ export default function BulkActionPanel({
               ))}
             </select>
 
-            <button
+            <Button
               type="button"
-              onClick={() => setIsConfirmOpen(true)}
-              className="btn btn-error btn-sm font-bold gap-1.5 whitespace-nowrap"
+              variant="error"
+              size="sm"
+              className="font-bold whitespace-nowrap"
               disabled={isPending}
+              onClick={() => setIsConfirmOpen(true)}
+              icon={<Trash2 className="w-4 h-4" />}
             >
-              <Trash2 className="w-4 h-4" />
-              <span>{t('bulkDelete')}</span>
-            </button>
+              {t('bulkDelete')}
+            </Button>
 
             {/* Cancel selection */}
-            <button
+            <Button
               type="button"
-              onClick={onClearSelection}
-              className="btn btn-ghost btn-sm btn-circle text-base-content/60"
+              variant="ghost"
+              size="sm"
+              className="btn-circle text-base-content/60"
               title={t('bulkDeselectAll')}
               aria-label={t('bulkDeselectAllAria')}
               disabled={isPending}
-            >
-              <X className="w-4 h-4" />
-            </button>
+              onClick={onClearSelection}
+              icon={<X className="w-4 h-4" />}
+            />
           </div>
         </div>
       </div>

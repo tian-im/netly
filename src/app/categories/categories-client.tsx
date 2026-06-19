@@ -18,7 +18,7 @@ import EditCategoryModal from './components/EditCategoryModal';
 import DeleteCategoryModal from './components/DeleteCategoryModal';
 import RulesPanel from './components/RulesPanel';
 import DeleteRuleModal from './components/DeleteRuleModal';
-import { ToastContainer, type ToastMessage } from '@/app/components/ui';
+import { Button, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
 export type { Category };
 
@@ -283,26 +283,26 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
 
       {/* Sub-menu tabs */}
       <div className="tabs tabs-boxed bg-base-200 p-1 w-fit">
-        <button
-          className={`tab tab-lg font-semibold gap-2 transition-all ${
-            activeTab === 'categories' ? 'tab-active' : ''
-          }`}
+        <Button
+          variant="tab"
+          size="lg"
+          className={`font-semibold ${activeTab === 'categories' ? 'tab-active' : ''}`}
           onClick={() => { setActiveTab('categories'); window.scrollTo(0, 0); }}
           aria-label={`View Categories tab. Total categories: ${categories.length}`}
         >
           <Tags className="h-5 w-5" /> {t('categories')}
           <span className="badge badge-sm badge-neutral">{categories.length}</span>
-        </button>
-        <button
-          className={`tab tab-lg font-semibold gap-2 transition-all ${
-            activeTab === 'rules' ? 'tab-active' : ''
-          }`}
+        </Button>
+        <Button
+          variant="tab"
+          size="lg"
+          className={`font-semibold ${activeTab === 'rules' ? 'tab-active' : ''}`}
           onClick={() => { setActiveTab('rules'); window.scrollTo(0, 0); }}
           aria-label={`View Match Rules tab. Total rules: ${totalRules}`}
         >
           <Settings className="h-5 w-5" /> {t('matchRules')}
           <span className="badge badge-sm badge-neutral">{totalRules}</span>
-        </button>
+        </Button>
       </div>
 
       {/* ── CATEGORIES TAB ── */}

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Tags, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
-import { Button } from '@/app/components/ui';
+import { Button, Input } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface CategoryTableProps {
@@ -79,22 +79,23 @@ export default function CategoryTable({
         </h2>
 
         <div className="form-control w-full max-w-xs mt-2 mb-4 relative">
-          <input
+          <Input
             type="text"
             placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="input input-bordered input-sm w-full pr-8"
+            className="input-sm w-full pr-8"
           />
           {searchQuery && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
+              className="btn-circle absolute right-2.5 top-1/2 -translate-y-1/2 hover:text-base-content focus:outline-none"
               onClick={() => onSearchChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content focus:outline-none"
               aria-label={tCommon('clearSearch')}
-            >
-              <X className="h-4 w-4" />
-            </button>
+              icon={<X className="h-4 w-4" />}
+            />
           )}
         </div>
 
@@ -109,51 +110,61 @@ export default function CategoryTable({
               <thead className="sticky top-0 bg-base-100 z-10 shadow-xs">
                 <tr className="border-b border-base-200">
                   <th>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onSort('name')}
-                      className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
+                      className="font-bold w-full justify-start text-left"
                       aria-label="Sort by category name"
                     >
                       <span className="truncate">{t('categoryName')}</span>{' '}
                       <SortIndicator field="name" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    </Button>
                   </th>
                   <th>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onSort('type')}
-                      className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
+                      className="font-bold w-full justify-start text-left"
                       aria-label="Sort by category type"
                     >
                       <span>{t('type')}</span> <SortIndicator field="type" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    </Button>
                   </th>
                   <th>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onSort('cashFlowType')}
-                      className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none w-full text-left"
+                      className="font-bold w-full justify-start text-left"
                       aria-label="Sort by cash flow section"
                     >
                       <span className="truncate">{t('cashFlow')}</span>{' '}
                       <SortIndicator field="cashFlowType" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    </Button>
                   </th>
                   <th className="text-center">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onSort('rules')}
-                      className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                      className="font-bold w-full justify-center"
                       aria-label="Sort by match rules count"
                     >
                       <span>{t('matchRules')}</span> <SortIndicator field="rules" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    </Button>
                   </th>
                   <th className="text-center">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onSort('usage')}
-                      className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                      className="font-bold w-full justify-center"
                       aria-label="Sort by transaction usage count"
                     >
                       <span>{t('usage')}</span> <SortIndicator field="usage" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    </Button>
                   </th>
                   <th className="text-center">{tCommon('actions')}</th>
                 </tr>

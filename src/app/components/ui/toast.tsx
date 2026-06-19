@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { Button } from './button';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -36,13 +37,14 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onClose })
       {styles.icon}
       <span className="text-sm font-medium flex-1">{message}</span>
       {onClose && (
-        <button 
+        <Button 
+          variant="ghost" 
+          size="xs" 
+          className="btn-circle p-1" 
           onClick={onClose} 
-          className="p-1 rounded-lg hover:bg-black/5 transition-colors"
-          aria-label="Dismiss notification"
-        >
-          <X className="h-4 w-4 opacity-70" />
-        </button>
+          aria-label="Dismiss notification" 
+          icon={<X className="h-4 w-4 opacity-70" />} 
+        />
       )}
     </div>
   );

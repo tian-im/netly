@@ -7,6 +7,7 @@ import { CashFlowStatement, CashFlowSection } from '../types';
 import { ArrowDownRight, Search } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { RenderDelta } from '@/lib/render-delta';
+import { Button } from '@/app/components/ui';
 
 // WHY: Extracted as a named sub-component (instead of an inline closure) so that
 // React can skip re-rendering sections whose props haven't changed. An inline closure
@@ -51,12 +52,14 @@ const CashFlowSectionBlock = memo(function CashFlowSectionBlock({
       <div className="space-y-2 text-xs px-2 text-base-content/75">
         {/* Inflow row */}
         <div className="flex justify-between items-start">
-          <button
+          <Button
+            variant="link"
+            size="xs"
             onClick={() => onDrillDown(`${title} (${t('cashFlow.inflow')})`, { cashFlowSection: sectionName, cashFlowType: 'inflow' })}
-            className="hover:underline hover:text-primary text-left focus:outline-none flex items-center gap-1"
+            className="font-medium"
           >
             {t('cashFlow.inflowsLabel')} <Search className="h-3 w-3 opacity-60" />
-          </button>
+          </Button>
           <div className="flex flex-col items-end">
             <span className="text-success font-semibold">
               +{symbol}{data.inflow.toLocaleString(locale, { minimumFractionDigits: 2 })}
@@ -67,12 +70,14 @@ const CashFlowSectionBlock = memo(function CashFlowSectionBlock({
 
         {/* Outflow row */}
         <div className="flex justify-between items-start">
-          <button
+          <Button
+            variant="link"
+            size="xs"
             onClick={() => onDrillDown(`${title} (${t('cashFlow.outflow')})`, { cashFlowSection: sectionName, cashFlowType: 'outflow' })}
-            className="hover:underline hover:text-primary text-left focus:outline-none flex items-center gap-1"
+            className="font-medium"
           >
             {t('cashFlow.outflowsLabel')} <Search className="h-3 w-3 opacity-60" />
-          </button>
+          </Button>
           <div className="flex flex-col items-end">
             <span className="text-error font-semibold">
               -{symbol}{data.outflow.toLocaleString(locale, { minimumFractionDigits: 2 })}

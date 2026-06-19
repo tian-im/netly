@@ -390,15 +390,15 @@ export default function AccountsClient({
                     <option value="LIABILITY">{t('filterLiability')}</option>
                   </select>
                   <div className="relative w-full max-w-xs">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-base-content/40">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-base-content/40 z-10">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </span>
-                    <input
+                    <Input
                       type="text"
                       placeholder={tCommon('search') || 'Search accounts...'}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="input input-bordered input-sm w-full pl-9 bg-base-200/50 focus:bg-base-100 transition-colors text-base-content font-normal text-xs"
+                      className="input-sm w-full pl-9 bg-base-200/50 focus:bg-base-100 transition-colors text-base-content font-normal text-xs"
                     />
                   </div>
                 </div>
@@ -420,40 +420,48 @@ export default function AccountsClient({
                   <thead>
                     <tr className="border-b border-base-200">
                       <th>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={() => handleSort('name')}
-                          className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                          className="font-bold w-full justify-start"
                           aria-label="Sort by account name"
                         >
                           {t('accountName')} <SortIndicator field="name" />
-                        </button>
+                        </Button>
                       </th>
                       <th>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={() => handleSort('type')}
-                          className="font-bold flex items-center hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                          className="font-bold w-full justify-start"
                           aria-label="Sort by account type"
                         >
                           {t('type')} <SortIndicator field="type" />
-                        </button>
+                        </Button>
                       </th>
                       <th className="text-center">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={() => handleSort('transactions')}
-                          className="font-bold flex items-center justify-center w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                          className="font-bold w-full justify-center"
                           aria-label="Sort by transaction count"
                         >
                           {t('transactionsCountHeader')} <SortIndicator field="transactions" />
-                        </button>
+                        </Button>
                       </th>
                       <th className="text-right">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={() => handleSort('balance')}
-                          className="font-bold flex items-center justify-end w-full hover:text-primary transition-colors cursor-pointer focus:outline-none"
+                          className="font-bold w-full justify-end"
                           aria-label="Sort by account balance"
                         >
                           {t('balance')} <SortIndicator field="balance" />
-                        </button>
+                        </Button>
                       </th>
                       <th className="text-center">{t('actions')}</th>
                     </tr>

@@ -9,7 +9,7 @@ import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 import { findDuplicateGroups } from '@/app/actions';
-import { Button } from '@/app/components/ui';
+import { Button, Input, Checkbox, Radio } from '@/app/components/ui';
 
 interface Account {
   id: string;
@@ -491,7 +491,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     }`}
                     onClick={() => document.getElementById('file-input-field')?.click()}
                   >
-                    <input
+                    <Input
                       id="file-input-field"
                       type="file"
                       accept=".csv"
@@ -595,20 +595,18 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     <span className="label-text font-bold mb-1.5 block">{t('amountMappingType')}</span>
                     <div className="flex gap-4">
                       <label className="label cursor-pointer gap-2 py-0">
-                        <input
-                          type="radio"
+                        <Radio
                           name="amountType"
-                          className="radio radio-primary radio-sm"
+                          size="sm"
                           checked={!useSeparateDebitCredit}
                           onChange={() => setUseSeparateDebitCredit(false)}
                         />
                         <span className="label-text text-xs">{t('amountField')}</span>
                       </label>
                       <label className="label cursor-pointer gap-2 py-0">
-                        <input
-                          type="radio"
+                        <Radio
                           name="amountType"
-                          className="radio radio-primary radio-sm"
+                          size="sm"
                           checked={useSeparateDebitCredit}
                           onChange={() => setUseSeparateDebitCredit(true)}
                         />
@@ -620,9 +618,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                   {/* Toggle: CSV has headers or not */}
                   <div className="form-control">
                     <label className="label cursor-pointer justify-start gap-3 w-fit py-1">
-                      <input
-                        type="checkbox"
-                        className="toggle toggle-primary toggle-sm"
+                      <Checkbox
+                        variant="toggle"
+                        size="sm"
                         checked={hasHeaders}
                         onChange={(e) => {
                           setHasHeaders(e.target.checked);

@@ -7,6 +7,7 @@ import { IncomeStatement } from '../types';
 import { Receipt, Search } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { RenderDelta } from '@/lib/render-delta';
+import { Button } from '@/app/components/ui';
 
 interface IncomeStatementPanelProps {
   report: IncomeStatement;
@@ -116,12 +117,14 @@ export default function IncomeStatementPanel({
                   const priorVal = getPriorCategoryAmount(inc.name, false);
                   return (
                     <div key={inc.name} className="flex justify-between items-center text-sm">
-                      <button
+                      <Button
+                        variant="link"
+                        size="xs"
                         onClick={() => onDrillDown(inc.name, { categoryName: inc.name })}
-                        className="hover:underline hover:text-success text-left font-medium focus:outline-none flex items-center gap-1"
+                        className="font-medium"
                       >
                         {inc.name} <span className="text-xs text-base-content/40 font-normal">({percentage}%)</span> <Search className="h-3 w-3 opacity-60" />
-                      </button>
+                      </Button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
                           {symbol}{inc.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
@@ -156,12 +159,14 @@ export default function IncomeStatementPanel({
                   const priorVal = getPriorCategoryAmount(exp.name, true);
                   return (
                     <div key={exp.name} className="flex justify-between items-center text-sm">
-                      <button
+                      <Button
+                        variant="link"
+                        size="xs"
                         onClick={() => onDrillDown(exp.name, { categoryName: exp.name })}
-                        className="hover:underline hover:text-error text-left font-medium focus:outline-none flex items-center gap-1"
+                        className="font-medium"
                       >
                         {exp.name} <span className="text-xs text-base-content/40 font-normal">({percentage}%)</span> <Search className="h-3 w-3 opacity-60" />
-                      </button>
+                      </Button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">
                           {symbol}{exp.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}

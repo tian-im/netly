@@ -7,6 +7,7 @@ import { BalanceSheet } from '../types';
 import { Scale, Search } from 'lucide-react';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { RenderDelta } from '@/lib/render-delta';
+import { Button } from '@/app/components/ui';
 
 interface BalanceSheetPanelProps {
   report: BalanceSheet;
@@ -108,12 +109,14 @@ export default function BalanceSheetPanel({
                   const priorVal = getPriorBalance(acc.id);
                   return (
                     <div key={acc.id} className="flex justify-between items-center text-sm">
-                      <button
+                      <Button
+                        variant="link"
+                        size="xs"
                         onClick={() => onDrillDown(acc.name, { accountId: acc.id })}
-                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none flex items-center gap-1"
+                        className="font-medium"
                       >
                         {acc.name} <Search className="h-3 w-3 opacity-60" />
-                      </button>
+                      </Button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-success">
                           {symbol}{acc.balance.toLocaleString(locale, { minimumFractionDigits: 2 })}
@@ -147,12 +150,14 @@ export default function BalanceSheetPanel({
                   const priorVal = getPriorBalance(acc.id);
                   return (
                     <div key={acc.id} className="flex justify-between items-center text-sm">
-                      <button
+                      <Button
+                        variant="link"
+                        size="xs"
                         onClick={() => onDrillDown(acc.name, { accountId: acc.id })}
-                        className="hover:underline hover:text-primary text-left font-medium focus:outline-none flex items-center gap-1"
+                        className="font-medium"
                       >
                         {acc.name} <Search className="h-3 w-3 opacity-60" />
-                      </button>
+                      </Button>
                       <div className="flex flex-col items-end">
                         <span className="font-mono font-semibold text-error">
                           {symbol}{acc.balance.toLocaleString(locale, { minimumFractionDigits: 2 })}

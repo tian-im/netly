@@ -3,6 +3,7 @@ import { Database, Clock, Settings, History as HistoryIcon, RefreshCw } from 'lu
 import { useTranslations, useFormatter } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { vacuumDatabase } from '../../actions';
+import { Button } from '@/app/components/ui';
 
 interface DatabaseInfoCardProps {
   dbInfo: {
@@ -104,18 +105,16 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
         </div>
 
         <div className="mt-6">
-          <button
+          <Button
             onClick={handleVacuum}
-            className="btn btn-outline btn-primary btn-sm w-full gap-2"
-            disabled={isPending}
+            variant="outline-primary"
+            size="sm"
+            className="w-full"
+            loading={isPending}
+            icon={<RefreshCw className="h-4 w-4" />}
           >
-            {isPending ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
             {t('dbVacuumBtn')}
-          </button>
+          </Button>
           <label className="label mt-1">
             <span className="label-text-alt text-[10px] text-base-content/40 text-center w-full break-words whitespace-normal">
               {t('dbVacuumDesc')}

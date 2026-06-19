@@ -6,6 +6,7 @@ import { useLocaleContext } from '@/app/providers';
 import { getTransactions } from '../../actions';
 import { Search, X } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/currencies';
+import { Button } from '@/app/components/ui';
 
 interface TransactionDrillDownModalProps {
   isOpen: boolean;
@@ -112,9 +113,14 @@ export default function TransactionDrillDownModal({
           <h3 id="drilldown-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
             <Search className="h-5 w-5" /> {t('drillDown.title', { category: title })}
           </h3>
-          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost flex items-center justify-center" aria-label={tCommon('close')}>
-            <X className="h-4 w-4" />
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="btn-circle flex items-center justify-center p-0"
+            aria-label={tCommon('close')}
+            icon={<X className="h-4 w-4" />}
+          />
         </div>
 
         <div className="py-4">
@@ -202,7 +208,7 @@ export default function TransactionDrillDownModal({
         </div>
 
         <div className="modal-action border-t border-base-200 pt-3">
-          <button onClick={onClose} className="btn btn-primary btn-sm">{tCommon('close')}</button>
+          <Button onClick={onClose} variant="primary" size="sm">{tCommon('close')}</Button>
         </div>
       </div>
     </div>

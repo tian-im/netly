@@ -7,7 +7,7 @@ import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Download, RefreshCw } from 'lucide-react';
-import { Button, Input, ToastContainer, type ToastMessage } from '@/app/components/ui';
+import { Button, Input, Checkbox, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
 // Custom components
 import DateRangePresets from './components/DateRangePresets';
@@ -282,11 +282,10 @@ export default function ReportsClient({
             </div>
             <div className="flex flex-col gap-2 w-full md:w-auto">
               <label className="cursor-pointer label justify-start gap-2 self-start md:self-auto">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={comparePrior}
                   onChange={(e) => handleComparePriorChange(e.target.checked)}
-                  className="checkbox checkbox-primary checkbox-xs"
+                  size="xs"
                 />
                 <span className="label-text text-xs font-semibold">{t('comparePrior')}</span>
               </label>
@@ -310,15 +309,20 @@ export default function ReportsClient({
         <div className="flex items-center gap-2 bg-base-100 p-4 rounded-xl shadow border border-base-200 justify-center sm:justify-start">
           <span className="font-bold text-sm text-base-content/70">{t('viewCurrency')}</span>
           <div className="join">
-            {reportCurrencies.map((cur) => (
-              <button
-                key={cur}
-                onClick={() => handleCurrencyChange(cur)}
-                className={`btn btn-sm join-item ${selectedReportCurrency === cur ? 'btn-primary' : 'btn-outline'}`}
-              >
-                {cur}
-              </button>
-            ))}
+            {reportCurrencies.map((cur) => {
+              const isActive = selectedReportCurrency === cur;
+              return (
+                <Button
+                  key={cur}
+                  onClick={() => handleCurrencyChange(cur)}
+                  variant={isActive ? 'primary' : 'outline'}
+                  size="sm"
+                  className="join-item"
+                >
+                  {cur}
+                </Button>
+              );
+            })}
           </div>
         </div>
       )}

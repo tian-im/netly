@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { buildDashboardUrl } from '@/lib/links';
+import { Button } from '@/app/components/ui';
 
 const TRANSLATIONS = {
   en: { title: 'Transactions Error', desc: 'Failed to load the transaction ledger. Please try again.', tryAgain: 'Try Again', goBack: 'Go to Dashboard' },
@@ -40,12 +41,12 @@ export default function TransactionsErrorPage({
         {t.desc}
       </p>
       <div className="flex gap-4">
-        <button onClick={() => reset()} className="btn btn-primary btn-sm">
+        <Button onClick={() => reset()} size="sm">
           {t.tryAgain}
-        </button>
-        <a href={buildDashboardUrl()} className="btn btn-outline btn-sm">
+        </Button>
+        <Button href={buildDashboardUrl()} variant="outline" size="sm">
           {t.goBack}
-        </a>
+        </Button>
       </div>
     </div>
   );

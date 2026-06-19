@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { buildDashboardUrl } from '@/lib/links';
 import { PREFERENCES, getPreference } from '@/lib/preferences';
+import { Button } from '@/app/components/ui';
 
 const TRANSLATIONS = {
   en: { title: 'Application Error', desc: 'An unexpected error occurred in the system.', tryAgain: 'Try Again', dashboard: 'Dashboard' },
@@ -39,12 +40,12 @@ export default function ErrorPage({
         {t.desc}
       </p>
       <div className="flex gap-4">
-        <button onClick={() => reset()} className="btn btn-primary btn-sm">
+        <Button onClick={() => reset()} size="sm">
           {t.tryAgain}
-        </button>
-        <a href={buildDashboardUrl()} className="btn btn-outline btn-sm">
+        </Button>
+        <Button href={buildDashboardUrl()} variant="outline" size="sm">
           {t.dashboard}
-        </a>
+        </Button>
       </div>
     </div>
   );

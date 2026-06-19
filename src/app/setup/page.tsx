@@ -8,6 +8,7 @@ import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
 import { buildLoginUrl, buildDashboardUrl } from '@/lib/links';
+import { Button, Input } from '@/app/components/ui';
 
 function getDefaultDeviceName(): string {
   if (typeof navigator === 'undefined') return '';
@@ -178,42 +179,31 @@ export default function SetupPage() {
             </div>
           )}
 
-          <div className="form-control w-full mb-4">
-            <label className="label" htmlFor="device-name">
-              <span className="label-text font-semibold text-base-content/75">
-                {t('deviceName')}
-              </span>
-            </label>
-            <input
+          <div className="w-full mb-4 text-left">
+            <Input
               id="device-name"
               type="text"
+              label={t('deviceName')}
               placeholder={t('deviceNamePlaceholder')}
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="input input-bordered w-full"
               disabled={loading}
+              helperText={t('deviceNameHelp')}
               autoFocus
             />
-            <label className="label">
-              <span className="label-text-alt text-base-content/40">
-                {t('deviceNameHelp')}
-              </span>
-            </label>
           </div>
 
-          <button
+          <Button
             onClick={handleRegister}
             disabled={loading || !deviceName.trim()}
-            className="btn btn-primary btn-lg w-full gap-2"
+            size="lg"
+            className="w-full"
+            loading={loading}
+            icon={<KeyRound className="h-5 w-5" />}
           >
-            {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <KeyRound className="h-5 w-5" />
-            )}
             {loading ? t('registering') : t('createBtn')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

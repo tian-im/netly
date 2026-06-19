@@ -50,4 +50,20 @@ describe('Input Component', () => {
     expect(input.name).toBe('userpass');
     expect(input.disabled).toBe(true);
   });
+
+  it('renders type="file" correctly with appropriate classes', () => {
+    render(<Input type="file" data-testid="file-input" />);
+    const input = screen.getByTestId('file-input') as HTMLInputElement;
+    expect(input.type).toBe('file');
+    expect(input.className).toContain('file-input');
+    expect(input.className.split(' ')).not.toContain('input');
+  });
+
+  it('renders type="file" error state correctly', () => {
+    render(<Input type="file" data-testid="file-input" error="Invalid file format" />);
+    const input = screen.getByTestId('file-input') as HTMLInputElement;
+    expect(input.className).toContain('file-input-error');
+    expect(input.className).not.toContain('focus:border-primary');
+    expect(screen.getByText('Invalid file format')).toBeInTheDocument();
+  });
 });

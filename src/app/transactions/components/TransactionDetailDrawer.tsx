@@ -6,6 +6,7 @@ import { Transaction, Category } from '../types';
 import { useLocaleContext } from '@/app/providers';
 import { translateCategoryType, translateAccountType } from '@/lib/translate-category';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
+import { Button } from '@/app/components/ui';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -58,13 +59,14 @@ export default function TransactionDetailDrawer({
                   <h2 id="slide-over-title" className="text-xl font-bold text-base-content break-words pr-4">
                     {t('detail.title')}
                   </h2>
-                  <button
+                  <Button
                     type="button"
-                    className="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-base-content"
+                    variant="ghost"
+                    size="xs"
+                    className="btn-circle text-base-content/50 hover:text-base-content"
                     onClick={onClose}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                    icon={<X className="w-5 h-5" />}
+                  />
                 </div>
 
                 <div className="mt-6 border-b border-base-200 pb-6 text-center">

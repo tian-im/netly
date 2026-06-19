@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload, CheckCircle } from 'lucide-react';
+import { Button, Checkbox } from '@/app/components/ui';
 import { Transaction, Category, SortConfig } from '../types';
 import { useLocaleContext } from '@/app/providers';
 import { translateCategoryType, translateAccountType } from '@/lib/translate-category';
@@ -79,10 +80,12 @@ export default function TransactionTable({
     const isSorted = sortConfig.sortBy === field;
     return (
       <th className={`${className} p-0`}>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="xs"
           onClick={() => onSort(field)}
-          className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer w-full text-left py-3 px-4 font-bold text-xs uppercase select-none focus:outline-hidden"
+          className="w-full text-left font-bold uppercase select-none"
           aria-label={`Sort by ${label}`}
         >
           <span>{label}</span>
@@ -95,7 +98,7 @@ export default function TransactionTable({
           ) : (
             <ArrowUpDown className="w-3.5 h-3.5 opacity-30 shrink-0" />
           )}
-        </button>
+        </Button>
       </th>
     );
   };
@@ -135,9 +138,8 @@ export default function TransactionTable({
           className="text-center"
           onClick={(e) => e.stopPropagation()}
         >
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm checkbox-primary"
+          <Checkbox
+            size="sm"
             checked={isSelected}
             onChange={() => onToggleSelect(tx.id)}
             disabled={isUpdatingThisRow}
@@ -211,9 +213,8 @@ export default function TransactionTable({
           <thead>
             <tr className="border-b border-base-200 bg-base-200/50">
               <th className="text-center">
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-sm checkbox-primary"
+                <Checkbox
+                  size="sm"
                   checked={isAllSelected}
                   onChange={onToggleSelectAll}
                   disabled={isLoading || transactions.length === 0}
@@ -300,26 +301,30 @@ export default function TransactionTable({
                             {t('duplicateGroupHeader', { index: groupIndex + 1, count: group.transactions.length })}
                           </span>
                           <div className="flex gap-2">
-                            <button
+                            <Button
                               type="button"
+                              variant="warning"
+                              size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (onKeepOneDeleteRest) onKeepOneDeleteRest(group);
                               }}
-                              className="btn btn-xs btn-warning cursor-pointer"
+                              className="cursor-pointer"
                             >
                               {t('keepOneBtn')}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (onDismissDuplicateGroup) onDismissDuplicateGroup(group.id);
                               }}
-                              className="btn btn-xs btn-outline btn-ghost cursor-pointer"
+                              className="cursor-pointer"
                             >
                               {t('notDuplicatesBtn')}
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </td>

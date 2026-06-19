@@ -52,4 +52,11 @@ describe('Toast Component', () => {
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('renders close button using Button component', () => {
+    const handleClose = vi.fn();
+    render(<Toast message="With close button" onClose={handleClose} />);
+    const closeBtn = screen.getByRole('button', { name: /dismiss/i });
+    expect(closeBtn.className).toContain('btn');
+  });
 });

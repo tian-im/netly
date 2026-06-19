@@ -8,6 +8,7 @@ import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
 import { buildSetupUrl, buildDashboardUrl } from '@/lib/links';
+import { Button, Input } from '@/app/components/ui';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -193,70 +194,66 @@ export default function LoginPage() {
 
           {useSetupCodeMode ? (
             <div className="w-full space-y-4">
-              <div className="form-control w-full">
-                <input
-                  type="text"
-                  placeholder={t('setupCodePlaceholder')}
-                  value={setupCode}
-                  onChange={(e) => setSetupCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === 'Enter' && !verifyingSetupCode && handleVerifySetupCode()}
-                  className="input input-bordered font-mono font-bold text-center tracking-wider text-lg w-full"
-                  disabled={verifyingSetupCode}
-                  autoFocus
-                />
-              </div>
+              <Input
+                type="text"
+                placeholder={t('setupCodePlaceholder')}
+                value={setupCode}
+                onChange={(e) => setSetupCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && !verifyingSetupCode && handleVerifySetupCode()}
+                className="font-mono font-bold text-center tracking-wider text-lg w-full"
+                disabled={verifyingSetupCode}
+                autoFocus
+              />
 
-              <button
+              <Button
                 onClick={() => handleVerifySetupCode()}
                 disabled={verifyingSetupCode || !setupCode.trim()}
-                className="btn btn-primary btn-lg w-full gap-2"
+                size="lg"
+                className="w-full"
+                loading={verifyingSetupCode}
+                icon={<KeyRound className="h-5 w-5" />}
               >
-                {verifyingSetupCode ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <KeyRound className="h-5 w-5" />
-                )}
                 {verifyingSetupCode ? t('verifyingSetupCode') : t('submitSetupCodeBtn')}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 onClick={() => {
                   setUseSetupCodeMode(false);
                   setError('');
                   setSetupCode('');
                 }}
                 disabled={verifyingSetupCode}
-                className="btn btn-link btn-sm text-base-content/60 no-underline hover:underline"
+                variant="link"
+                size="sm"
+                className="text-base-content/60 no-underline hover:underline"
               >
                 {t('backToPasskey')}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="w-full space-y-4">
-              <button
+              <Button
                 onClick={handleLogin}
-                disabled={loading}
-                className="btn btn-primary btn-lg w-full gap-2"
+                size="lg"
+                className="w-full"
+                loading={loading}
+                icon={<KeyRound className="h-5 w-5" />}
               >
-                {loading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <KeyRound className="h-5 w-5" />
-                )}
                 {loading ? t('authenticating') : t('signInBtn')}
-              </button>
+              </Button>
 
               <div className="text-xs text-base-content/50 pt-2">
                 <span>{t('cantUsePasskey')} </span>
-                <button
+                <Button
                   onClick={() => {
                     setUseSetupCodeMode(true);
                     setError('');
                   }}
-                  className="link link-primary font-semibold"
+                  variant="link"
+                  className="font-semibold"
                 >
                   {t('useSetupCode')}
-                </button>
+                </Button>
               </div>
             </div>
           )}

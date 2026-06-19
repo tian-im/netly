@@ -103,6 +103,50 @@ describe('Button Component', () => {
     expect(screen.getByRole('button').className).toContain('btn-outline');
     expect(screen.getByRole('button').className).toContain('btn-secondary');
   });
+
+  it('applies neutral, warning, and link variant classes correctly', () => {
+    const { rerender } = render(<Button variant="neutral">Neutral</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-neutral');
+
+    rerender(<Button variant="warning">Warning</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-warning');
+
+    rerender(<Button variant="link">Link</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-link');
+  });
+
+  it('applies tab variant classes correctly and suppresses button defaults', () => {
+    const { rerender } = render(<Button variant="tab">Tab</Button>);
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('tab');
+    expect(button.className).not.toContain('btn');
+    expect(button.className).not.toContain('rounded-xl');
+    expect(button.className).not.toContain('no-animation');
+
+    rerender(<Button variant="tab" size="lg">Tab LG</Button>);
+    expect(screen.getByRole('button').className).toContain('tab-lg');
+    expect(screen.getByRole('button').className).not.toContain('btn-lg');
+  });
+
+  it('renders tab variant with xl size correctly', () => {
+    render(<Button variant="tab" size="xl">Tab XL</Button>);
+    expect(screen.getByRole('button').className).toContain('tab-xl');
+  });
+
+  it('renders tab variant as button even if href is passed', () => {
+    render(<Button variant="tab" href="/some-path">Tab Button</Button>);
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('applies segmented variant classes correctly', () => {
+    render(<Button variant="segmented">Option</Button>);
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('bg-transparent');
+    expect(button.className).toContain('text-base-content/70');
+    expect(button.className).toContain('hover:bg-base-300');
+    expect(button.className).toContain('border-0');
+  });
 });
 
 

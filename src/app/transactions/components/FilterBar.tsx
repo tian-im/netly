@@ -6,6 +6,7 @@ import { Search, Settings, Check } from 'lucide-react';
 import { Account, Category } from '../types';
 import { translateCategoryType } from '@/lib/translate-category';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
+import { Button, Input, Checkbox } from '@/app/components/ui';
 
 interface FilterBarProps {
   accounts: Account[];
@@ -107,15 +108,15 @@ export default function FilterBar({
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between w-full">
           {/* Search bar */}
           <div className="relative flex-1 w-full">
-            <span className="absolute left-3 top-2.5 text-base-content/40">
+            <span className="absolute left-3 top-2.5 text-base-content/40 z-10">
               <Search className="w-4 h-4" aria-hidden="true" />
             </span>
-            <input
+            <Input
               type="text"
               placeholder={t('filter.searchPlaceholder')}
               value={localSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="input input-bordered input-sm w-full pl-9"
+              className="input-sm w-full pl-9"
               aria-label="Search payee or memo"
             />
           </div>
@@ -138,14 +139,14 @@ export default function FilterBar({
 
             {/* Rule settings popover */}
             <div className="dropdown dropdown-end">
-              <button
+              <Button
                 tabIndex={0}
-                role="button"
-                className="btn btn-ghost btn-sm btn-circle"
+                variant="ghost"
+                size="sm"
+                className="btn-circle"
                 aria-label="Rule creation settings"
-              >
-                <Settings className="w-4 h-4 text-base-content/65" />
-              </button>
+                icon={<Settings className="w-4 h-4 text-base-content/65" />}
+              />
               <div
                 tabIndex={0}
                 className="dropdown-content card card-compact bg-base-100 z-10 w-64 p-2 shadow-xl border border-base-200"
@@ -158,36 +159,42 @@ export default function FilterBar({
                     {t('rulePrompt.rulePromptPrefsDesc')}
                   </p>
                   <div className="space-y-1">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onRuleModeChange('ask')}
-                      className={`flex items-center justify-between w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-base-200 transition-colors ${
+                      className={`w-full justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-base-200 transition-colors ${
                         ruleMode === 'ask' ? 'font-semibold text-primary' : ''
                       }`}
                     >
                       <span>{t('rulePrompt.rulePromptAsk')}</span>
                       {ruleMode === 'ask' && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onRuleModeChange('always')}
-                      className={`flex items-center justify-between w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-base-200 transition-colors ${
+                      className={`w-full justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-base-200 transition-colors ${
                         ruleMode === 'always' ? 'font-semibold text-primary' : ''
                       }`}
                     >
                       <span>{t('rulePrompt.rulePromptAlways')}</span>
                       {ruleMode === 'always' && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => onRuleModeChange('never')}
-                      className={`flex items-center justify-between w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-base-200 transition-colors ${
+                      className={`w-full justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-base-200 transition-colors ${
                         ruleMode === 'never' ? 'font-semibold text-primary' : ''
                       }`}
                     >
                       <span>{t('rulePrompt.rulePromptNever')}</span>
                       {ruleMode === 'never' && <Check className="w-3.5 h-3.5" />}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -283,10 +290,10 @@ export default function FilterBar({
           {/* Show duplicates toggle */}
           <div className="w-full flex items-center justify-start gap-2 h-full py-1">
             <label className="label cursor-pointer justify-start gap-2 w-full py-0">
-              <input
+              <Checkbox
                 id="show-duplicates-toggle"
-                type="checkbox"
-                className="toggle toggle-primary toggle-sm"
+                variant="toggle"
+                size="sm"
                 checked={duplicates}
                 onChange={(e) => onFilterChange({ duplicates: e.target.checked })}
                 aria-label="Show duplicate transactions only"

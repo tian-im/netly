@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { exportAllTransactions, exportAllAccounts } from '../../actions';
 import { formatDateISO } from '@/lib/dates';
+import { Button } from '@/app/components/ui';
 
 interface ExportCardProps {
   accountsCount: number;
@@ -59,33 +60,29 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <button
+          <Button
             onClick={handleExportTransactions}
-            className="btn btn-neutral btn-md gap-2"
-            disabled={isExportingTransactions || transactionsCount === 0}
+            variant="neutral"
+            size="md"
+            disabled={transactionsCount === 0}
+            loading={isExportingTransactions}
+            icon={<FileSpreadsheet className="h-5 w-5 text-success" />}
             aria-label={t('exportTransactionsBtn', { count: transactionsCount })}
           >
-            {isExportingTransactions ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <FileSpreadsheet className="h-5 w-5 text-success" />
-            )}
             {t('exportTransactionsBtn', { count: transactionsCount })}
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={handleExportAccounts}
-            className="btn btn-neutral btn-md gap-2"
-            disabled={isExportingAccounts || accountsCount === 0}
+            variant="neutral"
+            size="md"
+            disabled={accountsCount === 0}
+            loading={isExportingAccounts}
+            icon={<FileSpreadsheet className="h-5 w-5 text-info" />}
             aria-label={t('exportAccountsBtn', { count: accountsCount })}
           >
-            {isExportingAccounts ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <FileSpreadsheet className="h-5 w-5 text-info" />
-            )}
             {t('exportAccountsBtn', { count: accountsCount })}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

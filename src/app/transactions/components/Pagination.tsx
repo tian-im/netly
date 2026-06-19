@@ -7,6 +7,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react';
+import { Button } from '@/app/components/ui';
 
 interface PaginationProps {
   totalCount: number;
@@ -56,73 +57,80 @@ export default function Pagination({
       {/* Page controls */}
       <div className="join">
         {/* First page */}
-        <button
-          className="join-item btn btn-xs btn-ghost"
+        <Button
+          variant="ghost"
+          size="xs"
+          className="join-item"
           onClick={() => onPageChange(1)}
           disabled={safePage === 1}
           title={t('pagination.firstPage')}
           aria-label={t('pagination.firstPage')}
-        >
-          <ChevronsLeft className="w-3.5 h-3.5" />
-        </button>
+          icon={<ChevronsLeft className="w-3.5 h-3.5" />}
+        />
 
         {/* Prev */}
-        <button
-          className="join-item btn btn-xs btn-ghost"
+        <Button
+          variant="ghost"
+          size="xs"
+          className="join-item"
           onClick={() => onPageChange(Math.max(1, safePage - 1))}
           disabled={safePage === 1}
           title={t('pagination.prevPage')}
           aria-label={t('pagination.prevPage')}
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-        </button>
+          icon={<ChevronLeft className="w-3.5 h-3.5" />}
+        />
 
         {/* Numbered pages */}
-        {getPageNumbers().map((p, i) =>
-          p === '...' ? (
-            <button
+        {getPageNumbers().map((p, i) => {
+          const isActive = safePage === p;
+          return p === '...' ? (
+            <Button
               key={`ellipsis-${i}`}
-              className="join-item btn btn-xs btn-disabled"
+              variant="ghost"
+              size="xs"
+              className="join-item"
               disabled
             >
               …
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               key={p}
-              className={`join-item btn btn-xs ${
-                safePage === p ? 'btn-primary' : 'btn-ghost'
-              }`}
+              variant={isActive ? 'primary' : 'ghost'}
+              size="xs"
+              className="join-item"
               onClick={() => onPageChange(p as number)}
               aria-label={t('pagination.goToPage', { page: p })}
-              aria-current={safePage === p ? 'page' : undefined}
+              aria-current={isActive ? 'page' : undefined}
             >
               {p}
-            </button>
-          )
-        )}
+            </Button>
+          );
+        })}
 
         {/* Next */}
-        <button
-          className="join-item btn btn-xs btn-ghost"
+        <Button
+          variant="ghost"
+          size="xs"
+          className="join-item"
           onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
           disabled={safePage === totalPages}
           title={t('pagination.nextPage')}
           aria-label={t('pagination.nextPage')}
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+          icon={<ChevronRight className="w-3.5 h-3.5" />}
+        />
 
         {/* Last page */}
-        <button
-          className="join-item btn btn-xs btn-ghost"
+        <Button
+          variant="ghost"
+          size="xs"
+          className="join-item"
           onClick={() => onPageChange(totalPages)}
           disabled={safePage === totalPages}
           title={t('pagination.lastPage')}
           aria-label={t('pagination.lastPage')}
-        >
-          <ChevronsRight className="w-3.5 h-3.5" />
-        </button>
+          icon={<ChevronsRight className="w-3.5 h-3.5" />}
+        />
       </div>
     </div>
   );

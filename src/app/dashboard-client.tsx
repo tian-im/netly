@@ -16,6 +16,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
 import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl, buildDashboardUrl, buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
+import { Button } from '@/app/components/ui';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -406,50 +407,54 @@ export default function DashboardClient({
                   { id: 'ytd', label: t('periodLabelYtd'), key: '4' },
                   { id: '12m', label: t('periodLabel12m'), key: '5' },
                 ] as const
-              ).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => handlePeriodChange(p.id)}
-                  className={`btn btn-xs rounded-md border-0 gap-1 ${
-                    period === p.id
-                      ? 'btn-primary text-primary-content shadow-sm'
-                      : 'bg-transparent text-base-content/70 hover:bg-base-300'
-                  }`}
-                  aria-pressed={period === p.id}
-                  title={`${p.label} (⌘${p.key})`}
-                >
-                  {p.label}
-                </button>
-              ))}
+              ).map((p) => {
+                const isActive = period === p.id;
+                return (
+                  <Button
+                    key={p.id}
+                    onClick={() => handlePeriodChange(p.id)}
+                    size="xs"
+                    className="rounded-md"
+                    variant={isActive ? "primary" : "segmented"}
+                    aria-pressed={isActive}
+                    title={`${p.label} (⌘${p.key})`}
+                  >
+                    {p.label}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
-          <Link
+          <Button
             href={buildReportsUrl(period, now, currentVisualCurrency)}
-            className="btn btn-outline btn-xs gap-1 text-primary border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+            variant="outline"
+            size="xs"
+            className="text-primary border-primary/20 hover:border-primary/50 hover:bg-primary/5"
           >
             {t('detailedStatements')} <ArrowRight className="h-3 w-3" />
-          </Link>
+          </Button>
         </div>
 
         {activeCurrencies.length >= 1 && (
           <div className="flex items-center gap-2 justify-end">
             <span className="text-xs font-bold opacity-60">{t('currencyLabel')}</span>
             <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('currencyLabel')}>
-              {activeCurrencies.map((cur) => (
-                <button
-                  key={cur}
-                  onClick={() => setSelectedVisualCurrency(cur)}
-                  className={`btn btn-xs rounded-md border-0 ${
-                    currentVisualCurrency === cur
-                      ? 'btn-primary text-primary-content shadow-sm'
-                      : 'bg-transparent text-base-content/70 hover:bg-base-300'
-                  }`}
-                  aria-pressed={currentVisualCurrency === cur}
-                >
-                  {cur}
-                </button>
-              ))}
+              {activeCurrencies.map((cur) => {
+                const isActive = currentVisualCurrency === cur;
+                return (
+                  <Button
+                    key={cur}
+                    onClick={() => setSelectedVisualCurrency(cur)}
+                    size="xs"
+                    className="rounded-md"
+                    variant={isActive ? "primary" : "segmented"}
+                    aria-pressed={isActive}
+                  >
+                    {cur}
+                  </Button>
+                );
+              })}
             </div>
           </div>
         )}
