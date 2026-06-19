@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
+import { Button } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface DeleteCategoryModalProps {
@@ -45,22 +46,24 @@ export default function DeleteCategoryModal({
           )}
         </p>
         <div className="modal-action">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="btn btn-ghost btn-sm"
             disabled={isDeleting}
           >
             {tCommon('cancel')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="error"
+            size="sm"
+            loading={isDeleting}
             onClick={onConfirm}
-            className="btn btn-error btn-sm"
-            disabled={isDeleting}
           >
-            {isDeleting ? t('deleting') : t('deleteCategoryBtn')}
-          </button>
+            {t('deleteCategoryBtn')}
+          </Button>
         </div>
       </div>
     </div>

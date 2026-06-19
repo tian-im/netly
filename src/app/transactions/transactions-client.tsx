@@ -15,12 +15,8 @@ import TransactionDetailDrawer from './components/TransactionDetailDrawer';
 import BulkActionPanel from './components/BulkActionPanel';
 import { Download } from 'lucide-react';
 import type { DuplicateGroup } from '@/lib/duplicates';
+import { Button, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error';
-}
 
 interface TransactionsClientProps {
   initialTransactions: Transaction[];
@@ -65,7 +61,7 @@ export default function TransactionsClient({
   const [updatingTxId, setUpdatingTxId] = useState<string | null>(null);
 
   // Toast notifications state
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
   // State for dismissed duplicate groups (session-only)
@@ -392,13 +388,14 @@ export default function TransactionsClient({
         
         {/* Actions header group */}
         <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-between md:justify-end">
-          <button
+          <Button
             onClick={handleExportCSV}
-            className="btn btn-outline btn-primary btn-sm gap-2"
+            variant="outline-primary"
+            size="sm"
+            icon={<Download className="h-4 w-4" />}
           >
-            <Download className="h-4 w-4" />
-            <span>{t('exportCsv')}</span>
-          </button>
+            {t('exportCsv')}
+          </Button>
           <span className="badge badge-neutral badge-lg font-mono font-bold py-3">
             {t('transactionsCount', { count: displayedTotalCount })}
           </span>
@@ -476,18 +473,10 @@ export default function TransactionsClient({
       />
 
       {/* Toasts Notification Container */}
-      <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`alert shadow-lg text-xs font-semibold ${
-              t.type === 'error' ? 'alert-error text-error-content' : 'alert-success text-success-content'
-            }`}
-          >
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
+      <ToastContainer
+        toasts={toasts}
+        onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

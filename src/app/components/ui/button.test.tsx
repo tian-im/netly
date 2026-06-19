@@ -80,4 +80,29 @@ describe('Button Component', () => {
     render(<Button disabled>Disabled Button</Button>);
     expect(screen.getByRole('button')).toBeDisabled();
   });
+
+  it('renders an icon when icon prop is provided', () => {
+    render(<Button icon={<span data-testid="my-icon" />}>Save</Button>);
+    expect(screen.getByTestId('my-icon')).toBeInTheDocument();
+  });
+
+  it('applies outline-error variant class correctly', () => {
+    render(<Button variant="outline-error">Outline Error</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-outline');
+    expect(screen.getByRole('button').className).toContain('btn-error');
+  });
+
+  it('applies outline-primary variant class correctly', () => {
+    render(<Button variant="outline-primary">Outline Primary</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-outline');
+    expect(screen.getByRole('button').className).toContain('btn-primary');
+  });
+
+  it('applies outline-secondary variant class correctly', () => {
+    render(<Button variant="outline-secondary">Outline Secondary</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-outline');
+    expect(screen.getByRole('button').className).toContain('btn-secondary');
+  });
 });
+
+

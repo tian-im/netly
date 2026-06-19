@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Pencil, AlertTriangle } from 'lucide-react';
+import { Button, Input } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface EditCategoryModalProps {
@@ -72,21 +73,16 @@ export default function EditCategoryModal({
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-            <div className="form-control w-full">
-              <label className="label" htmlFor="edit-category-name">
-                <span className="label-text font-bold">{t('categoryName')}</span>
-              </label>
-              <input
-                id="edit-category-name"
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="input input-bordered w-full"
-                required
-                disabled={isUpdating}
-                autoFocus
-              />
-            </div>
+            <Input
+              id="edit-category-name"
+              label={t('categoryName')}
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              required
+              disabled={isUpdating}
+              autoFocus
+            />
 
             <div className="form-control w-full">
               <label className="label" htmlFor="edit-category-type">
@@ -123,21 +119,21 @@ export default function EditCategoryModal({
             </div>
 
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={handleCancel}
-                className="btn btn-ghost"
                 disabled={isUpdating}
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="btn btn-primary"
-                disabled={isUpdating || !editName.trim()}
+                loading={isUpdating}
+                disabled={!editName.trim()}
               >
-                {isUpdating ? t('saving') : t('saveChanges')}
-              </button>
+                {t('saveChanges')}
+              </Button>
             </div>
           </form>
         </div>
@@ -158,20 +154,22 @@ export default function EditCategoryModal({
             </h3>
             <p className="py-4 text-base-content/80 text-sm">{tCommon('discardChangesConfirm')}</p>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowDiscard(false)}
-                className="btn btn-ghost btn-sm"
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleDiscardConfirm}
-                className="btn btn-warning btn-sm"
               >
                 {tCommon('discard')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

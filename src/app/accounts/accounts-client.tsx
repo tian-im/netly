@@ -8,6 +8,7 @@ import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import CurrencySelector from '@/app/components/CurrencySelector';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
+import { Button, Input, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
 interface Account {
   id: string;
@@ -25,11 +26,6 @@ interface AccountsClientProps {
   preferredCurrency?: string;
 }
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error';
-}
 
 export default function AccountsClient({
   initialAccounts,
@@ -90,7 +86,7 @@ export default function AccountsClient({
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
 
   // Toast State
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Action Pending States
   const [isPending, startTransition] = useTransition();
@@ -499,22 +495,27 @@ export default function AccountsClient({
                           </td>
                           <td className="text-center">
                             <div className="flex justify-center gap-1">
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleOpenEdit(acc)}
-                                className="btn btn-ghost btn-sm text-info hover:bg-info/10"
+                                className="text-info hover:bg-info/10"
                                 disabled={isPending}
                                 aria-label={`Edit ${acc.name}`}
                               >
                                 {tCommon('edit')}
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleDeleteClick(acc)}
-                                className="btn btn-ghost btn-sm text-error hover:bg-error/10"
+                                className="text-error hover:bg-error/10"
+                                loading={isDeleting}
                                 disabled={isPending}
                                 aria-label={`Delete ${acc.name}`}
                               >
-                                {isDeleting ? t('deleting') : tCommon('delete')}
-                              </button>
+                                {tCommon('delete')}
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -581,21 +582,16 @@ export default function AccountsClient({
               {t('createAccount')}
             </h2>
             <form onSubmit={handleAddAccount} className="space-y-4 mt-2">
-              <div className="form-control w-full">
-                <label className="label" htmlFor="new-account-name">
-                  <span className="label-text font-bold">{t('newAccountName')}</span>
-                </label>
-                <input
-                  id="new-account-name"
-                  type="text"
-                  placeholder={t('newAccountNamePlaceholder')}
-                  value={newAccName}
-                  onChange={(e) => setNewAccName(e.target.value)}
-                  className="input input-bordered w-full"
-                  required
-                  disabled={isCreating}
-                />
-              </div>
+              <Input
+                id="new-account-name"
+                label={t('newAccountName')}
+                type="text"
+                placeholder={t('newAccountNamePlaceholder')}
+                value={newAccName}
+                onChange={(e) => setNewAccName(e.target.value)}
+                required
+                disabled={isCreating}
+              />
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-type">
@@ -627,39 +623,26 @@ export default function AccountsClient({
                 )}
               </div>
 
-              <div className="form-control w-full">
-                <label className="label" htmlFor="new-account-balance">
-                  <span className="label-text font-bold">{t('newAccountBalance')}</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3.5 text-base-content/50" aria-hidden="true">
-                    {getCurrencySymbol(newAccCurrency)}
-                  </span>
-                  <input
-                    id="new-account-balance"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newAccBalance}
-                    onChange={(e) => setNewAccBalance(e.target.value)}
-                    className="input input-bordered w-full"
-                    disabled={isCreating}
-                  />
-                </div>
-                <label className="label">
-                  <span className="label-text-alt text-base-content/40 whitespace-normal">
-                    {t('balanceHelp')}
-                  </span>
-                </label>
-              </div>
+              <Input
+                id="new-account-balance"
+                label={`${t('newAccountBalance')} (${getCurrencySymbol(newAccCurrency)})`}
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={newAccBalance}
+                onChange={(e) => setNewAccBalance(e.target.value)}
+                disabled={isCreating}
+                helperText={t('balanceHelp')}
+              />
 
-              <button
+              <Button
                 type="submit"
-                className="btn btn-primary w-full mt-2"
-                disabled={isCreating || !newAccName}
+                className="w-full mt-2"
+                loading={isCreating}
+                disabled={!newAccName}
               >
-                {isCreating ? t('addingAccount') : t('addAccount')}
-              </button>
+                {t('addAccount')}
+              </Button>
             </form>
           </div>
         </div>
@@ -675,20 +658,15 @@ export default function AccountsClient({
             </h3>
             
             <form onSubmit={handleUpdateAccount} className="space-y-4 mt-4">
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-account-name">
-                  <span className="label-text font-bold">{t('newAccountName')}</span>
-                </label>
-                <input
-                  id="edit-account-name"
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="input input-bordered w-full"
-                  required
-                  disabled={isUpdating}
-                />
-              </div>
+              <Input
+                id="edit-account-name"
+                label={t('newAccountName')}
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+                disabled={isUpdating}
+              />
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-account-type">
@@ -721,48 +699,34 @@ export default function AccountsClient({
                 )}
               </div>
 
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-account-balance">
-                  <span className="label-text font-bold">{t('newAccountBalance')}</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3.5 text-base-content/50" aria-hidden="true">
-                    {getCurrencySymbol(editCurrency)}
-                  </span>
-                  <input
-                    id="edit-account-balance"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={editBalance}
-                    onChange={(e) => setEditBalance(e.target.value)}
-                    className="input input-bordered w-full"
-                    disabled={isUpdating}
-                  />
-                </div>
-                <label className="label">
-                  <span className="label-text-alt text-base-content/40 whitespace-normal">
-                    {t('balanceHelp')}
-                  </span>
-                </label>
-              </div>
+              <Input
+                id="edit-account-balance"
+                label={`${t('newAccountBalance')} (${getCurrencySymbol(editCurrency)})`}
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={editBalance}
+                onChange={(e) => setEditBalance(e.target.value)}
+                disabled={isUpdating}
+                helperText={t('balanceHelp')}
+              />
 
               <div className="modal-action">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={handleCancelEdit}
-                  className="btn btn-ghost"
                   disabled={isUpdating}
                 >
                   {tCommon('cancel')}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
-                  disabled={isUpdating || !editName.trim()}
+                  loading={isUpdating}
+                  disabled={!editName.trim()}
                 >
-                  {isUpdating ? t('saving') : t('saveChanges')}
-                </button>
+                  {t('saveChanges')}
+                </Button>
               </div>
             </form>
           </div>
@@ -782,22 +746,24 @@ export default function AccountsClient({
               {t('deleteWarning', { name: accountToDelete.name })}
             </p>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setAccountToDelete(null)}
-                className="btn btn-ghost btn-sm"
                 disabled={deletingAccountId !== null}
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="error"
+                size="sm"
                 onClick={handleDeleteConfirm}
-                className="btn btn-error btn-sm"
-                disabled={deletingAccountId !== null}
+                loading={deletingAccountId !== null}
               >
-                {deletingAccountId !== null ? t('deleting') : t('deleteAccountBtn')}
-              </button>
+                {t('deleteAccountBtn')}
+              </Button>
             </div>
           </div>
         </div>
@@ -815,36 +781,32 @@ export default function AccountsClient({
               {tCommon('discardChangesConfirm')}
             </p>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleDiscardCancel}
-                className="btn btn-ghost btn-sm"
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleDiscardConfirm}
-                className="btn btn-warning btn-sm"
               >
                 {tCommon('confirm')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
 
       {/* Toasts Notification Container */}
-      <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`alert ${t.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg border border-white/10`}
-          >
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
+      <ToastContainer
+        toasts={toasts}
+        onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

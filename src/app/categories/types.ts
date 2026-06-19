@@ -12,9 +12,3 @@ export interface Category {
   rulesCount: number;
   rules: Rule[];
 }
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error';
-}

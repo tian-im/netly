@@ -40,13 +40,13 @@ describe('Toast Component', () => {
 
   it('does not render close button if onClose callback is not provided', () => {
     render(<Toast message="No close button" />);
-    expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument();
   });
 
   it('renders close button and fires onClose when clicked', () => {
     const handleClose = vi.fn();
     render(<Toast message="With close button" onClose={handleClose} />);
-    const closeBtn = screen.getByRole('button', { name: /close/i });
+    const closeBtn = screen.getByRole('button', { name: /dismiss/i });
     expect(closeBtn).toBeInTheDocument();
     
     fireEvent.click(closeBtn);

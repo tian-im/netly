@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { buildLoginUrl } from '@/lib/links';
 import { resetDatabase } from '../../actions';
+import { Button, Input } from '@/app/components/ui';
 
 interface DangerZoneCardProps {
   accountsCount: number;
@@ -91,14 +92,15 @@ export default function DangerZoneCard({
               {t('dbPathLabel')}{' '}
               <code className="bg-base-200 px-1.5 py-0.5 rounded font-mono">prisma/dev.db</code>
             </div>
-            <button
+            <Button
+              variant="outline-error"
+              size="md"
               onClick={() => setShowWipeModal(true)}
-              className="btn btn-outline btn-error btn-md gap-2"
               disabled={isPending}
+              icon={<Trash2 className="h-4 w-4" />}
             >
-              <Trash2 className="h-4 w-4" />
               {t('wipeDbBtn')}
-            </button>
+            </Button>
           </div>
           <div className="divider my-2"></div>
           <div className="flex justify-between items-center gap-4 flex-wrap">
@@ -106,18 +108,15 @@ export default function DangerZoneCard({
               <LogOut className="h-4 w-4 inline mr-1" />
               {t('signOutLabel')}
             </div>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleLogout}
-              className="btn btn-outline btn-sm gap-2"
-              disabled={isLoggingOut}
+              loading={isLoggingOut}
+              icon={<LogOut className="h-4 w-4" />}
             >
-              {isLoggingOut ? (
-                <span className="loading loading-spinner loading-xs"></span>
-              ) : (
-                <LogOut className="h-4 w-4" />
-              )}
               {t('signOutBtn')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -139,47 +138,42 @@ export default function DangerZoneCard({
                 <li>{t('wipeConfirmRules', { count: rulesCount })}</li>
               </ul>
               <p>{t('wipeConfirmPermanent')}</p>
-              <div className="form-control w-full pt-2">
-                <label className="label py-1" htmlFor="wipe-confirm-input">
-                  <span className="label-text-alt text-base-content/60">
-                    {/* Interpolate next-intl placeholder to render WIPE as a ReactNode */}
-                    {t.rich('wipeConfirmPrompt', {
-                      word: (chunks) => <strong className="text-error">{chunks}</strong>
-                    })}
-                  </span>
-                </label>
-                <input
-                  id="wipe-confirm-input"
-                  type="text"
-                  value={wipeConfirmInput}
-                  onChange={(e) => setWipeConfirmInput(e.target.value)}
-                  className="input input-bordered input-sm w-full font-bold"
-                  disabled={isPending}
-                />
-              </div>
+              <Input
+                id="wipe-confirm-input"
+                label={t.rich('wipeConfirmPrompt', {
+                  word: (chunks) => <strong className="text-error">{chunks}</strong>
+                })}
+                type="text"
+                value={wipeConfirmInput}
+                onChange={(e) => setWipeConfirmInput(e.target.value)}
+                className="font-bold"
+                disabled={isPending}
+              />
             </div>
 
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShowWipeModal(false);
                   setWipeConfirmInput('');
                 }}
-                className="btn btn-ghost btn-sm"
                 disabled={isPending}
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline-error"
+                size="sm"
                 onClick={handleResetDbConfirm}
-                className="btn btn-outline btn-error btn-sm gap-2"
-                disabled={isPending || wipeConfirmInput.trim().toUpperCase() !== 'WIPE'}
+                loading={isPending}
+                disabled={wipeConfirmInput.trim().toUpperCase() !== 'WIPE'}
               >
-                {isPending && <span className="loading loading-spinner loading-xs"></span>}
-                {isPending ? t('wiping') : t('wipeAllBtn')}
-              </button>
+                {t('wipeAllBtn')}
+              </Button>
             </div>
           </div>
         </div>

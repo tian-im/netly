@@ -29,6 +29,8 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onClose })
     },
   }[type];
 
+  // WHY: We use Tailwind animations (animate-in, fade-in, slide-in-from-bottom-2) for standard,
+  // premium feel micro-animations when toasts enter the viewport.
   return (
     <div className={`flex items-center gap-3 p-3.5 border rounded-xl shadow-lg transition-all animate-in fade-in slide-in-from-bottom-2 duration-300 ${styles.bg}`}>
       {styles.icon}
@@ -37,7 +39,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onClose })
         <button 
           onClick={onClose} 
           className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-          aria-label="Close notification"
+          aria-label="Dismiss notification"
         >
           <X className="h-4 w-4 opacity-70" />
         </button>
@@ -45,3 +47,4 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onClose })
     </div>
   );
 };
+

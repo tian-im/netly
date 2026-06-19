@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { KeyRound, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
+import { Button, Input } from '@/app/components/ui';
 import { PassKeyInfo } from '@/types/settings';
 
 interface PassKeySectionProps {
@@ -201,15 +202,16 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                   className={passKeys.length <= 1 ? 'tooltip tooltip-left' : ''}
                   data-tip={passKeys.length <= 1 ? tPasskey('cannotRemoveLast') : undefined}
                 >
-                  <button
+                  <Button
                     onClick={() => setPassKeyToDelete(pk)}
                     disabled={isPending || passKeys.length <= 1}
-                    className="btn btn-ghost btn-xs text-error gap-1"
+                    variant="ghost"
+                    size="xs"
+                    className="text-error gap-1"
                     title={passKeys.length <= 1 ? tPasskey('cannotRemoveLast') : tPasskey('remove')}
                     aria-label={tPasskey('remove') + ' - ' + (pk.deviceName || tPasskey('unnamed'))}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    icon={<Trash2 className="h-3.5 w-3.5" />}
+                  />
                 </div>
               </div>
             ))}
@@ -222,26 +224,25 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
           )}
 
           <div className="flex flex-wrap gap-2 mt-3">
-            <button
+            <Button
               onClick={() => setShowAddPassKeyModal(true)}
-              className="btn btn-outline btn-primary btn-sm gap-2"
+              variant="outline-primary"
+              size="sm"
               disabled={isPending}
+              icon={<Plus className="h-4 w-4" />}
             >
-              <Plus className="h-4 w-4" />
               {tPasskey('addBtn')}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleGenerateSetupToken}
+              variant="outline-secondary"
+              size="sm"
               disabled={isPending}
-              className="btn btn-outline btn-secondary btn-sm gap-2"
+              loading={isPending}
+              icon={<Plus className="h-4 w-4" />}
             >
-              {isPending ? (
-                <span className="loading loading-spinner loading-xs"></span>
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
               {tPasskey('addDeviceBtn')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -256,49 +257,40 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
             </h3>
             <div className="py-4 space-y-3">
               <p className="text-sm text-base-content/80">{tPasskey('modalDesc')}</p>
-              <div className="form-control w-full">
-                <label className="label py-1" htmlFor="new-passkey-name">
-                  <span className="label-text font-semibold text-base-content/75">
-                    {tPasskey('deviceName')}
-                  </span>
-                </label>
-                <input
-                  id="new-passkey-name"
-                  type="text"
-                  placeholder={tPasskey('deviceNamePlaceholder')}
-                  value={newDeviceName}
-                  onChange={(e) => setNewDeviceName(e.target.value)}
-                  className="input input-bordered w-full"
-                  disabled={isPending}
-                  autoFocus
-                />
-              </div>
+              <Input
+                id="new-passkey-name"
+                label={tPasskey('deviceName')}
+                type="text"
+                placeholder={tPasskey('deviceNamePlaceholder')}
+                value={newDeviceName}
+                onChange={(e) => setNewDeviceName(e.target.value)}
+                disabled={isPending}
+                autoFocus
+              />
             </div>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShowAddPassKeyModal(false);
                   setNewDeviceName('');
                 }}
-                className="btn btn-ghost btn-sm"
                 disabled={isPending}
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="sm"
                 onClick={handleAddPassKey}
-                className="btn btn-primary btn-sm gap-2"
-                disabled={isPending || !newDeviceName.trim()}
+                disabled={!newDeviceName.trim()}
+                loading={isPending}
+                icon={<Plus className="h-4 w-4" />}
               >
-                {isPending ? (
-                  <span className="loading loading-spinner loading-xs"></span>
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                {isPending ? tPasskey('registering') : tPasskey('registerBtn')}
-              </button>
+                {tPasskey('registerBtn')}
+              </Button>
             </div>
           </div>
         </div>
@@ -322,16 +314,16 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                     {tPasskey('setupTokenLabel')}
                   </span>
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       type="text"
                       readOnly
                       value={setupToken.token}
-                      className="input input-bordered font-mono font-bold text-center tracking-wider w-full text-lg bg-base-200"
+                      className="font-mono font-bold text-center tracking-wider w-full text-lg bg-base-200"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleCopyToken(setupToken.token)}
-                      className="btn btn-primary btn-square"
+                      className="btn-square px-0 shrink-0"
                       title={tCommon('copy')}
                       aria-label={tCommon('copy')}
                     >
@@ -340,7 +332,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -350,16 +342,16 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                     {tPasskey('setupUrlLabel')}
                   </span>
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       type="text"
                       readOnly
                       value={setupToken.url}
-                      className="input input-bordered text-xs w-full bg-base-200"
+                      className="text-xs w-full bg-base-200"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleCopyUrl(setupToken.url)}
-                      className="btn btn-primary btn-square"
+                      className="btn-square px-0 shrink-0"
                       title={tCommon('copy')}
                       aria-label={tCommon('copy')}
                     >
@@ -368,7 +360,7 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -381,16 +373,16 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
               </div>
             </div>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => {
                   setShowSetupTokenModal(false);
                   setSetupToken(null);
                 }}
-                className="btn btn-sm"
               >
                 {tCommon('close')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -408,29 +400,27 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
               {tPasskey('removeConfirmWarning', { name: passKeyToDelete.deviceName || tPasskey('unnamed') })}
             </p>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setPassKeyToDelete(null)}
-                className="btn btn-ghost btn-sm"
                 disabled={isPending}
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="error"
+                size="sm"
+                loading={isPending}
                 onClick={async () => {
                   await handleDeletePassKey(passKeyToDelete.id);
                   setPassKeyToDelete(null);
                 }}
-                className="btn btn-error btn-sm"
-                disabled={isPending}
               >
-                {isPending ? (
-                  <span className="loading loading-spinner loading-xs"></span>
-                ) : (
-                  tPasskey('removeConfirmBtn')
-                )}
-              </button>
+                {tPasskey('removeConfirmBtn')}
+              </Button>
             </div>
           </div>
         </div>

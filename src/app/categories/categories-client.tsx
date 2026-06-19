@@ -11,16 +11,16 @@ import {
 } from '../actions';
 import { translateError } from '@/lib/translateError';
 import { Tags, Settings } from 'lucide-react';
-import type { Category, Toast } from './types';
+import type { Category } from './types';
 import CategoryTable from './components/CategoryTable';
 import CreateCategoryForm from './components/CreateCategoryForm';
 import EditCategoryModal from './components/EditCategoryModal';
 import DeleteCategoryModal from './components/DeleteCategoryModal';
 import RulesPanel from './components/RulesPanel';
 import DeleteRuleModal from './components/DeleteRuleModal';
-import ToastContainer from './components/ToastContainer';
+import { ToastContainer, type ToastMessage } from '@/app/components/ui';
 
-export type { Category, Toast };
+export type { Category };
 
 interface CategoriesClientProps {
   initialCategories: Category[];
@@ -45,7 +45,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
   const [ruleToDelete, setRuleToDelete] = useState<{ id: string; catId: string; pattern: string } | null>(null);
 
   // Toast state
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Action Pending States
   const [, startTransition] = useTransition();
@@ -384,7 +384,7 @@ export default function CategoriesClient({ initialCategories }: CategoriesClient
       {/* Toasts Notification Container */}
       <ToastContainer
         toasts={toasts}
-        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+        onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
       />
     </div>
   );

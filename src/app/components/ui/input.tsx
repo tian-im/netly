@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+  label?: React.ReactNode;
   error?: string;
   helperText?: string;
 }
@@ -12,7 +12,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="form-control w-full">
         {label && (
           <label className="label py-1">
-            <span className="label-text font-semibold text-base-content/85 text-xs">{label}</span>
+            {/* WHY: We use 'font-bold' for labels to keep form headings clear, legible, and visually structured. */}
+            <span className="label-text font-bold text-base-content/85 text-xs">{label}</span>
           </label>
         )}
         <input
@@ -22,6 +23,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           } ${className}`}
           {...props}
         />
+        {/* WHY: If both an error and a helperText are present, we display the error to immediately
+            draw the user's attention to the validation issue, prioritizing it over the generic helper text. */}
         {(error || helperText) && (
           <label className="label py-0.5">
             <span className={`label-text-alt text-xs ${error ? 'text-error font-medium' : 'text-base-content/50'}`}>
@@ -35,3 +38,4 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 
 Input.displayName = 'Input';
+

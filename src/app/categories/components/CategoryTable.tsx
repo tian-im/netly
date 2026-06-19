@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Tags, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { Button } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface CategoryTableProps {
@@ -199,22 +200,27 @@ export default function CategoryTable({
                       </td>
                       <td className="text-center whitespace-normal">
                         <div className="flex justify-center gap-1">
-                          <button
+                          <Button
                             onClick={() => onEdit(cat)}
-                            className="btn btn-ghost btn-xs text-info hover:bg-info/10 px-1"
+                            variant="ghost"
+                            size="xs"
+                            className="text-info hover:bg-info/10 px-1"
                             disabled={isUpdating || deletingCategoryId !== null}
                             aria-label={`Edit ${cat.name}`}
                           >
                             {t('edit')}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => onDeleteClick(cat)}
-                            className="btn btn-ghost btn-xs text-error hover:bg-error/10 px-1"
+                            variant="ghost"
+                            size="xs"
+                            className="text-error hover:bg-error/10 px-1"
                             disabled={isUpdating || deletingCategoryId !== null}
+                            loading={isDeleting}
                             aria-label={`Delete ${cat.name}`}
                           >
-                            {isDeleting ? t('deleting') : t('delete')}
-                          </button>
+                            {t('delete')}
+                          </Button>
                         </div>
                       </td>
                     </tr>

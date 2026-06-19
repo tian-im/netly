@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { Bot, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
+import { Button, Input } from '@/app/components/ui';
 import { McpTokenInfo } from '@/types/settings';
 
 interface McpSectionProps {
@@ -148,15 +149,16 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                         </p>
                       </div>
                     </div>
-                    <button
+                    <Button
                       onClick={() => setMcpTokenToRevoke(token)}
                       disabled={isPending}
-                      className="btn btn-ghost btn-xs text-error gap-1"
+                      variant="ghost"
+                      size="xs"
+                      className="text-error gap-1"
                       title={t('mcpRevokeBtn')}
                       aria-label={`${t('mcpRevokeBtn')} - ${token.name}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                      icon={<Trash2 className="h-3.5 w-3.5" />}
+                    />
                   </div>
                 ))}
               </div>
@@ -170,18 +172,19 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
           )}
 
           <div>
-            <button
+            <Button
               onClick={() => {
                 setGeneratedMcpToken(null);
                 setNewMcpName('');
                 setShowAddMcpModal(true);
               }}
-              className="btn btn-outline btn-primary btn-sm gap-2"
+              variant="outline-primary"
+              size="sm"
               disabled={isPending}
+              icon={<Plus className="h-4 w-4" />}
             >
-              <Plus className="h-4 w-4" />
               {t('mcpCreateBtn')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -197,23 +200,16 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
 
             <div className="py-4 space-y-4">
               {!generatedMcpToken ? (
-                <div className="form-control w-full">
-                  <label className="label py-1" htmlFor="new-mcp-name">
-                    <span className="label-text font-semibold text-base-content/75">
-                      {t('mcpNameLabel')}
-                    </span>
-                  </label>
-                  <input
-                    id="new-mcp-name"
-                    type="text"
-                    placeholder={t('mcpNamePlaceholder')}
-                    value={newMcpName}
-                    onChange={(e) => setNewMcpName(e.target.value)}
-                    className="input input-bordered w-full"
-                    disabled={isPending}
-                    autoFocus
-                  />
-                </div>
+                <Input
+                  id="new-mcp-name"
+                  label={t('mcpNameLabel')}
+                  type="text"
+                  placeholder={t('mcpNamePlaceholder')}
+                  value={newMcpName}
+                  onChange={(e) => setNewMcpName(e.target.value)}
+                  disabled={isPending}
+                  autoFocus
+                />
               ) : (
                 <div className="space-y-3">
                   <div className="alert alert-success text-xs gap-2">
@@ -225,16 +221,16 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                       {t('mcpTokenLabel')}
                     </span>
                     <div className="flex gap-2">
-                      <input
+                      <Input
                         type="text"
                         readOnly
                         value={generatedMcpToken.token}
-                        className="input input-bordered font-mono font-bold text-center w-full text-sm bg-base-200"
+                        className="font-mono font-bold text-center w-full text-sm bg-base-200"
                       />
-                      <button
+                      <Button
                         type="button"
                         onClick={() => handleCopyToken(generatedMcpToken.token)}
-                        className="btn btn-primary btn-square"
+                        className="btn-square px-0 shrink-0"
                         title={tCommon('copy')}
                         aria-label={tCommon('copy')}
                       >
@@ -243,7 +239,7 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -257,43 +253,41 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
             <div className="modal-action">
               {!generatedMcpToken ? (
                 <>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setShowAddMcpModal(false);
                       setNewMcpName('');
                     }}
-                    className="btn btn-ghost btn-sm"
                     disabled={isPending}
                   >
                     {tCommon('cancel')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    size="sm"
                     onClick={handleCreateMcpToken}
-                    className="btn btn-primary btn-sm gap-2"
-                    disabled={isPending || !newMcpName.trim()}
+                    loading={isPending}
+                    disabled={!newMcpName.trim()}
+                    icon={<Plus className="h-4 w-4" />}
                   >
-                    {isPending ? (
-                      <span className="loading loading-spinner loading-xs"></span>
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
                     {t('mcpCreateBtn')}
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={() => {
                     setShowAddMcpModal(false);
                     setGeneratedMcpToken(null);
                     setNewMcpName('');
                   }}
-                  className="btn btn-sm"
                 >
                   {tCommon('close')}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -312,29 +306,27 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
               {t('mcpRevokeConfirmDesc', { name: mcpTokenToRevoke.name })}
             </p>
             <div className="modal-action">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setMcpTokenToRevoke(null)}
-                className="btn btn-ghost btn-sm"
                 disabled={isPending}
               >
                 {tCommon('cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="error"
+                size="sm"
+                loading={isPending}
                 onClick={async () => {
                   await handleRevokeMcpToken(mcpTokenToRevoke.id);
                   setMcpTokenToRevoke(null);
                 }}
-                className="btn btn-error btn-sm"
-                disabled={isPending}
               >
-                {isPending ? (
-                  <span className="loading loading-spinner loading-xs"></span>
-                ) : (
-                  t('mcpRevokeConfirmBtn')
-                )}
-              </button>
+                {t('mcpRevokeConfirmBtn')}
+              </Button>
             </div>
           </div>
         </div>

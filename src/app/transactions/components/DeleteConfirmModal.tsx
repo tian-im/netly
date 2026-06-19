@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/app/components/ui';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -48,20 +49,23 @@ export default function DeleteConfirmModal({
           {count === 1 ? t('deleteConfirmDesc') : t('bulkDeleteConfirmDesc', { count })}
         </p>
         <div className="modal-action">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={onClose}
-            className="btn btn-outline btn-sm"
           >
             {tCommon('cancel')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="error"
+            size="sm"
+            className="font-bold"
             onClick={onConfirm}
-            className="btn btn-error btn-sm font-bold"
           >
             {t('bulkDelete')} ({count})
-          </button>
+          </Button>
         </div>
       </div>
     </div>

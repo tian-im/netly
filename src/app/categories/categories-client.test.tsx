@@ -42,6 +42,9 @@ vi.mock('lucide-react', () => ({
   ArrowUp: ({ className }: any) => <div data-testid="arrow-up" className={className} />,
   ArrowDown: ({ className }: any) => <div data-testid="arrow-down" className={className} />,
   X: ({ className }: any) => <div data-testid="x-icon" className={className} />,
+  CheckCircle: ({ className }: any) => <div data-testid="check-circle-icon" className={className} />,
+  XCircle: ({ className }: any) => <div data-testid="x-circle-icon" className={className} />,
+  Info: ({ className }: any) => <div data-testid="info-icon" className={className} />,
 }));
 
 // Mock next/link

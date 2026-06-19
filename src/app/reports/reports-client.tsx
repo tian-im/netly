@@ -7,6 +7,7 @@ import { getFinancialReports, getTransactions } from '../actions';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Download, RefreshCw } from 'lucide-react';
+import { Button, Input, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
 // Custom components
 import DateRangePresets from './components/DateRangePresets';
@@ -18,11 +19,6 @@ import CashFlowPanel from './components/CashFlowPanel';
 // Types
 import { FinancialReports } from './types';
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error';
-}
 
 export default function ReportsClient({
   preferredCurrency = DEFAULT_CURRENCY,
@@ -61,7 +57,7 @@ export default function ReportsClient({
   const [loadedParams, setLoadedParams] = useState<{ start: string; end: string; compare: boolean } | null>(null);
 
   // UI state
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isPending, startTransition] = useTransition();
 
   // Drill-down Modal state
@@ -249,13 +245,15 @@ export default function ReportsClient({
             {t('pageDesc')}
           </p>
         </div>
-        <button
+        <Button
           onClick={handleExportCSV}
-          className="btn btn-outline btn-primary btn-sm gap-2"
+          variant="outline-primary"
+          size="sm"
           disabled={isPending}
+          icon={<Download className="h-4 w-4" />}
         >
-          <Download className="h-4 w-4" /> {t('exportLedger')}
-        </button>
+          {t('exportLedger')}
+        </Button>
       </div>
 
       {/* Date Filters card */}
@@ -263,22 +261,22 @@ export default function ReportsClient({
         <div className="card-body p-5">
           <div className="flex flex-col md:flex-row items-end gap-4 justify-between">
             <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-sm font-bold text-base-content">{t('startDate')}</label>
-                <input
+              <div className="flex-1">
+                <Input
+                  label={t('startDate')}
                   type="date"
                   value={startDateStr}
                   onChange={(e) => setStartDateStr(e.target.value)}
-                  className="input input-bordered input-sm"
+                  className="input-sm"
                 />
               </div>
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-sm font-bold text-base-content">{t('endDate')}</label>
-                <input
+              <div className="flex-1">
+                <Input
+                  label={t('endDate')}
                   type="date"
                   value={endDateStr}
                   onChange={(e) => setEndDateStr(e.target.value)}
-                  className="input input-bordered input-sm"
+                  className="input-sm"
                 />
               </div>
             </div>
@@ -292,19 +290,15 @@ export default function ReportsClient({
                 />
                 <span className="label-text text-xs font-semibold">{t('comparePrior')}</span>
               </label>
-              <button
+              <Button
                 onClick={handleCompile}
-                className="btn btn-primary btn-sm w-full md:w-auto gap-2"
-                disabled={isPending}
+                size="sm"
+                className="w-full md:w-auto"
+                loading={isPending}
+                icon={<RefreshCw className="h-4 w-4" />}
               >
-                {isPending ? (
-                  t('compiling')
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4" /> {t('compile')}
-                  </>
-                )}
-              </button>
+                {t('compile')}
+              </Button>
             </div>
           </div>
           <DateRangePresets onSelectRange={handlePresetSelect} startDateStr={startDateStr} endDateStr={endDateStr} />
@@ -406,16 +400,10 @@ export default function ReportsClient({
       />
 
       {/* Toasts container */}
-      <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`alert ${t.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg border border-white/10`}
-          >
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
+      <ToastContainer
+        toasts={toasts}
+        onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

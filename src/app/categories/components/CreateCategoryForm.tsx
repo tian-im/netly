@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
+import { Button, Input } from '@/app/components/ui';
 
 interface CreateCategoryFormProps {
   isCreating: boolean;
@@ -31,22 +32,17 @@ export default function CreateCategoryForm({ isCreating, onSubmit }: CreateCateg
           <Plus className="h-5 w-5" /> {t('createCategory')}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="form-control w-full">
-            <label className="label" htmlFor="new-category-name">
-              <span className="label-text font-bold">{t('newCategoryName')}</span>
-            </label>
-            <input
-              id="new-category-name"
-              type="text"
-              placeholder={t('newCategoryNamePlaceholder')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input input-bordered w-full"
-              required
-              disabled={isCreating}
-              autoFocus
-            />
-          </div>
+          <Input
+            id="new-category-name"
+            label={t('newCategoryName')}
+            type="text"
+            placeholder={t('newCategoryNamePlaceholder')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            disabled={isCreating}
+            autoFocus
+          />
 
           <div className="form-control w-full">
             <label className="label" htmlFor="new-category-type">
@@ -82,13 +78,14 @@ export default function CreateCategoryForm({ isCreating, onSubmit }: CreateCateg
             </select>
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="btn btn-primary w-full mt-2"
-            disabled={isCreating || !name.trim()}
+            className="w-full mt-2"
+            loading={isCreating}
+            disabled={!name.trim()}
           >
-            {isCreating ? t('creating') : t('addCategory')}
-          </button>
+            {t('addCategory')}
+          </Button>
         </form>
       </div>
     </div>

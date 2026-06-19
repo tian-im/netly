@@ -14,12 +14,8 @@ import ExportCard from './components/ExportCard';
 import DangerZoneCard from './components/DangerZoneCard';
 import DatabaseMetricsCard from './components/DatabaseMetricsCard';
 import SupportCard from './components/SupportCard';
+import { ToastContainer, type ToastMessage } from '@/app/components/ui';
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error';
-}
 
 interface SettingsClientProps {
   accountsCount: number;
@@ -55,7 +51,7 @@ export default function SettingsClient({
   initialPreferences,
 }: SettingsClientProps) {
   const t = useTranslations('settings');
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const toastIdRef = useRef(0);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -155,18 +151,10 @@ export default function SettingsClient({
       />
 
       {/* Toasts Notification Container */}
-      <div className="toast toast-end toast-bottom z-50 p-4" role="log" aria-live="polite">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`alert shadow-lg text-xs font-semibold ${
-              t.type === 'error' ? 'alert-error text-error-content' : 'alert-success text-success-content'
-            }`}
-          >
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
+      <ToastContainer
+        toasts={toasts}
+        onClose={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

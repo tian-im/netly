@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings, X } from 'lucide-react';
+import { Button, Input } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface RulesPanelProps {
@@ -102,15 +103,17 @@ export default function RulesPanel({
                           className="flex justify-between items-center bg-base-200 px-3 py-2 rounded-lg text-sm"
                         >
                           <span className="font-mono font-semibold text-primary">&quot;{rule.pattern}&quot;</span>
-                          <button
+                          <Button
                             onClick={() => onDeleteRuleClick(rule.id, cat.id, rule.pattern)}
-                            className="btn btn-ghost btn-circle btn-xs text-error hover:bg-error/10 flex items-center justify-center"
+                            variant="ghost"
+                            size="xs"
+                            className="btn-circle text-error hover:bg-error/10 flex items-center justify-center p-0"
                             disabled={deletingRuleId !== null}
                             title={t('delete')}
                             aria-label={t('ruleDeleteWarning', { pattern: rule.pattern })}
-                          >
-                            {isDeletingRule ? t('deleting') : <X className="h-3.5 w-3.5" />}
-                          </button>
+                            icon={isDeletingRule ? undefined : <X className="h-3.5 w-3.5" />}
+                            loading={isDeletingRule}
+                          />
                         </div>
                       );
                     })}
@@ -132,25 +135,19 @@ export default function RulesPanel({
             <p className="text-xs text-base-content/60">{t('matchRulesInstructions')}</p>
 
             <form onSubmit={handleCreateRule} className="space-y-4 mt-4">
-              <div className="form-control">
-                <label className="label" htmlFor="new-rule-pattern">
-                  <span className="label-text font-semibold text-xs">{t('merchantKeyword')}</span>
-                </label>
-                <input
+                <Input
                   id="new-rule-pattern"
+                  label={t('merchantKeyword')}
                   type="text"
                   placeholder={t('merchantKeywordPlaceholder')}
                   value={newRulePattern}
                   onChange={(e) => setNewRulePattern(e.target.value)}
-                  className="input input-bordered input-sm"
+                  className="input-sm"
                   required
                   disabled={isCreatingRule || categories.length === 0}
                   autoFocus
+                  helperText={t('regexHint')}
                 />
-                <label className="label py-0.5">
-                  <span className="label-text-alt text-base-content/50">{t('regexHint')}</span>
-                </label>
-              </div>
 
               <div className="form-control">
                 <label className="label" htmlFor="new-rule-category">
@@ -172,13 +169,15 @@ export default function RulesPanel({
                 </select>
               </div>
 
-              <button
+              <Button
                 type="submit"
-                className="btn btn-primary btn-sm w-full mt-2"
-                disabled={isCreatingRule || !newRulePattern.trim() || categories.length === 0}
+                size="sm"
+                className="w-full mt-2"
+                disabled={!newRulePattern.trim() || categories.length === 0}
+                loading={isCreatingRule}
               >
-                {isCreatingRule ? t('creating') : t('createRule')}
-              </button>
+                {t('createRule')}
+              </Button>
             </form>
           </div>
         </div>

@@ -40,6 +40,10 @@ vi.mock('lucide-react', () => ({
   Pencil: () => <div data-testid="pencil-icon" />,
   AlertTriangle: ({ className }: any) => <div data-testid="alert-triangle" className={className} />,
   Search: () => <div data-testid="search-icon" />,
+  CheckCircle: ({ className }: any) => <div data-testid="check-circle-icon" />,
+  XCircle: ({ className }: any) => <div data-testid="x-circle-icon" />,
+  Info: ({ className }: any) => <div data-testid="info-icon" />,
+  X: ({ className }: any) => <div data-testid="x-icon" className={className} />,
 }));
 
 // Mock next/link

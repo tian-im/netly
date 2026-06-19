@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/app/components/ui';
 import { Transaction, Category } from '../types';
 
 interface RulePromptModalProps {
@@ -51,20 +52,25 @@ export default function RulePromptModal({
           })}
         </p>
         <div className="modal-action">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => onConfirm(false)}
-            className="btn btn-outline btn-sm"
             disabled={isPending}
           >
             {t('rulePrompt.skipBtn')}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
             onClick={() => onConfirm(true)}
-            className="btn btn-primary btn-sm"
             disabled={isPending}
+            loading={isPending}
           >
             {t('rulePrompt.createRuleBtn')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

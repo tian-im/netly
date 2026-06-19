@@ -9,6 +9,7 @@ import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 import { findDuplicateGroups } from '@/app/actions';
+import { Button } from '@/app/components/ui';
 
 interface Account {
   id: string;
@@ -833,13 +834,13 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
 
                   <div className="card-actions flex-col items-stretch mt-6">
                     <div className="flex justify-end">
-                      <button
+                      <Button
                         type="submit"
-                        className="btn btn-primary"
-                        disabled={!isValid || importing}
+                        loading={importing}
+                        disabled={!isValid}
                       >
-                         {importing ? t('importing') : t('importButton', { count: totalRowsCount })}
-                      </button>
+                        {t('importButton', { count: totalRowsCount })}
+                      </Button>
                     </div>
                     {importing && (
                       <progress
