@@ -147,6 +147,14 @@ describe('Button Component', () => {
     expect(button.className).toContain('hover:bg-base-300');
     expect(button.className).toContain('border-0');
   });
+
+  it('suppresses rounded-xl and scale when join-item className is passed', () => {
+    render(<Button className="join-item">Joined</Button>);
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('join-item');
+    expect(button.className).not.toContain('rounded-xl');
+    expect(button.className).not.toContain('hover:scale-[0.98]');
+  });
 });
 
 

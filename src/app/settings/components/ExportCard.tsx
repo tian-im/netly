@@ -62,11 +62,10 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <Button
             onClick={handleExportTransactions}
-            variant="neutral"
             size="md"
             disabled={transactionsCount === 0}
             loading={isExportingTransactions}
-            icon={<FileSpreadsheet className="h-5 w-5 text-success" />}
+            icon={<FileSpreadsheet className="h-5 w-5" />}
             aria-label={t('exportTransactionsBtn', { count: transactionsCount })}
           >
             {t('exportTransactionsBtn', { count: transactionsCount })}
@@ -74,11 +73,10 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
 
           <Button
             onClick={handleExportAccounts}
-            variant="neutral"
             size="md"
             disabled={accountsCount === 0}
             loading={isExportingAccounts}
-            icon={<FileSpreadsheet className="h-5 w-5 text-info" />}
+            icon={<FileSpreadsheet className="h-5 w-5" />}
             aria-label={t('exportAccountsBtn', { count: accountsCount })}
           >
             {t('exportAccountsBtn', { count: accountsCount })}

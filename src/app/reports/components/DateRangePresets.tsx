@@ -121,17 +121,19 @@ export default function DateRangePresets({
   return (
     <div className="flex flex-wrap gap-2 items-center justify-start mt-2">
       <span className="text-xs font-bold text-base-content/60">{t('datePresets.presetsLabel')}</span>
-      {presetList.map((preset) => (
-        <Button
-          key={preset.key}
-          onClick={() => handlePreset(preset.key)}
-          size="xs"
-          variant={isActive(preset.key) ? 'primary' : 'outline'}
-          className={isActive(preset.key) ? '' : 'hover:btn-primary'}
-        >
-          {preset.label}
-        </Button>
-      ))}
+      <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg">
+        {presetList.map((preset) => (
+          <Button
+            key={preset.key}
+            onClick={() => handlePreset(preset.key)}
+            size="xs"
+            className="rounded-md"
+            variant={isActive(preset.key) ? 'primary' : 'segmented'}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -308,16 +308,17 @@ export default function ReportsClient({
       {reports && reportCurrencies.length > 1 && (
         <div className="flex items-center gap-2 bg-base-100 p-4 rounded-xl shadow border border-base-200 justify-center sm:justify-start">
           <span className="font-bold text-sm text-base-content/70">{t('viewCurrency')}</span>
-          <div className="join">
+          <div className="flex flex-wrap gap-1 bg-base-200 p-0.5 rounded-lg" role="group" aria-label={t('viewCurrency')}>
             {reportCurrencies.map((cur) => {
               const isActive = selectedReportCurrency === cur;
               return (
                 <Button
                   key={cur}
                   onClick={() => handleCurrencyChange(cur)}
-                  variant={isActive ? 'primary' : 'outline'}
-                  size="sm"
-                  className="join-item"
+                  variant={isActive ? 'primary' : 'segmented'}
+                  size="xs"
+                  className="rounded-md"
+                  aria-pressed={isActive}
                 >
                   {cur}
                 </Button>

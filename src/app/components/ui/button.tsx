@@ -13,7 +13,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 // the component can render either a standard <button> or a Next.js <Link> (anchor) dynamically.
 export const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
   ({ className = '', variant = 'primary', size = 'md', loading, href, icon, children, ...props }, ref) => {
-    
+
     // Map variant to DaisyUI classes
     // WHY: outline-primary, outline-secondary, and outline-error variants provide themed outline styling,
     // preserving the visual identity and brand accents of interactive buttons.
@@ -48,12 +48,13 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, Bu
     // For tabs and links, we suppress scale and btn-specific extra paddings.
     const isTab = variant === 'tab';
     const isLink = variant === 'link';
+    const isJoinItem = className.includes('join-item');
     const prefix = isTab ? '' : 'btn ';
     const btnExtras = isTab
       ? ''
-      : isLink
+      : (isLink || isJoinItem)
       ? 'transition-all duration-200 no-animation '
-      : 'rounded-xl transition-all duration-200 no-animation hover:scale-[0.98] ';
+      : 'rounded-md transition-all duration-200 no-animation hover:scale-[0.98] ';
     const baseClass = `${prefix}${btnExtras}font-medium gap-2 normal-case ${variantClasses} ${sizeClasses} ${className}`.trim();
 
     // WHY: If href is provided, this component acts as a Next.js Link. We extract button-specific
