@@ -29,11 +29,20 @@ You are a specialized senior software engineer agent tasked with implementing th
    - Format: `// WHY: <rationale>` — e.g., `// WHY: We use client-side case-insensitive comparison instead of a DB UNIQUE constraint because SQLite with Prisma doesn't support case-insensitive unique indexes, and the account count (<100) makes this safe.`
    - If you later read such a `// WHY:` comment and consider changing the code, **confirm with the user before making any changes** to ensure the original trade-off is still understood.
 
+9. **User Manual Maintenance**:
+   - The user manual lives at [`content/docs/`](./content/docs/) (English: `en/`, Chinese: `zh/`).
+   - When you add, change, or remove a feature, check whether the corresponding pages in `content/docs/en/` need updating. Update them as part of the same work.
+   - If you add English content, flag the equivalent Chinese page(s) in `content/docs/zh/` as needing translation by adding an HTML comment: `<!-- TODO: translate from en/... -->` at the top of the file.
+   - When adding a new doc page to `content/docs/en/`, always create the mirror file in `content/docs/zh/` (even if it only contains the translation notice) so the sidebar stays structurally consistent.
+   - If a feature change affects the user workflow enough to warrant a changelog entry, add a bullet to `content/docs/en/CHANGELOG.md` (and the translation notice in `content/docs/zh/CHANGELOG.md`).
+   - The user manual is public (no auth required); keep language clear, avoid internal jargon, and write for a non-technical audience.
+
 ## References
 
 Always ground your decisions and implementation steps in the following project documents:
 - **Implementation Plan**: [docs/implementation_plan.md](./docs/implementation_plan.md)
 - **System Architecture Review**: [docs/architect_review.md](./docs/architect_review.md)
+- **User Manual Plan**: [docs/user_manual_plan.md](./docs/user_manual_plan.md)
 
 ---
 

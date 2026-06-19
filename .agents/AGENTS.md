@@ -88,12 +88,18 @@ Use parallel execution for independent operations — launch multiple agents sim
 
 **No Emoji in UI/Code:** Never use emojis (e.g. `✨`, `🔥`, `🚨`) in UI components, texts, or code. Always use `lucide-react` icons for consistent and professional iconography.
 
+**UI Kit Component Usage (CRITICAL):**
+- All frontend UI code must strictly reuse the custom UI components defined in `src/app/components/ui/` (e.g., `<Button>`, `<Input>`, etc.) rather than writing inline raw DaisyUI/Tailwind styles.
+- If a task requires a component that does not exist in `src/app/components/ui/`, agents **MUST NOT** create the component or add it to the UI kit without first obtaining explicit approval from the USER.
+- All UI components should build upon standard DaisyUI and Tailwind CSS directives, ensuring consistent themes and design token alignments.
+
 **Code quality checklist:**
 - Functions small (<50 lines), files focused (<800 lines)
 - No deep nesting (>4 levels)
 - Proper error handling, no hardcoded values
 - Readable, well-named identifiers
 - No emojis used in UI or code; use `lucide-react` instead
+- Reuses existing UI kit components from `src/app/components/ui/` and seeks user approval before creating new ones
 
 ## Testing Requirements
 

@@ -11,7 +11,7 @@ Update documentation to reflect recent changes: $ARGUMENTS
 ## Your Task
 
 1. **Identify changed code** - `git diff --name-only`
-2. **Find related docs** - README, API docs, guides
+2. **Find related docs** - README, API docs, guides, **user manual**
 3. **Update documentation** - Keep in sync with code
 4. **Verify accuracy** - Docs match implementation
 
@@ -22,6 +22,13 @@ Update documentation to reflect recent changes: $ARGUMENTS
 - Quick start guide
 - Feature overview
 - Configuration options
+
+### User Manual (`content/docs/`)
+- **English** (`content/docs/en/`) — User-facing feature guides, how-tos, FAQ, changelog
+- **Chinese** (`content/docs/zh/`) — Mirrors the English tree; add `<!-- TODO: translate from en/... -->` notices when updating English but not Chinese
+- **Changelog** (`content/docs/{locale}/CHANGELOG.md`) — User-friendly release notes (separate from repo `CHANGELOG.md`)
+- Check for stale pages when features are added/changed/removed
+- If you create a new page in `en/`, also create the mirror file in `zh/` (even if untranslated)
 
 ### API Documentation
 - Endpoint descriptions
@@ -42,6 +49,8 @@ Update documentation to reflect recent changes: $ARGUMENTS
 ## Update Checklist
 
 - [ ] README reflects current features
+- [ ] User manual (`content/docs/en/`) reflects current features
+- [ ] Chinese manual (`content/docs/zh/`) has mirror files with translation notices
 - [ ] API docs match endpoints
 - [ ] JSDoc updated for changed functions
 - [ ] Examples are working

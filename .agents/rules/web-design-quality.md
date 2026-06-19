@@ -61,3 +61,5 @@ Do not default to dark mode automatically. Choose the visual direction the produ
 - [ ] Does it use hierarchy rather than uniform emphasis?
 - [ ] Would this look believable in a real product screenshot?
 - [ ] If it supports both themes, do both light and dark feel intentional?
+- [ ] Does it strictly reuse components from the project's UI kit (`src/app/components/ui/`)?
+- [ ] If any new UI component is added to the UI kit, was explicit approval obtained from the user first?

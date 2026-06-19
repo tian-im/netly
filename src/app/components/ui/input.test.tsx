@@ -1,0 +1,53 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import '@testing-library/jest-dom/vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import React from 'react';
+import { Input } from './input';
+
+afterEach(() => {
+  cleanup();
+});
+
+describe('Input Component', () => {
+  it('renders standard input field correctly', () => {
+    render(<Input placeholder="Enter username" />);
+    const input = screen.getByPlaceholderText('Enter username') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.type).toBe('text');
+  });
+
+  it('renders the label correctly when provided', () => {
+    render(<Input label="Username" placeholder="Enter username" />);
+    expect(screen.getByText('Username')).toBeInTheDocument();
+  });
+
+  it('renders the helper text correctly when provided', () => {
+    render(<Input helperText="Use a unique username" />);
+    expect(screen.getByText('Use a unique username')).toBeInTheDocument();
+  });
+
+  it('renders error state correctly and overrides helper text', () => {
+    render(<Input helperText="Will be hidden" error="Username is required" />);
+    expect(screen.queryByText('Will be hidden')).not.toBeInTheDocument();
+    expect(screen.getByText('Username is required')).toBeInTheDocument();
+    expect(screen.getByRole('textbox').className).toContain('input-error');
+  });
+
+  it('handles input events and changes value', () => {
+    const handleChange = vi.fn();
+    render(<Input onChange={handleChange} placeholder="Type here" />);
+    const input = screen.getByPlaceholderText('Type here') as HTMLInputElement;
+    
+    fireEvent.change(input, { target: { value: 'testuser' } });
+    expect(handleChange).toHaveBeenCalledTimes(1);
+    expect(input.value).toBe('testuser');
+  });
+
+  it('passes other standard input attributes like type, name, disabled', () => {
+    render(<Input type="password" name="userpass" disabled placeholder="Password" />);
+    const input = screen.getByPlaceholderText('Password') as HTMLInputElement;
+    expect(input.type).toBe('password');
+    expect(input.name).toBe('userpass');
+    expect(input.disabled).toBe(true);
+  });
+});
