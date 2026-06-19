@@ -526,7 +526,7 @@ export default function DashboardClient({
           }
           progress={{
             percentage: savingsRate,
-            colorClass: savingsRate >= 20 ? 'bg-success' : savingsRate >= 0 ? 'bg-warning' : 'bg-error',
+            colorClass: savingsRate >= 20 ? 'progress-success' : savingsRate >= 0 ? 'progress-warning' : 'progress-error',
           }}
           subtitle={t('targetSavings')}
         />

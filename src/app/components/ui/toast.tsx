@@ -38,7 +38,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', onClose })
       {onClose && (
         <button 
           onClick={onClose} 
-          className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          className="p-1 rounded-lg hover:bg-black/5 transition-colors"
           aria-label="Dismiss notification"
         >
           <X className="h-4 w-4 opacity-70" />

@@ -26,8 +26,8 @@ export function LocaleProvider({ children, ssrLocale = 'en' }: { children: React
     }
   }, [locale]);
 
-  // WHY: One-time cleanup for the old netly_theme cookie/localStorage key that
-  // existed before the night-only consolidation. Harmless if already removed.
+  // WHY: One-time cleanup for the legacy netly_theme cookie/localStorage key
+  // that existed before the theme was removed. Harmless if already gone.
   useEffect(() => {
     localStorage.removeItem('netly_theme');
     document.cookie = 'netly_theme=;path=/;max-age=0;SameSite=Lax';

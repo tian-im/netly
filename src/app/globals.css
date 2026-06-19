@@ -37,14 +37,6 @@ body {
   line-height: 1.5;
 }
 
-/* Darker progress bar track for better contrast on dark themes */
-.progress::-webkit-progress-bar {
-  background-color: oklch(0.2 0 0 / 0.15);
-}
-.progress::-moz-progress-bar {
-  background-color: oklch(0.2 0 0 / 0.15);
-}
-
 /* Smooth scroll for mobile snap containers */
 .snap-x {
   scroll-snap-type: x mandatory;

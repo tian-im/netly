@@ -77,20 +77,12 @@ export default function StatCard({
         )}
 
         {progress && (
-          <div
-            className="w-full h-2 rounded-full mt-2 overflow-hidden"
-            style={{ backgroundColor: 'oklch(0.2 0 0 / 0.2)' }}
-            role="progressbar"
-            aria-valuenow={Math.max(0, Math.min(100, progress.percentage))}
-            aria-valuemin={0}
-            aria-valuemax={100}
+          <progress
+            className={`progress ${progress.colorClass} w-full mt-2`}
+            value={Math.max(0, Math.min(100, progress.percentage))}
+            max="100"
             aria-label={`${title}: ${Math.round(progress.percentage)}%`}
-          >
-            <div
-              className={`h-full ${progress.colorClass} rounded-full`}
-              style={{ width: `${Math.max(0, Math.min(100, progress.percentage))}%` }}
-            ></div>
-          </div>
+          ></progress>
         )}
 
         {subtitle && (

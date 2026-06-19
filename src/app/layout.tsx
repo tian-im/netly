@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -29,12 +29,12 @@ export default function RootLayout({
   const headerLocale = parseAcceptLanguage(headers().get('Accept-Language'));
   const locale = cookieLocale || headerLocale;
   return (
-    <html lang={locale} data-theme="night" className="h-full">
+    <html lang={locale} className="h-full">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="h-full bg-base-300">
         <LayoutClient ssrLocale={locale}>
