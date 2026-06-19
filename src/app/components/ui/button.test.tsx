@@ -155,6 +155,13 @@ describe('Button Component', () => {
     expect(button.className).not.toContain('rounded-xl');
     expect(button.className).not.toContain('hover:scale-[0.98]');
   });
+
+  it('passes target and rel to the anchor element when href is provided', () => {
+    render(<Button href="/external-link" target="_blank" rel="noopener">Link</Button>);
+    const link = screen.getByRole('link');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener');
+  });
 });
 
 

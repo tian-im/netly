@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Pencil, AlertTriangle } from 'lucide-react';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Select } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface EditCategoryModalProps {
@@ -84,39 +84,29 @@ export default function EditCategoryModal({
               autoFocus
             />
 
-            <div className="form-control w-full">
-              <label className="label" htmlFor="edit-category-type">
-                <span className="label-text font-bold">{t('newCategoryType')}</span>
-              </label>
-              <select
-                id="edit-category-type"
-                value={editType}
-                onChange={(e) => setEditType(e.target.value)}
-                className="select select-bordered w-full"
-                disabled={isUpdating}
-              >
-                <option value="EXPENSE">{t('expenseOption')}</option>
-                <option value="INCOME">{t('incomeOption')}</option>
-                <option value="TRANSFER">{t('transferOption')}</option>
-              </select>
-            </div>
+            <Select
+              id="edit-category-type"
+              label={t('newCategoryType')}
+              value={editType}
+              onChange={(e) => setEditType(e.target.value)}
+              disabled={isUpdating}
+            >
+              <option value="EXPENSE">{t('expenseOption')}</option>
+              <option value="INCOME">{t('incomeOption')}</option>
+              <option value="TRANSFER">{t('transferOption')}</option>
+            </Select>
 
-            <div className="form-control w-full">
-              <label className="label" htmlFor="edit-category-cf-type">
-                <span className="label-text font-bold">{t('newCategoryCFType')}</span>
-              </label>
-              <select
-                id="edit-category-cf-type"
-                value={editCFType}
-                onChange={(e) => setEditCFType(e.target.value)}
-                className="select select-bordered w-full"
-                disabled={isUpdating}
-              >
-                <option value="OPERATING">{t('operatingOption')}</option>
-                <option value="INVESTING">{t('investingOption')}</option>
-                <option value="FINANCING">{t('financingOption')}</option>
-              </select>
-            </div>
+            <Select
+              id="edit-category-cf-type"
+              label={t('newCategoryCFType')}
+              value={editCFType}
+              onChange={(e) => setEditCFType(e.target.value)}
+              disabled={isUpdating}
+            >
+              <option value="OPERATING">{t('operatingOption')}</option>
+              <option value="INVESTING">{t('investingOption')}</option>
+              <option value="FINANCING">{t('financingOption')}</option>
+            </Select>
 
             <div className="modal-action">
               <Button

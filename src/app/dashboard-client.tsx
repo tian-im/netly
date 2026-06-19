@@ -16,7 +16,7 @@ import { useTranslations, useFormatter } from 'next-intl';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
 import { getPeriodDates, buildReportsUrl, buildCategoryTransactionsUrl, buildDashboardUrl, buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
-import { Button } from '@/app/components/ui';
+import { Button, Card } from '@/app/components/ui';
 
 // Subcomponents
 import StatCard from './dashboard-components/StatCard';
@@ -352,7 +352,7 @@ export default function DashboardClient({
 
       {/* Empty State / CTA Callout */}
       {accounts.length === 0 && (
-        <div className="card bg-base-200 border border-base-300 p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg rounded-3xl">
+        <Card bg="bg-base-200" shadow="lg" className="p-8 flex flex-col sm:flex-row items-center justify-between gap-6 rounded-3xl">
           <div className="flex items-center gap-4 text-left">
             <div className="bg-primary/10 p-3 rounded-2xl text-primary">
               <Wallet className="h-8 w-8" />
@@ -362,13 +362,13 @@ export default function DashboardClient({
               <p className="text-sm opacity-75 mt-1">{t('noAccountsCreated')}</p>
             </div>
           </div>
-          <Link
+          <Button
             href={buildAccountsUrl()}
-            className="btn btn-primary shadow-md hover:scale-105 transition-transform shrink-0"
+            className="shadow-md hover:scale-105 transition-transform shrink-0"
           >
             {tAccounts('createAccount')}
-          </Link>
-        </div>
+          </Button>
+        </Card>
       )}
 
       {/* Review Queue Alert banner */}
@@ -383,12 +383,14 @@ export default function DashboardClient({
               </p>
             </div>
           </div>
-          <Link
+          <Button
             href={buildTransactionsUrl('uncategorized')}
-            className="btn btn-warning btn-sm gap-1 hover:scale-105 transition-transform"
+            variant="warning"
+            size="sm"
+            className="gap-1 hover:scale-105 transition-transform"
           >
             {t('categorizeNow')} <ArrowRight className="h-4 w-4" />
-          </Link>
+          </Button>
         </div>
       )}
 
@@ -620,7 +622,7 @@ export default function DashboardClient({
         <div className="lg:block">
           <BreakdownList
             title={t('incomeBreakdown', { currency: currentVisualCurrency })}
-            titleColorClass="text-success"
+            titleColor="success"
             items={sortedIncome.map((item) => ({
               ...item,
               href: categoryIdMap[item.name] ? buildCategoryTransactionsUrl(categoryIdMap[item.name]) : undefined,
@@ -637,7 +639,7 @@ export default function DashboardClient({
         <div className="lg:block">
           <BreakdownList
             title={t('expenseBreakdown', { currency: currentVisualCurrency })}
-            titleColorClass="text-error"
+            titleColor="error"
             items={sortedExpenses.map((item) => ({
               ...item,
               href: categoryIdMap[item.name] ? buildCategoryTransactionsUrl(categoryIdMap[item.name]) : undefined,

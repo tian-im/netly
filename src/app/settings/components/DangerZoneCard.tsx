@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { buildLoginUrl } from '@/lib/links';
 import { resetDatabase } from '../../actions';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Card } from '@/app/components/ui';
 
 interface DangerZoneCardProps {
   accountsCount: number;
@@ -77,12 +77,11 @@ export default function DangerZoneCard({
 
   return (
     <>
-      <div className="card bg-base-100 shadow-xl border border-error/20">
-        <div className="card-body">
-          <h2 className="card-title text-lg font-bold text-error flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-error" />
+      <Card className="border border-error/20">
+        <Card.Body>
+          <Card.Title icon={<AlertTriangle className="h-5 w-5 text-error" />} className="text-error">
             {t('dangerZoneTitle')}
-          </h2>
+          </Card.Title>
           <p className="text-sm text-base-content/70">
             {t('dangerZoneDesc')}
           </p>
@@ -118,8 +117,8 @@ export default function DangerZoneCard({
               {t('signOutBtn')}
             </Button>
           </div>
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {/* Wipe Confirmation Modal */}
       {showWipeModal && (

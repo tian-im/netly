@@ -4,6 +4,7 @@ import { useLocaleContext } from '../../providers';
 import { useTranslations } from 'next-intl';
 import CurrencySelector from '@/app/components/CurrencySelector';
 import { PREFERENCES, getPreference, setPreference } from '@/lib/preferences';
+import { Card, Select } from '@/app/components/ui';
 
 interface PreferencesCardProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
@@ -95,12 +96,11 @@ export default function PreferencesCard({ showToast, initialPreferences }: Prefe
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200">
-      <div className="card-body">
-        <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2 mb-2">
-          <Sliders className="h-5 w-5 text-primary" />
+    <Card>
+      <Card.Body>
+        <Card.Title icon={<Sliders className="h-5 w-5" />}>
           {t('preferencesTitle')}
-        </h2>
+        </Card.Title>
         <p className="text-xs text-base-content/60 mb-4">
           {t('preferencesDesc')}
         </p>
@@ -121,81 +121,57 @@ export default function PreferencesCard({ showToast, initialPreferences }: Prefe
             />
           </div>
 
-          <div className="form-control w-full">
-            <label className="label py-1" htmlFor="range-select">
-              <span className="label-text text-xs font-bold text-base-content/75">
-                {t('dateRangeLabel')}
-              </span>
-            </label>
-            <select
-              id="range-select"
-              value={mounted ? defaultRange : 'Month'}
-              onChange={(e) => handleRangeChange(e.target.value)}
-              className="select select-bordered select-sm w-full"
-            >
-              <option value="Month">{tReports('datePresets.month')}</option>
-              <option value="3m">{tReports('datePresets.threeMonths')}</option>
-              <option value="6m">{tReports('datePresets.sixMonths')}</option>
-              <option value="ytd">{tReports('datePresets.ytd')}</option>
-              <option value="12m">{tReports('datePresets.twelveMonths')}</option>
-            </select>
-          </div>
+          <Select
+            id="range-select"
+            label={t('dateRangeLabel')}
+            value={mounted ? defaultRange : 'Month'}
+            onChange={(e) => handleRangeChange(e.target.value)}
+            size="sm"
+          >
+            <option value="Month">{tReports('datePresets.month')}</option>
+            <option value="3m">{tReports('datePresets.threeMonths')}</option>
+            <option value="6m">{tReports('datePresets.sixMonths')}</option>
+            <option value="ytd">{tReports('datePresets.ytd')}</option>
+            <option value="12m">{tReports('datePresets.twelveMonths')}</option>
+          </Select>
 
-          <div className="form-control w-full">
-            <label className="label py-1" htmlFor="date-format-select">
-              <span className="label-text text-xs font-bold text-base-content/75">
-                {t('dateFormatLabel')}
-              </span>
-            </label>
-            <select
-              id="date-format-select"
-              value={mounted ? dateFormat : 'YYYY-MM-DD'}
-              onChange={(e) => handleDateFormatChange(e.target.value)}
-              className="select select-bordered select-sm w-full"
-            >
-              <option value="YYYY-MM-DD">YYYY-MM-DD ({getFormatExample('YYYY-MM-DD')})</option>
-              <option value="DD/MM/YYYY">DD/MM/YYYY ({getFormatExample('DD/MM/YYYY')})</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY ({getFormatExample('MM/DD/YYYY')})</option>
-            </select>
-          </div>
+          <Select
+            id="date-format-select"
+            label={t('dateFormatLabel')}
+            value={mounted ? dateFormat : 'YYYY-MM-DD'}
+            onChange={(e) => handleDateFormatChange(e.target.value)}
+            size="sm"
+          >
+            <option value="YYYY-MM-DD">YYYY-MM-DD ({getFormatExample('YYYY-MM-DD')})</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY ({getFormatExample('DD/MM/YYYY')})</option>
+            <option value="MM/DD/YYYY">MM/DD/YYYY ({getFormatExample('MM/DD/YYYY')})</option>
+          </Select>
 
-          <div className="form-control w-full">
-            <label className="label py-1" htmlFor="rule-mode-select">
-              <span className="label-text text-xs font-bold text-base-content/75">
-                {t('ruleModeLabel')}
-              </span>
-            </label>
-            <select
-              id="rule-mode-select"
-              value={mounted ? ruleMode : PREFERENCES.ruleMode.default}
-              onChange={(e) => handleRuleModeChange(e.target.value)}
-              className="select select-bordered select-sm w-full"
-            >
-              <option value="ask">{tTxRulePrompt('rulePromptAsk')}</option>
-              <option value="always">{tTxRulePrompt('rulePromptAlways')}</option>
-              <option value="never">{tTxRulePrompt('rulePromptNever')}</option>
-            </select>
-          </div>
+          <Select
+            id="rule-mode-select"
+            label={t('ruleModeLabel')}
+            value={mounted ? ruleMode : PREFERENCES.ruleMode.default}
+            onChange={(e) => handleRuleModeChange(e.target.value)}
+            size="sm"
+          >
+            <option value="ask">{tTxRulePrompt('rulePromptAsk')}</option>
+            <option value="always">{tTxRulePrompt('rulePromptAlways')}</option>
+            <option value="never">{tTxRulePrompt('rulePromptNever')}</option>
+          </Select>
 
-          <div className="form-control w-full">
-            <label className="label py-1" htmlFor="language-select">
-              <span className="label-text text-xs font-bold text-base-content/75">
-                {t('languageLabel')}
-              </span>
-            </label>
-            <select
-              id="language-select"
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
-              className="select select-bordered select-sm w-full"
-              aria-label={t('languageToggleAriaLabel')}
-            >
-              <option value="en">{t('languages.en')}</option>
-              <option value="zh">{t('languages.zh')}</option>
-            </select>
-          </div>
+          <Select
+            id="language-select"
+            label={t('languageLabel')}
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
+            size="sm"
+            aria-label={t('languageToggleAriaLabel')}
+          >
+            <option value="en">{t('languages.en')}</option>
+            <option value="zh">{t('languages.zh')}</option>
+          </Select>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

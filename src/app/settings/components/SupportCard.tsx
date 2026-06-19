@@ -4,29 +4,31 @@ import { useTranslations } from 'next-intl';
 import { Heart } from 'lucide-react';
 import { buildKoFiUrl } from '@/lib/links';
 
+import { Card, Button } from '@/app/components/ui';
+
 export default function SupportCard() {
   const t = useTranslations('support');
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200 border-l-4 border-l-accent">
-      <div className="card-body">
-        <h2 className="card-title flex items-center gap-2 text-accent">
-          <Heart className="h-5 w-5 text-accent" />
+    <Card className="border-l-4 border-l-accent">
+      <Card.Body>
+        <Card.Title icon={<Heart className="h-5 w-5 text-accent" />} className="text-accent">
           {t('cardTitle')}
-        </h2>
+        </Card.Title>
         <p className="text-sm text-base-content/70">{t('cardDescription')}</p>
         <p className="text-sm text-base-content/85 font-medium mt-2">{t('cardMessage')}</p>
-        <div className="card-actions justify-end mt-2">
-          <a
+        <Card.Actions className="mt-2">
+          <Button
             href={buildKoFiUrl()}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-primary btn-sm gap-1"
+            size="sm"
+            className="gap-1"
           >
             {t('ctaButton')}
-          </a>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Card.Actions>
+      </Card.Body>
+    </Card>
   );
 }

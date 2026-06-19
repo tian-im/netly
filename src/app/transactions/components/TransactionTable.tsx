@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload, CheckCircle } from 'lucide-react';
-import { Button, Checkbox } from '@/app/components/ui';
+import { Button, Checkbox, Select, Card } from '@/app/components/ui';
 import { Transaction, Category, SortConfig } from '../types';
 import { useLocaleContext } from '@/app/providers';
 import { translateCategoryType, translateAccountType } from '@/lib/translate-category';
@@ -172,11 +172,13 @@ export default function TransactionTable({
         {/* Category Selector */}
         <td onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1.5 w-full">
-            <select
+            <Select
               value={tx.categoryId || ''}
               onChange={(e) => onCategoryChange(tx, e.target.value)}
-              className={`select select-bordered select-xs w-full font-semibold ${
-                isUncategorized ? 'select-warning text-warning-content' : ''
+              size="xs"
+              variant={isUncategorized ? 'warning' : 'default'}
+              className={`font-semibold ${
+                isUncategorized ? 'text-warning-content' : ''
               }`}
               disabled={isLoading || isUpdatingThisRow}
               aria-label={`Change category for transaction with payee ${tx.payee}`}
@@ -187,7 +189,7 @@ export default function TransactionTable({
                   {c.name} ({translateCategoryType(t, c.type)})
                 </option>
               ))}
-            </select>
+            </Select>
             {isUpdatingThisRow && (
               <span className="loading loading-spinner loading-xs text-primary shrink-0" />
             )}
@@ -207,7 +209,7 @@ export default function TransactionTable({
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200 overflow-hidden">
+    <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="table table-zebra table-md min-w-[800px]">
           <thead>
@@ -351,6 +353,6 @@ export default function TransactionTable({
           onPageChange={onPageChange}
         />
       )}
-    </div>
+    </Card>
   );
 }

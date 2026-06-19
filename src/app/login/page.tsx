@@ -8,7 +8,7 @@ import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
 import { buildSetupUrl, buildDashboardUrl } from '@/lib/links';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Select, Card } from '@/app/components/ui';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -127,20 +127,21 @@ export default function LoginPage() {
   if (success) {
     return (
       <div className="h-full flex items-center justify-center bg-base-300">
-        <div className="card w-full max-w-md bg-base-100 shadow-2xl border border-base-200 relative">
-          <div className="absolute top-4 right-4">
-            <select
+        <Card shadow="2xl" className="w-full max-w-md relative">
+          <div className="absolute top-4 right-4 z-10">
+            <Select
               value={locale}
               onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
-              className="select select-bordered select-xs"
+              size="xs"
+              className="!w-24"
               aria-label="Language Selector"
             >
               <option value="en">English</option>
               <option value="zh">中文</option>
-            </select>
+            </Select>
           </div>
 
-          <div className="card-body items-center text-center p-8">
+          <Card.Body className="items-center text-center p-8">
             <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-4">
               <CheckCircle className="h-10 w-10 text-success" />
             </div>
@@ -152,28 +153,29 @@ export default function LoginPage() {
               <Loader2 className="h-4 w-4 animate-spin" />
               {t('successDesc')}
             </p>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="h-full flex items-center justify-center bg-base-300">
-      <div className="card w-full max-w-md bg-base-100 shadow-2xl border border-base-200 relative">
-        <div className="absolute top-4 right-4">
-          <select
+      <Card shadow="2xl" className="w-full max-w-md relative">
+        <div className="absolute top-4 right-4 z-10">
+          <Select
             value={locale}
             onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
-            className="select select-bordered select-xs"
+            size="xs"
+            className="!w-24"
             aria-label="Language Selector"
           >
             <option value="en">English</option>
             <option value="zh">中文</option>
-          </select>
+          </Select>
         </div>
 
-        <div className="card-body items-center text-center p-8 w-full">
+        <Card.Body className="items-center text-center p-8 w-full">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <KeyRound className="h-8 w-8 text-primary" />
           </div>
@@ -257,8 +259,8 @@ export default function LoginPage() {
               </div>
             </div>
           )}
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

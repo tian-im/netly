@@ -8,7 +8,7 @@ import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import CurrencySelector from '@/app/components/CurrencySelector';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
-import { Button, Input, ToastContainer, type ToastMessage } from '@/app/components/ui';
+import { Button, Input, Select, Card, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
 interface Account {
   id: string;
@@ -369,26 +369,26 @@ export default function AccountsClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
       {/* Left column: Accounts Manager */}
       <div className="lg:col-span-2">
-        <div className="card bg-base-100 shadow-xl border border-base-200">
-          <div className="card-body">
-            <h2 className="card-title text-xl font-bold flex justify-between items-center text-primary flex-wrap gap-2">
-              <span className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
+        <Card>
+          <Card.Body>
+            <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+              <Card.Title icon={<Wallet className="h-5 w-5" />}>
                 {t('managedAccounts')}
-              </span>
+              </Card.Title>
               
               {accounts.length > 0 && (
                 <div className="flex items-center gap-2 w-full max-w-md justify-end">
-                  <select
+                  <Select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as any)}
-                    className="select select-bordered select-sm bg-base-200/50 focus:bg-base-100 font-normal text-xs text-base-content"
+                    size="sm"
+                    className="bg-base-200/50 focus:bg-base-100 font-normal text-xs text-base-content !w-auto"
                     aria-label="Filter accounts by type"
                   >
                     <option value="ALL">{t('filterAllTypes')}</option>
                     <option value="ASSET">{t('filterAsset')}</option>
                     <option value="LIABILITY">{t('filterLiability')}</option>
-                  </select>
+                  </Select>
                   <div className="relative w-full max-w-xs">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-base-content/40 z-10">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -403,7 +403,7 @@ export default function AccountsClient({
                   </div>
                 </div>
               )}
-            </h2>
+            </div>
 
             {accounts.length === 0 ? (
               <div className="text-center py-8 text-base-content/50">
@@ -577,18 +577,17 @@ export default function AccountsClient({
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </div>
-
+ 
       {/* Right column: Create Account Form */}
       <div>
-        <div className="card bg-base-100 shadow-xl border border-base-200">
-          <div className="card-body">
-            <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-              <Plus className="h-5 w-5" />
+        <Card>
+          <Card.Body>
+            <Card.Title icon={<Plus className="h-5 w-5" />}>
               {t('createAccount')}
-            </h2>
+            </Card.Title>
             <form onSubmit={handleAddAccount} className="space-y-4 mt-2">
               <Input
                 id="new-account-name"
@@ -601,21 +600,16 @@ export default function AccountsClient({
                 disabled={isCreating}
               />
 
-              <div className="form-control w-full">
-                <label className="label" htmlFor="new-account-type">
-                  <span className="label-text font-bold">{t('newAccountType')}</span>
-                </label>
-                <select
-                  id="new-account-type"
-                  value={newAccType}
-                  onChange={(e) => setNewAccType(e.target.value as 'ASSET' | 'LIABILITY')}
-                  className="select select-bordered w-full"
-                  disabled={isCreating}
-                >
-                  <option value="ASSET">{t('assetOption')}</option>
-                  <option value="LIABILITY">{t('liabilityOption')}</option>
-                </select>
-              </div>
+              <Select
+                id="new-account-type"
+                label={t('newAccountType')}
+                value={newAccType}
+                onChange={(e) => setNewAccType(e.target.value as 'ASSET' | 'LIABILITY')}
+                disabled={isCreating}
+              >
+                <option value="ASSET">{t('assetOption')}</option>
+                <option value="LIABILITY">{t('liabilityOption')}</option>
+              </Select>
               <div className="form-control w-full">
                 <label className="label" htmlFor="new-account-currency">
                   <span className="label-text font-bold">{t('newAccountCurrency')}</span>
@@ -652,8 +646,8 @@ export default function AccountsClient({
                 {t('addAccount')}
               </Button>
             </form>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </div>
 
       {/* Edit Account Modal */}
@@ -676,21 +670,16 @@ export default function AccountsClient({
                 disabled={isUpdating}
               />
 
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-account-type">
-                  <span className="label-text font-bold">{t('newAccountType')}</span>
-                </label>
-                <select
-                  id="edit-account-type"
-                  value={editType}
-                  onChange={(e) => setEditType(e.target.value as 'ASSET' | 'LIABILITY')}
-                  className="select select-bordered w-full"
-                  disabled={isUpdating}
-                >
-                  <option value="ASSET">{t('assetOption')}</option>
-                  <option value="LIABILITY">{t('liabilityOption')}</option>
-                </select>
-              </div>
+              <Select
+                id="edit-account-type"
+                label={t('newAccountType')}
+                value={editType}
+                onChange={(e) => setEditType(e.target.value as 'ASSET' | 'LIABILITY')}
+                disabled={isUpdating}
+              >
+                <option value="ASSET">{t('assetOption')}</option>
+                <option value="LIABILITY">{t('liabilityOption')}</option>
+              </Select>
 
               <div className="form-control w-full">
                 <label className="label" htmlFor="edit-account-currency">

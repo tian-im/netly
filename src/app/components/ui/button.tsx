@@ -7,6 +7,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   loading?: boolean;
   href?: string;
   icon?: React.ReactNode;
+  target?: string;
+  rel?: string;
 }
 
 // WHY: We use a union type HTMLButtonElement | HTMLAnchorElement for forwardRef because

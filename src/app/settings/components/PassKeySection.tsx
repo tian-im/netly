@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { KeyRound, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Card } from '@/app/components/ui';
 import { PassKeyInfo } from '@/types/settings';
 
 interface PassKeySectionProps {
@@ -165,12 +165,11 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
 
   return (
     <>
-      <div className="card bg-base-100 shadow-xl border border-base-200">
-        <div className="card-body p-6">
-          <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2 mb-2">
-            <KeyRound className="h-5 w-5 text-primary" />
+      <Card>
+        <Card.Body>
+          <Card.Title icon={<KeyRound className="h-5 w-5 text-primary" />}>
             {tPasskey('title')}
-          </h2>
+          </Card.Title>
           <p className="text-xs text-base-content/60 mb-4">
             {tPasskey('desc')}
           </p>
@@ -244,8 +243,8 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
               {tPasskey('addDeviceBtn')}
             </Button>
           </div>
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {/* Add PassKey Modal */}
       {showAddPassKeyModal && (

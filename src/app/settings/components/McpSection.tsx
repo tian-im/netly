@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { Bot, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Card } from '@/app/components/ui';
 import { McpTokenInfo } from '@/types/settings';
 
 interface McpSectionProps {
@@ -111,12 +111,11 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
 
   return (
     <>
-      <div className="card bg-base-100 shadow-xl border border-base-200">
-        <div className="card-body p-6">
-          <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2 mb-2">
-            <Bot className="h-5 w-5 text-primary" />
+      <Card>
+        <Card.Body>
+          <Card.Title icon={<Bot className="h-5 w-5 text-primary" />}>
             {t('mcpTitle')}
-          </h2>
+          </Card.Title>
           <p className="text-xs text-base-content/60 mb-4">{t('mcpDesc')}</p>
 
           {mcpTokens.length > 0 && (
@@ -186,8 +185,8 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
               {t('mcpCreateBtn')}
             </Button>
           </div>
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {/* Add/Generate MCP Token Modal */}
       {showAddMcpModal && (

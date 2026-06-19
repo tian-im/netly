@@ -3,7 +3,7 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { exportAllTransactions, exportAllAccounts } from '../../actions';
 import { formatDateISO } from '@/lib/dates';
-import { Button } from '@/app/components/ui';
+import { Button, Card } from '@/app/components/ui';
 
 interface ExportCardProps {
   accountsCount: number;
@@ -49,12 +49,11 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200">
-      <div className="card-body">
-        <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2 mb-1">
-          <Download className="h-5 w-5 text-primary" />
+    <Card>
+      <Card.Body>
+        <Card.Title icon={<Download className="h-5 w-5 text-primary" />}>
           {t('exportTitle')}
-        </h2>
+        </Card.Title>
         <p className="text-xs text-base-content/60">
           {t('exportDesc')}
         </p>
@@ -82,7 +81,7 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
             {t('exportAccountsBtn', { count: accountsCount })}
           </Button>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

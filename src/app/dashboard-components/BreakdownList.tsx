@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Tag } from 'lucide-react';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 
+import { Card } from '@/app/components/ui';
+
 export interface BreakdownItem {
   name: string;
   amount: number;
@@ -11,7 +13,7 @@ export interface BreakdownItem {
 
 interface BreakdownListProps {
   title: string;
-  titleColorClass: string;
+  titleColor?: 'success' | 'error' | 'primary' | 'warning' | 'base' | 'default';
   items: BreakdownItem[];
   totalAmount: number;
   emptyMessage: string;
@@ -22,7 +24,7 @@ interface BreakdownListProps {
 
 export default function BreakdownList({
   title,
-  titleColorClass,
+  titleColor = 'default',
   items,
   totalAmount,
   emptyMessage,
@@ -32,12 +34,11 @@ export default function BreakdownList({
 }: BreakdownListProps) {
   const symbol = getCurrencySymbol(currency);
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-200" role="region" aria-label={title}>
-      <div className="card-body p-6">
-        <h3 className={`card-title text-base font-bold ${titleColorClass} mb-2 flex items-center gap-2`}>
-          <Tag className="h-5 w-5" aria-hidden="true" />
+    <Card shadow="lg" role="region" aria-label={title}>
+      <Card.Body className="p-6">
+        <Card.Title icon={<Tag className="h-5 w-5" aria-hidden="true" />} color={titleColor} className="text-base mb-2">
           {title}
-        </h3>
+        </Card.Title>
         <div className="space-y-3 mt-4 max-h-[280px] sm:max-h-[340px] overflow-y-auto pr-1">
           {items.length === 0 ? (
             <p className="text-xs text-base-content/50 py-4 text-center" role="status">{emptyMessage}</p>
@@ -75,7 +76,7 @@ export default function BreakdownList({
             })
           )}
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

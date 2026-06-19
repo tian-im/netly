@@ -3,7 +3,7 @@ import { Database, Clock, Settings, History as HistoryIcon, RefreshCw } from 'lu
 import { useTranslations, useFormatter } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { vacuumDatabase } from '../../actions';
-import { Button } from '@/app/components/ui';
+import { Button, Card } from '@/app/components/ui';
 
 interface DatabaseInfoCardProps {
   dbInfo: {
@@ -52,13 +52,12 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
     : tCommon('unknown');
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200">
-      <div className="card-body flex flex-col justify-between">
+    <Card>
+      <Card.Body className="flex flex-col justify-between">
         <div>
-          <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2 mb-2">
-            <Database className="h-5 w-5 text-primary" />
+          <Card.Title icon={<Database className="h-5 w-5 text-primary" />}>
             {t('dbInfoTitle')}
-          </h2>
+          </Card.Title>
           <p className="text-xs text-base-content/60 mb-4">
             {t('dbInfoDesc')}
           </p>
@@ -121,7 +120,7 @@ export default function DatabaseInfoCard({ dbInfo, showToast }: DatabaseInfoCard
             </span>
           </label>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

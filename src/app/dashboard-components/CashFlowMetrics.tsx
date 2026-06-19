@@ -3,6 +3,8 @@ import { ArrowDownRight, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 
+import { Card } from '@/app/components/ui';
+
 interface CashFlowMetricsProps {
   title: string;
   ocf: number;
@@ -44,13 +46,12 @@ export default function CashFlowMetrics({
   };
 
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-200">
-      <div className="card-body p-6 flex flex-col justify-between h-full">
+    <Card shadow="lg">
+      <Card.Body className="p-6 flex flex-col justify-between h-full">
         <div>
-          <h3 className="card-title text-base font-bold text-primary mb-4 flex items-center gap-2">
-            <ArrowDownRight className="h-5 w-5" aria-hidden="true" />
+          <Card.Title icon={<ArrowDownRight className="h-5 w-5" aria-hidden="true" />} className="text-base mb-4">
             {title}
-          </h3>
+          </Card.Title>
 
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b border-base-200 pb-2">
@@ -80,15 +81,15 @@ export default function CashFlowMetrics({
           </div>
         </div>
 
-        <div className="mt-6 pt-3 border-t border-base-200 flex justify-end">
+        <Card.Actions justify="end" className="mt-6 pt-3 border-t border-base-200">
           <Link
             href={detailedStatementsHref}
             className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
           >
             {detailedStatementsLabel} <ArrowRight className="h-3 w-3" />
           </Link>
-        </div>
-      </div>
-    </div>
+        </Card.Actions>
+      </Card.Body>
+    </Card>
   );
 }

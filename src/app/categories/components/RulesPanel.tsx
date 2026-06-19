@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings, X } from 'lucide-react';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Select, Card } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface RulesPanelProps {
@@ -60,19 +60,19 @@ export default function RulesPanel({
       {/* Left column: Rules List grouped by category */}
       <div className="lg:col-span-2 space-y-4">
         {!hasAnyRules ? (
-          <div className="card bg-base-100 shadow border border-base-200">
-            <div className="card-body items-center text-center py-16">
+          <Card shadow="sm">
+            <Card.Body className="items-center text-center py-16">
               <Settings className="h-12 w-12 mb-4 text-base-content/30" />
               <h3 className="text-lg font-bold text-base-content/60">{t('noMatchRulesYet')}</h3>
               <p className="text-sm text-base-content/40 max-w-xs">{t('matchRulesInstructions')}</p>
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         ) : (
           categories.map((cat) => {
             if (!cat.rules || cat.rules.length === 0) return null;
             return (
-              <div key={cat.id} className="card bg-base-100 shadow border border-base-200">
-                <div className="card-body p-4">
+              <Card key={cat.id} shadow="sm">
+                <Card.Body className="p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="font-bold text-base">{cat.name}</h3>
                     <span
@@ -118,8 +118,8 @@ export default function RulesPanel({
                       );
                     })}
                   </div>
-                </div>
-              </div>
+                </Card.Body>
+              </Card>
             );
           })
         )}
@@ -127,47 +127,43 @@ export default function RulesPanel({
 
       {/* Right column: Create Rule Form + Summary */}
       <div>
-        <div className="card bg-base-100 shadow-xl border border-base-200">
-          <div className="card-body p-6">
-            <h2 className="card-title text-md font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-              <Settings className="h-4 w-4" /> {t('createRule')}
-            </h2>
+        <Card>
+          <Card.Body className="p-6">
+            <Card.Title icon={<Settings className="h-4 w-4" />} className="text-md uppercase tracking-wider">
+              {t('createRule')}
+            </Card.Title>
             <p className="text-xs text-base-content/60">{t('matchRulesInstructions')}</p>
 
             <form onSubmit={handleCreateRule} className="space-y-4 mt-4">
-                <Input
-                  id="new-rule-pattern"
-                  label={t('merchantKeyword')}
-                  type="text"
-                  placeholder={t('merchantKeywordPlaceholder')}
-                  value={newRulePattern}
-                  onChange={(e) => setNewRulePattern(e.target.value)}
-                  className="input-sm"
-                  required
-                  disabled={isCreatingRule || categories.length === 0}
-                  autoFocus
-                  helperText={t('regexHint')}
-                />
+              <Input
+                id="new-rule-pattern"
+                label={t('merchantKeyword')}
+                type="text"
+                placeholder={t('merchantKeywordPlaceholder')}
+                value={newRulePattern}
+                onChange={(e) => setNewRulePattern(e.target.value)}
+                className="input-sm"
+                required
+                disabled={isCreatingRule || categories.length === 0}
+                autoFocus
+                helperText={t('regexHint')}
+              />
 
-              <div className="form-control">
-                <label className="label" htmlFor="new-rule-category">
-                  <span className="label-text font-semibold text-xs">{t('assignCategory')}</span>
-                </label>
-                <select
-                  id="new-rule-category"
-                  value={newRuleCatId}
-                  onChange={(e) => setNewRuleCatId(e.target.value)}
-                  className="select select-bordered select-sm"
-                  required
-                  disabled={isCreatingRule || categories.length === 0}
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                id="new-rule-category"
+                label={t('assignCategory')}
+                value={newRuleCatId}
+                onChange={(e) => setNewRuleCatId(e.target.value)}
+                size="sm"
+                required
+                disabled={isCreatingRule || categories.length === 0}
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
 
               <Button
                 type="submit"
@@ -179,12 +175,12 @@ export default function RulesPanel({
                 {t('createRule')}
               </Button>
             </form>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
 
         {/* Summary stats */}
-        <div className="card bg-base-100 shadow border border-base-200 mt-4">
-          <div className="card-body p-4">
+        <Card shadow="sm" className="mt-4">
+          <Card.Body className="p-4">
             <h3 className="font-bold text-sm text-base-content/60 uppercase tracking-wider mb-3">
               {t('summary')}
             </h3>
@@ -206,8 +202,8 @@ export default function RulesPanel({
                 </span>
               </div>
             </div>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Tags, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Card } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface CategoryTableProps {
@@ -54,11 +54,11 @@ export default function CategoryTable({
 
   if (categories.length === 0) {
     return (
-      <div className="card bg-base-100 shadow-xl border border-base-200">
-        <div className="card-body">
-          <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-            <Tags className="h-5 w-5" /> {t('storedCategories')}
-          </h2>
+      <Card>
+        <Card.Body>
+          <Card.Title icon={<Tags className="h-5 w-5" />}>
+            {t('storedCategories')}
+          </Card.Title>
           <div className="text-center py-16 text-base-content/50 flex flex-col items-center gap-4">
             <Tags className="h-12 w-12 text-base-content/30" />
             <div>
@@ -66,17 +66,17 @@ export default function CategoryTable({
               <p className="text-sm text-base-content/40 max-w-sm mt-1">{t('getStarted')}</p>
             </div>
           </div>
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
     );
   }
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200">
-      <div className="card-body">
-        <h2 className="card-title text-xl font-bold text-primary flex items-center gap-2">
-          <Tags className="h-5 w-5" /> {t('storedCategories')}
-        </h2>
+    <Card>
+      <Card.Body>
+        <Card.Title icon={<Tags className="h-5 w-5" />}>
+          {t('storedCategories')}
+        </Card.Title>
 
         <div className="form-control w-full max-w-xs mt-2 mb-4 relative">
           <Input
@@ -241,7 +241,7 @@ export default function CategoryTable({
             </table>
           </div>
         )}
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

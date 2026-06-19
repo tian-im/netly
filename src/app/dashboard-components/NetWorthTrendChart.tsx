@@ -13,6 +13,8 @@ import {
   CartesianGrid,
 } from 'recharts';
 
+import { Card } from '@/app/components/ui';
+
 interface TrendDataItem {
   label: string;
   value: number;
@@ -45,14 +47,11 @@ export default function NetWorthTrendChart({
   }, []);
 
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-200 lg:col-span-2">
-      <div className="card-body p-6">
-        <h3 className="card-title text-base font-bold text-primary flex justify-between items-center">
-          <span className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" aria-hidden="true" />
-            {title}
-          </span>
-        </h3>
+    <Card shadow="lg" className="lg:col-span-2">
+      <Card.Body className="p-6">
+        <Card.Title icon={<TrendingUp className="h-5 w-5" aria-hidden="true" />} className="text-base">
+          {title}
+        </Card.Title>
 
         {isEmpty ? (
           <div className="flex items-center justify-center h-56 text-base-content/50">
@@ -140,7 +139,7 @@ export default function NetWorthTrendChart({
           )}
           </>
         )}
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

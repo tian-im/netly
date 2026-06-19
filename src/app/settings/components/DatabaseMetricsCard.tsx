@@ -2,6 +2,7 @@ import { BarChart3, Calendar } from 'lucide-react';
 import { useTranslations, useFormatter } from 'next-intl';
 import Link from 'next/link';
 import { buildAccountsUrl, buildTransactionsUrl, buildCategoriesUrl } from '@/lib/links';
+import { Card } from '@/app/components/ui';
 
 interface DatabaseMetricsCardProps {
   accountsCount: number;
@@ -41,13 +42,12 @@ export default function DatabaseMetricsCard({
   })();
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-200">
-      <div className="card-body p-6">
+    <Card>
+      <Card.Body className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-          <h2 className="card-title text-lg font-bold text-primary flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
+          <Card.Title icon={<BarChart3 className="h-5 w-5 text-primary" />}>
             {t('databaseMetricsTitle')}
-          </h2>
+          </Card.Title>
           <div className="flex items-center gap-1.5 text-xs text-base-content/60 bg-base-200 px-2.5 py-1 rounded-full w-fit">
             <Calendar className="h-3.5 w-3.5" />
             <span>{formattedDateRange}</span>
@@ -94,7 +94,7 @@ export default function DatabaseMetricsCard({
             <div className="stat-desc mt-1 group-hover:text-base-content/85 transition-colors">{t('rulesDesc')}</div>
           </Link>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

@@ -9,9 +9,10 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className = '', label, error, helperText, ...props }, ref) => {
     const isFile = props.type === 'file';
+    const ringClass = error ? 'focus:ring-error/20' : 'focus:ring-primary/20';
     const inputClass = isFile
-      ? `file-input file-input-bordered w-full rounded-lg focus:ring-2 focus:ring-primary/20 ${error ? 'file-input-error' : 'focus:border-primary'} ${className}`
-      : `input input-bordered w-full rounded-lg focus:ring-2 focus:ring-primary/20 ${error ? 'input-error' : 'focus:border-primary'} ${className}`;
+      ? `file-input file-input-bordered w-full rounded-lg focus:ring-2 ${ringClass} ${error ? 'file-input-error' : 'focus:border-primary'} ${className}`
+      : `input input-bordered w-full rounded-lg focus:ring-2 ${ringClass} ${error ? 'input-error' : 'focus:border-primary'} ${className}`;
 
     return (
       <div className="form-control w-full">

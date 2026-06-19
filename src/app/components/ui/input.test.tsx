@@ -66,4 +66,14 @@ describe('Input Component', () => {
     expect(input.className).not.toContain('focus:border-primary');
     expect(screen.getByText('Invalid file format')).toBeInTheDocument();
   });
+
+  it('adjusts focus ring color dynamically based on error state', () => {
+    const { rerender } = render(<Input placeholder="Normal" />);
+    expect(screen.getByPlaceholderText('Normal').className).toContain('focus:ring-primary/20');
+    expect(screen.getByPlaceholderText('Normal').className).not.toContain('focus:ring-error/20');
+
+    rerender(<Input placeholder="Normal" error="Some error" />);
+    expect(screen.getByPlaceholderText('Normal').className).toContain('focus:ring-error/20');
+    expect(screen.getByPlaceholderText('Normal').className).not.toContain('focus:ring-primary/20');
+  });
 });

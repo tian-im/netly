@@ -6,7 +6,7 @@ import { Search, Settings, Check } from 'lucide-react';
 import { Account, Category } from '../types';
 import { translateCategoryType } from '@/lib/translate-category';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
-import { Button, Input, Checkbox } from '@/app/components/ui';
+import { Button, Input, Checkbox, Select, Card } from '@/app/components/ui';
 
 interface FilterBarProps {
   accounts: Account[];
@@ -102,8 +102,8 @@ export default function FilterBar({
   }, []);
 
   return (
-    <div className="card bg-base-100 shadow border border-base-200">
-      <div className="card-body p-4 flex flex-col gap-4">
+    <Card shadow="sm">
+      <Card.Body className="p-4 flex flex-col gap-4">
         {/* Row 1: Search + Page size / Settings */}
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between w-full">
           {/* Search bar */}
@@ -124,10 +124,11 @@ export default function FilterBar({
           {/* Page size & settings dropdown */}
           <div className="flex items-center gap-2 shrink-0 justify-end w-full md:w-auto border-t md:border-t-0 pt-2 md:pt-0">
             <span className="text-xs text-base-content/50 whitespace-nowrap">{t('filterBar.show')}</span>
-            <select
+            <Select
               value={pageSize}
               onChange={(e) => onFilterChange({ pageSize: Number(e.target.value) })}
-              className="select select-bordered select-sm w-20"
+              size="sm"
+              className="!w-20"
               aria-label="Transactions per page"
             >
               {PAGE_SIZE_OPTIONS.map((n) => (
@@ -135,7 +136,7 @@ export default function FilterBar({
                   {n}
                 </option>
               ))}
-            </select>
+            </Select>
 
             {/* Rule settings popover */}
             <div className="dropdown dropdown-end">
@@ -147,11 +148,11 @@ export default function FilterBar({
                 aria-label="Rule creation settings"
                 icon={<Settings className="w-4 h-4 text-base-content/65" />}
               />
-              <div
+              <Card
                 tabIndex={0}
-                className="dropdown-content card card-compact bg-base-100 z-10 w-64 p-2 shadow-xl border border-base-200"
+                className="dropdown-content card-compact z-10 w-64 p-2"
               >
-                <div className="card-body">
+                <Card.Body>
                   <h3 className="font-bold text-xs uppercase tracking-wider text-primary mb-1">
                     {t('rulePrompt.rulePromptPrefs')}
                   </h3>
@@ -196,8 +197,8 @@ export default function FilterBar({
                       {ruleMode === 'never' && <Check className="w-3.5 h-3.5" />}
                     </Button>
                   </div>
-                </div>
-              </div>
+                </Card.Body>
+              </Card>
             </div>
           </div>
         </div>
@@ -206,10 +207,10 @@ export default function FilterBar({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 w-full border-t border-base-200/50 pt-3">
           {/* Account filter */}
           <div className="w-full">
-            <select
+            <Select
               value={selectedAccountId}
               onChange={(e) => onFilterChange({ accountId: e.target.value })}
-              className="select select-bordered select-sm w-full"
+              size="sm"
               aria-label="Filter transactions by account"
             >
               <option value="">{t('filter.allAccounts')}</option>
@@ -218,15 +219,15 @@ export default function FilterBar({
                   {a.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Currency filter */}
           <div className="w-full">
-            <select
+            <Select
               value={selectedCurrency}
               onChange={(e) => onFilterChange({ currency: e.target.value })}
-              className="select select-bordered select-sm w-full"
+              size="sm"
               aria-label="Filter transactions by currency"
             >
               <option value="">{t('filter.allCurrencies')}</option>
@@ -235,15 +236,15 @@ export default function FilterBar({
                   {cur}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Category filter */}
           <div className="w-full">
-            <select
+            <Select
               value={selectedCategoryId}
               onChange={(e) => onFilterChange({ categoryId: e.target.value })}
-              className="select select-bordered select-sm w-full"
+              size="sm"
               aria-label="Filter transactions by category"
             >
               <option value="">{t('filter.allCategories')}</option>
@@ -253,15 +254,15 @@ export default function FilterBar({
                   {c.name} ({translateCategoryType(t, c.type)})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Date Range filter */}
           <div className="w-full">
-            <select
+            <Select
               value={dateRange || 'all'}
               onChange={(e) => onFilterChange({ dateRange: e.target.value })}
-              className="select select-bordered select-sm w-full"
+              size="sm"
               aria-label="Filter transactions by date range"
             >
               <option value="all">{t('filter.allPeriods')}</option>
@@ -270,21 +271,21 @@ export default function FilterBar({
               <option value="sixMonths">{t('filter.sixMonths')}</option>
               <option value="twelveMonths">{t('filter.twelveMonths')}</option>
               <option value="ytd">{t('filter.ytd')}</option>
-            </select>
+            </Select>
           </div>
 
           {/* Review Status filter */}
           <div className="w-full">
-            <select
+            <Select
               value={isReviewed}
               onChange={(e) => onFilterChange({ isReviewed: e.target.value })}
-              className="select select-bordered select-sm w-full"
+              size="sm"
               aria-label="Filter transactions by review status"
             >
               <option value="all">{t('filter.allStatus')}</option>
               <option value="true">{t('filter.reviewed')}</option>
               <option value="false">{t('filter.needsReview')}</option>
-            </select>
+            </Select>
           </div>
 
           {/* Show duplicates toggle */}
@@ -302,7 +303,7 @@ export default function FilterBar({
             </label>
           </div>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

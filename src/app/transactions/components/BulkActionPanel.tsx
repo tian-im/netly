@@ -6,7 +6,7 @@ import { X, Trash2 } from 'lucide-react';
 import { Category } from '../types';
 import { translateCategoryType } from '@/lib/translate-category';
 import DeleteConfirmModal from './DeleteConfirmModal';
-import { Button } from '@/app/components/ui';
+import { Button, Select } from '@/app/components/ui';
 
 interface BulkActionPanelProps {
   selectedCount: number;
@@ -54,14 +54,16 @@ export default function BulkActionPanel({
 
           {/* Categorization controls & Delete */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
+            <Select
               onChange={(e) => {
                 if (e.target.value) {
                   onBulkCategorize(e.target.value);
                   e.target.value = ''; // Reset selection
                 }
               }}
-              className="select select-primary select-sm w-full sm:w-48 font-semibold"
+              size="sm"
+              variant="primary"
+              className="w-full sm:w-48 font-semibold"
               disabled={isPending}
               defaultValue=""
             >
@@ -74,7 +76,7 @@ export default function BulkActionPanel({
                   {c.name} ({translateCategoryType(t, c.type)})
                 </option>
               ))}
-            </select>
+            </Select>
 
             <Button
               type="button"

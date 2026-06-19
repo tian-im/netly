@@ -9,7 +9,7 @@ import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
 import { findDuplicateGroups } from '@/app/actions';
-import { Button, Input, Checkbox, Radio } from '@/app/components/ui';
+import { Button, Input, Checkbox, Radio, Select, Card } from '@/app/components/ui';
 
 interface Account {
   id: string;
@@ -434,36 +434,31 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
         </p>
       </div>
 
-      <div className="card bg-base-100 shadow-xl border border-base-200">
-        <div className="card-body">
+      <Card>
+        <Card.Body>
           {accounts.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-base-content/60">{t('noAccountsWarning')}</p>
-              <Link href={buildAccountsUrl()} className="btn btn-primary mt-4 btn-sm">
+              <Button href={buildAccountsUrl()} size="sm" className="mt-4">
                 {t('goCreateAccount')}
-              </Link>
+              </Button>
             </div>
           ) : (
             <form onSubmit={handleImport} className="space-y-6">
               {/* Form Row 1: Account selection & File drag-and-drop */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-bold text-base-content/80">{t('selectAccountField')}</span>
-                  </label>
-                  <select
-                    value={selectedAccountId}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                    className="select select-bordered w-full"
-                    required
-                  >
-                    {accounts.map((acc) => (
-                      <option key={acc.id} value={acc.id}>
-                        {acc.name} ({acc.type})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label={t('selectAccountField')}
+                  value={selectedAccountId}
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                  required
+                >
+                  {accounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} ({acc.type})
+                    </option>
+                  ))}
+                </Select>
 
                 <div className="form-control w-full">
                   <label className="label">
@@ -541,9 +536,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     <span>{importResult.message}</span>
                   </div>
                   {importResult.success && (
-                    <Link href={buildTransactionsUrl()} className="btn btn-xs btn-outline border-success-content/20 hover:bg-success-content/10">
+                    <Button href={buildTransactionsUrl()} size="xs" variant="outline" className="border-success-content/20 hover:bg-success-content/10">
                       {t('viewTransactions')} →
-                    </Link>
+                    </Button>
                   )}
                 </div>
               )}
@@ -557,9 +552,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                       <span>{tTransactions('duplicateAlertDesc', { count: duplicateCount })}</span>
                     </div>
                   </div>
-                  <Link href={buildTransactionsUrl(new URLSearchParams({ accountId: selectedAccountId, duplicates: 'true' }))} className="btn btn-xs btn-outline border-warning-content/20 hover:bg-warning-content/10">
+                  <Button href={buildTransactionsUrl(new URLSearchParams({ accountId: selectedAccountId, duplicates: 'true' }))} size="xs" variant="outline" className="border-warning-content/20 hover:bg-warning-content/10">
                     {tTransactions('reviewDuplicatesBtn')} →
-                  </Link>
+                  </Button>
                 </div>
               )}
 
@@ -644,124 +639,96 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                    <div className="form-control w-full">
-                      <label className="label">
-                        <span className="label-text font-bold">{t('dateField')}</span>
-                      </label>
-                      <select
-                        value={dateHeader}
-                        onChange={(e) => setDateHeader(e.target.value)}
-                        className="select select-bordered w-full select-sm"
-                        required
-                      >
-                        <option value="">{t('selectPlaceholder')}</option>
-                        {csvHeaders.map((h) => (
-                          <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      label={t('dateField')}
+                      value={dateHeader}
+                      onChange={(e) => setDateHeader(e.target.value)}
+                      size="sm"
+                      required
+                    >
+                      <option value="">{t('selectPlaceholder')}</option>
+                      {csvHeaders.map((h) => (
+                        <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
+                      ))}
+                    </Select>
 
-                    <div className="form-control w-full">
-                      <label className="label">
-                        <span className="label-text font-bold">{t('dateLayoutFormat')}</span>
-                      </label>
-                      <select
-                        value={dateFormatHint}
-                        onChange={(e) => setDateFormatHint(e.target.value)}
-                        className="select select-bordered w-full select-sm"
-                      >
-                        <option value="DD/MM/YYYY">{t('dateFormatDmy')}</option>
-                        <option value="MM/DD/YYYY">{t('dateFormatMdy')}</option>
-                        <option value="YYYY-MM-DD">{t('dateFormatIso')}</option>
-                      </select>
-                    </div>
+                    <Select
+                      label={t('dateLayoutFormat')}
+                      value={dateFormatHint}
+                      onChange={(e) => setDateFormatHint(e.target.value)}
+                      size="sm"
+                    >
+                      <option value="DD/MM/YYYY">{t('dateFormatDmy')}</option>
+                      <option value="MM/DD/YYYY">{t('dateFormatMdy')}</option>
+                      <option value="YYYY-MM-DD">{t('dateFormatIso')}</option>
+                    </Select>
 
-                    <div className="form-control w-full">
-                      <label className="label">
-                        <span className="label-text font-bold">{t('payeeField')}</span>
-                      </label>
-                      <select
-                        value={payeeHeader}
-                        onChange={(e) => setPayeeHeader(e.target.value)}
-                        className="select select-bordered w-full select-sm"
-                        required
-                      >
-                        <option value="">{t('selectPlaceholder')}</option>
-                        {csvHeaders.map((h) => (
-                          <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      label={t('payeeField')}
+                      value={payeeHeader}
+                      onChange={(e) => setPayeeHeader(e.target.value)}
+                      size="sm"
+                      required
+                    >
+                      <option value="">{t('selectPlaceholder')}</option>
+                      {csvHeaders.map((h) => (
+                        <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
+                      ))}
+                    </Select>
 
                     {/* Conditional Amount/Debit/Credit Fields */}
                     {!useSeparateDebitCredit ? (
-                      <div className="form-control w-full">
-                        <label className="label">
-                          <span className="label-text font-bold">{t('amountField')}</span>
-                        </label>
-                        <select
-                          value={amountHeader}
-                          onChange={(e) => setAmountHeader(e.target.value)}
-                          className="select select-bordered w-full select-sm"
-                          required={!useSeparateDebitCredit}
+                      <Select
+                        label={t('amountField')}
+                        value={amountHeader}
+                        onChange={(e) => setAmountHeader(e.target.value)}
+                        size="sm"
+                        required={!useSeparateDebitCredit}
+                      >
+                        <option value="">{t('selectPlaceholder')}</option>
+                        {csvHeaders.map((h) => (
+                          <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <>
+                        <Select
+                          label={t('debitColumnField')}
+                          value={debitHeader}
+                          onChange={(e) => setDebitHeader(e.target.value)}
+                          size="sm"
                         >
                           <option value="">{t('selectPlaceholder')}</option>
                           {csvHeaders.map((h) => (
                             <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
                           ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="form-control w-full">
-                          <label className="label">
-                            <span className="label-text font-bold">{t('debitColumnField')}</span>
-                          </label>
-                          <select
-                            value={debitHeader}
-                            onChange={(e) => setDebitHeader(e.target.value)}
-                            className="select select-bordered w-full select-sm"
-                          >
-                            <option value="">{t('selectPlaceholder')}</option>
-                            {csvHeaders.map((h) => (
-                              <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
-                            ))}
-                          </select>
-                        </div>
+                        </Select>
 
-                        <div className="form-control w-full">
-                          <label className="label">
-                            <span className="label-text font-bold">{t('creditColumnField')}</span>
-                          </label>
-                          <select
-                            value={creditHeader}
-                            onChange={(e) => setCreditHeader(e.target.value)}
-                            className="select select-bordered w-full select-sm"
-                          >
-                            <option value="">{t('selectPlaceholder')}</option>
-                            {csvHeaders.map((h) => (
-                              <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
-                            ))}
-                          </select>
-                        </div>
+                        <Select
+                          label={t('creditColumnField')}
+                          value={creditHeader}
+                          onChange={(e) => setCreditHeader(e.target.value)}
+                          size="sm"
+                        >
+                          <option value="">{t('selectPlaceholder')}</option>
+                          {csvHeaders.map((h) => (
+                            <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
+                          ))}
+                        </Select>
                       </>
                     )}
 
-                    <div className="form-control w-full">
-                      <label className="label">
-                        <span className="label-text font-bold">{t('descriptionColumn')}</span>
-                      </label>
-                      <select
-                        value={descHeader}
-                        onChange={(e) => setDescHeader(e.target.value)}
-                        className="select select-bordered w-full select-sm"
-                      >
-                        <option value="">{t('noneOption')}</option>
-                        {csvHeaders.map((h) => (
-                          <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      label={t('descriptionColumn')}
+                      value={descHeader}
+                      onChange={(e) => setDescHeader(e.target.value)}
+                      size="sm"
+                    >
+                      <option value="">{t('noneOption')}</option>
+                      {csvHeaders.map((h) => (
+                        <option key={h} value={h}>{renderDropdownOptionText(h)}</option>
+                      ))}
+                    </Select>
                   </div>
 
                   {/* Dynamic Data Preview Section */}
@@ -851,8 +818,8 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
               )}
             </form>
           )}
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

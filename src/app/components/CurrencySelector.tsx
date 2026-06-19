@@ -6,6 +6,8 @@ import { CURRENCY_OPTIONS } from '@/lib/currencies';
 import { getCurrencyInfo } from '@/lib/iso-4217-data';
 import { Search } from 'lucide-react';
 
+import { Input } from '@/app/components/ui';
+
 interface CurrencySelectorProps {
   id?: string;
   value: string;
@@ -132,12 +134,12 @@ export default function CurrencySelector({
   return (
     <div className={`relative ${className}`}>
       <div className="relative">
-        <input
+        <Input
           ref={inputRef}
           id={id}
           name={name}
           type="text"
-          className="input input-bordered w-full pr-10"
+          className="pr-10"
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleFocus}

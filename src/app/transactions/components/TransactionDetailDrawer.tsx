@@ -6,7 +6,7 @@ import { Transaction, Category } from '../types';
 import { useLocaleContext } from '@/app/providers';
 import { translateCategoryType, translateAccountType } from '@/lib/translate-category';
 import { DEFAULT_CURRENCY } from '@/lib/currencies';
-import { Button } from '@/app/components/ui';
+import { Button, Select } from '@/app/components/ui';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -126,11 +126,13 @@ export default function TransactionDetailDrawer({
                     <Tag className="w-4.5 h-4.5 text-base-content/40 mt-1.5 shrink-0" />
                     <div className="flex-1">
                       <span className="block text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-1">{t('detail.category')}</span>
-                      <select
+                      <Select
                         value={transaction.categoryId || ''}
                         onChange={(e) => onCategoryChange(transaction, e.target.value)}
-                        className={`select select-bordered select-sm w-full font-semibold ${
-                          !transaction.categoryId ? 'select-warning text-warning-content' : ''
+                        size="sm"
+                        variant={!transaction.categoryId ? 'warning' : 'default'}
+                        className={`font-semibold ${
+                          !transaction.categoryId ? 'text-warning-content' : ''
                         }`}
                         disabled={isPending}
                       >
@@ -140,7 +142,7 @@ export default function TransactionDetailDrawer({
                             {c.name} ({translateCategoryType(t, c.type)})
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                   </div>
 

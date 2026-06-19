@@ -8,6 +8,8 @@ import { getCurrencySymbol } from '@/lib/currencies';
 import { useLocaleContext } from '@/app/providers';
 import { buildAccountTransactionsUrl } from '@/lib/links';
 
+import { Card } from '@/app/components/ui';
+
 interface AccountItem {
   id: string;
   name: string;
@@ -80,14 +82,11 @@ export default function AccountBalancesTable({
   );
 
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-200">
-      <div className="card-body p-6">
-        <h2 className="card-title text-lg font-bold flex justify-between items-center text-primary">
-          <span className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" aria-hidden="true" />
-            {t('accountBalances')}
-          </span>
-        </h2>
+    <Card shadow="lg">
+      <Card.Body className="p-6">
+        <Card.Title icon={<Wallet className="h-5 w-5" aria-hidden="true" />} className="text-lg">
+          {t('accountBalances')}
+        </Card.Title>
 
         {accounts.length === 0 ? (
           <div className="text-center py-8 text-base-content/50">
@@ -160,7 +159,7 @@ export default function AccountBalancesTable({
             </table>
           </div>
         )}
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

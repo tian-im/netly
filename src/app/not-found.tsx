@@ -3,6 +3,8 @@
 import { buildDashboardUrl } from '@/lib/links';
 import { PREFERENCES, getPreference } from '@/lib/preferences';
 
+import { Button } from '@/app/components/ui';
+
 const TRANSLATIONS = {
   en: { title: 'Page Not Found', desc: 'The page you are looking for does not exist or has been moved.', goBack: 'Go back to Dashboard' },
   zh: { title: '页面未找到', desc: '您访问的页面不存在或已被移动。', goBack: '返回仪表盘' },
@@ -27,9 +29,9 @@ export default function NotFound() {
       <p className="text-base-content/60 max-w-md text-sm">
         {t.desc}
       </p>
-      <a href={buildDashboardUrl()} className="btn btn-primary btn-sm">
+      <Button href={buildDashboardUrl()} size="sm">
         {t.goBack}
-      </a>
+      </Button>
     </div>
   );
 }

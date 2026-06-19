@@ -13,6 +13,8 @@ import {
 } from 'recharts';
 import { getCurrencySymbol, formatCompactNumber, DEFAULT_CURRENCY } from '@/lib/currencies';
 
+import { Card } from '@/app/components/ui';
+
 interface IncomeVsExpensesChartProps {
   title: string;
   subtitle: string;
@@ -54,13 +56,12 @@ export default function IncomeVsExpensesChart({
   ];
 
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-200">
-      <div className="card-body p-6 flex flex-col justify-between h-full">
+    <Card shadow="lg">
+      <Card.Body className="p-6 flex flex-col justify-between h-full">
         <div>
-          <h3 className="card-title text-base font-bold text-primary mb-1 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" aria-hidden="true" />
+          <Card.Title icon={<BarChart3 className="h-5 w-5" aria-hidden="true" />} className="text-base mb-1">
             {title}
-          </h3>
+          </Card.Title>
           <p className="text-xs opacity-50 mb-4">{subtitle}</p>
         </div>
 
@@ -128,7 +129,7 @@ export default function IncomeVsExpensesChart({
             </span>
           </div>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }
