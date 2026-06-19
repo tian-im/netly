@@ -1,9 +1,10 @@
-import { getTransactions, getAccounts, getCategories } from '../actions';
+import { getTransactions, getAccounts, getCategories, findDuplicateGroups } from '../actions';
 import TransactionsClient from './transactions-client';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { mapPreferenceToTransactionPeriod } from '@/lib/dates';
 import { PREFERENCES, getPreferenceFromCookies } from '@/lib/preferences';
+import { buildTransactionsUrl } from '@/lib/links';
 
 export const revalidate = 0; // Always fresh
 
@@ -28,6 +29,7 @@ interface PageProps {
     dateRange?: string;
     isReviewed?: 'true' | 'false' | 'all';
     currency?: string;
+    duplicates?: string;
   };
 }
 
@@ -50,7 +52,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
       if (val !== undefined) params.set(key, val);
     });
     params.set('dateRange', defaultRange);
-    redirect(`/transactions?${params.toString()}`);
+    redirect(buildTransactionsUrl(params));
   }
 
   const page = searchParams.page ? Math.max(1, parseInt(searchParams.page, 10) || 1) : 1;
@@ -62,35 +64,50 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
   const searchTerm = searchParams.searchTerm || undefined;
   const isReviewed = searchParams.isReviewed === 'true' ? true : searchParams.isReviewed === 'false' ? false : undefined;
   const currency = searchParams.currency || undefined;
+  const duplicatesMode = searchParams.duplicates === 'true';
 
-  const { transactions, totalCount } = await getTransactions({
-    accountId,
-    categoryId,
-    searchTerm,
-    page,
-    pageSize,
-    sortBy,
-    sortOrder,
-    dateRange,
-    isReviewed,
-    currency,
-  });
+  let transactions: any[] = [];
+  let totalCount = 0;
+  let duplicateGroups: any[] = [];
+
+  if (duplicatesMode) {
+    const groups = await findDuplicateGroups({
+      accountId,
+      dateRange,
+      fuzzy: false
+    });
+    duplicateGroups = serializeForClient(groups);
+  } else {
+    const res = await getTransactions({
+      accountId,
+      categoryId,
+      searchTerm,
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
+      dateRange,
+      isReviewed,
+      currency,
+    });
+    transactions = serializeForClient(res.transactions);
+    totalCount = res.totalCount;
+  }
 
   const accounts = await getAccounts();
   const categories = await getCategories();
 
-  // Safely serialize Dates to ISO string format for Next.js Client Component compatibility
-  const serializedTransactions = serializeForClient(transactions);
   const serializedAccounts = serializeForClient(accounts);
   const serializedCategories = serializeForClient(categories);
 
   return (
     <TransactionsClient
-      initialTransactions={serializedTransactions}
+      initialTransactions={transactions}
       initialTotalCount={totalCount}
       initialAccounts={serializedAccounts}
       initialCategories={serializedCategories}
       preferredCurrency={preferredCurrency}
+      initialDuplicateGroups={duplicateGroups}
     />
   );
 }

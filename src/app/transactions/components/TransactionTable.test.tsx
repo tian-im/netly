@@ -6,6 +6,8 @@ import { act } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import TransactionTable from './TransactionTable';
 import enMessages from '../../../../messages/en.json';
+import { Transaction, Category } from '../types';
+import type { DuplicateGroup } from '@/lib/duplicates';
 
 // @ts-ignore
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -28,35 +30,35 @@ const mockOnCategoryChange = vi.fn();
 const mockOnRowClick = vi.fn();
 const mockOnPageChange = vi.fn();
 
-const mockCategories = [
+const mockCategories: Category[] = [
   { id: 'cat_1', name: 'Transport', type: 'EXPENSE', cashFlowType: 'OPERATING', rules: [] },
   { id: 'cat_2', name: 'Salary', type: 'INCOME', cashFlowType: 'OPERATING', rules: [] },
 ];
 
-const baseTransaction = {
+const baseTransaction: Transaction = {
   id: 'tx_1',
-  date: '2026-06-01T00:00:00.000Z',
+  date: new Date('2026-06-01T00:00:00.000Z'),
   payee: 'Uber Ride',
   description: 'Ride to airport',
   amount: -25.5,
   accountId: 'acc_1',
   categoryId: null,
   isReviewed: false,
-  updatedAt: '2026-06-01T00:00:00.000Z',
-  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+  createdAt: new Date('2026-06-01T00:00:00.000Z'),
   account: {
     id: 'acc_1',
     name: 'Checking',
     type: 'ASSET',
     currency: 'AUD',
     startingBalance: 1000,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   },
   category: null,
 };
 
-const mockTransactions = [
+const mockTransactions: Transaction[] = [
   baseTransaction,
   {
     ...baseTransaction,
@@ -87,7 +89,7 @@ const defaultProps = {
   pageSize: 25,
   categories: mockCategories,
   isLoading: false,
-  updatingTxId: null,
+  updatingTxId: null as string | null,
   selectedIds: [] as string[],
   sortConfig,
   onSort: mockOnSort,
@@ -96,6 +98,10 @@ const defaultProps = {
   onCategoryChange: mockOnCategoryChange,
   onRowClick: mockOnRowClick,
   onPageChange: mockOnPageChange,
+  isDuplicateView: false,
+  duplicateGroups: [] as DuplicateGroup[],
+  onKeepOneDeleteRest: () => {},
+  onDismissDuplicateGroup: () => {},
 };
 
 function renderTable(props: Partial<typeof defaultProps> = {}) {
@@ -167,7 +173,7 @@ describe('TransactionTable', () => {
     const dateHeader = Array.from(container.querySelectorAll('th button')).find(
       (b) => b.textContent?.includes('Date')
     );
-    act(() => dateHeader!.click());
+    act(() => (dateHeader as any)!.click());
     expect(mockOnSort).toHaveBeenCalledWith('date');
   });
 
@@ -175,7 +181,7 @@ describe('TransactionTable', () => {
     const container = renderTable();
     const selectAllCheckbox = container.querySelector('thead input[type="checkbox"]')!;
     act(() => {
-      selectAllCheckbox.click();
+      (selectAllCheckbox as any).click();
     });
     expect(mockOnToggleSelectAll).toHaveBeenCalled();
   });
@@ -184,7 +190,7 @@ describe('TransactionTable', () => {
     const container = renderTable();
     const checkboxes = container.querySelectorAll('tbody input[type="checkbox"]');
     act(() => {
-      checkboxes[0].click();
+      (checkboxes[0] as any).click();
     });
     expect(mockOnToggleSelect).toHaveBeenCalled();
   });
@@ -198,7 +204,7 @@ describe('TransactionTable', () => {
   it('calls onRowClick when a row is clicked', () => {
     const container = renderTable();
     const rows = container.querySelectorAll('tbody tr');
-    act(() => rows[0].click());
+    act(() => (rows[0] as any).click());
     expect(mockOnRowClick).toHaveBeenCalled();
   });
 
@@ -238,5 +244,62 @@ describe('TransactionTable', () => {
     const container = renderTable({ updatingTxId: 'tx_1' });
     const firstRow = container.querySelector('tbody tr');
     expect(firstRow!.className).toContain('opacity-70');
+  });
+
+  it('renders duplicate groups visually inline', () => {
+    const mockDuplicateGroups = [
+      {
+        id: 'dup_group_1',
+        date: new Date('2026-06-01T00:00:00.000Z'),
+        payee: 'Uber Ride',
+        amount: -25.5,
+        transactions: [
+          mockTransactions[0],
+          { ...mockTransactions[0], id: 'tx_1_dup', description: 'Another Uber description' }
+        ]
+      }
+    ];
+    const mockOnKeepOneDeleteRest = vi.fn();
+    const mockOnDismissDuplicateGroup = vi.fn();
+
+    const container = renderTable({
+      isDuplicateView: true,
+      duplicateGroups: mockDuplicateGroups,
+      onKeepOneDeleteRest: mockOnKeepOneDeleteRest,
+      onDismissDuplicateGroup: mockOnDismissDuplicateGroup
+    });
+
+    expect(container.textContent).toContain('Duplicate group #1');
+    expect(container.textContent).toContain('Keep One, Delete Rest');
+    expect(container.textContent).toContain('Not Duplicates');
+
+    const keepBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Keep One, Delete Rest')
+    );
+    expect(keepBtn).toBeTruthy();
+    act(() => keepBtn!.click());
+    expect(mockOnKeepOneDeleteRest).toHaveBeenCalledWith(mockDuplicateGroups[0]);
+
+    const dismissBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Not Duplicates')
+    );
+    expect(dismissBtn).toBeTruthy();
+    act(() => dismissBtn!.click());
+    expect(mockOnDismissDuplicateGroup).toHaveBeenCalledWith('dup_group_1');
+  });
+
+  it('renders custom empty state in duplicate view when transactions is empty', () => {
+    const container = renderTable({
+      isDuplicateView: true,
+      transactions: [],
+      duplicateGroups: [],
+    });
+
+    expect(container.textContent).toContain('No duplicate transactions found');
+    expect(container.textContent).toContain('All potential duplicate groups have been reviewed or dismissed.');
+    const clearFilterLink = container.querySelector('a');
+    expect(clearFilterLink).toBeTruthy();
+    expect(clearFilterLink!.textContent).toBe('Clear filter');
+    expect(clearFilterLink!.getAttribute('href')).toBe('/transactions');
   });
 });

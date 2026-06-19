@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useTransition, useRef } from 'react';
+import { useState, useEffect, useTransition, useRef, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { updateTransactionCategory, bulkUpdateTransactionsCategory, exportAllTransactions } from '../actions';
+import { updateTransactionCategory, bulkUpdateTransactionsCategory, exportAllTransactions, bulkDeleteTransactions } from '../actions';
 import { translateError } from '@/lib/translateError';
 import { generateLedgerCSV, downloadCSV } from '@/lib/csv-export';
 import { PREFERENCES, getPreference, setPreference } from '@/lib/preferences';
@@ -14,6 +14,7 @@ import RulePromptModal from './components/RulePromptModal';
 import TransactionDetailDrawer from './components/TransactionDetailDrawer';
 import BulkActionPanel from './components/BulkActionPanel';
 import { Download } from 'lucide-react';
+import type { DuplicateGroup } from '@/lib/duplicates';
 
 interface Toast {
   id: string;
@@ -27,6 +28,7 @@ interface TransactionsClientProps {
   initialAccounts: Account[];
   initialCategories: Category[];
   preferredCurrency?: string;
+  initialDuplicateGroups?: DuplicateGroup[];
 }
 
 export default function TransactionsClient({
@@ -35,6 +37,7 @@ export default function TransactionsClient({
   initialAccounts,
   initialCategories,
   preferredCurrency,
+  initialDuplicateGroups = [],
 }: TransactionsClientProps) {
   const t = useTranslations('transactions');
   const tCommon = useTranslations('common');
@@ -65,6 +68,9 @@ export default function TransactionsClient({
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
+  // State for dismissed duplicate groups (session-only)
+  const [dismissedGroupKeys, setDismissedGroupKeys] = useState<string[]>([]);
+
   const [isPending, startTransition] = useTransition();
 
   // Read URL search params
@@ -78,6 +84,27 @@ export default function TransactionsClient({
   const dateRange = searchParams.get('dateRange') || 'all';
   const isReviewed = searchParams.get('isReviewed') || 'all';
   const currency = searchParams.get('currency') || '';
+  const duplicates = searchParams.get('duplicates') === 'true';
+
+  // Compute active duplicate groups and displayed transactions
+  const activeDuplicateGroups = useMemo(() => {
+    if (!duplicates) return [];
+    return initialDuplicateGroups.filter((g) => !dismissedGroupKeys.includes(g.id));
+  }, [initialDuplicateGroups, dismissedGroupKeys, duplicates]);
+
+  const displayedTransactions = useMemo(() => {
+    if (duplicates) {
+      return activeDuplicateGroups.flatMap((g) => g.transactions);
+    }
+    return initialTransactions;
+  }, [initialTransactions, activeDuplicateGroups, duplicates]);
+
+  const displayedTotalCount = useMemo(() => {
+    if (duplicates) {
+      return displayedTransactions.length;
+    }
+    return initialTotalCount;
+  }, [initialTotalCount, displayedTransactions, duplicates]);
 
   const query = {
     accountId,
@@ -88,6 +115,7 @@ export default function TransactionsClient({
     dateRange,
     isReviewed,
     currency,
+    duplicates,
   };
 
   const sortConfig: SortConfig = {
@@ -96,7 +124,7 @@ export default function TransactionsClient({
   };
 
   // Find currently selected transaction in newly fetched list to keep details updated
-  const activeTx = selectedTx ? (initialTransactions.find(t => t.id === selectedTx.id) || selectedTx) : null;
+  const activeTx = selectedTx ? (displayedTransactions.find(t => t.id === selectedTx.id) || selectedTx) : null;
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = crypto.randomUUID();
@@ -128,7 +156,7 @@ export default function TransactionsClient({
     startTransition(() => {
       const params = new URLSearchParams(searchParams.toString());
       Object.entries(updates).forEach(([key, val]) => {
-        if (val === undefined || val === '') {
+        if (val === undefined || val === '' || val === false) {
           params.delete(key);
         } else {
           params.set(key, String(val));
@@ -252,7 +280,7 @@ export default function TransactionsClient({
   };
 
   const handleToggleSelectAll = () => {
-    const allOnPageIds = initialTransactions.map((t) => t.id);
+    const allOnPageIds = displayedTransactions.map((t) => t.id);
     const areAllSelected = allOnPageIds.every((id) => selectedIds.includes(id));
 
     if (areAllSelected) {
@@ -289,6 +317,49 @@ export default function TransactionsClient({
         showToast(tErr(translateError(err)), 'error');
       }
     });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    startTransition(async () => {
+      try {
+        const res = await bulkDeleteTransactions(selectedIds);
+        if (res.deletedCount === 0) {
+          showToast(t('noTransactionsDeleted'), 'error');
+        } else {
+          showToast(t('bulkDeleteSuccess', { count: res.deletedCount }));
+        }
+        setSelectedIds([]);
+        router.refresh();
+      } catch (err: any) {
+        showToast(tErr(translateError(err)), 'error');
+      }
+    });
+  };
+
+  const handleKeepOneDeleteRest = async (group: DuplicateGroup) => {
+    const keepId = group.transactions[0].id;
+    const deleteIds = group.transactions.slice(1).map((t) => t.id);
+
+    startTransition(async () => {
+      try {
+        const res = await bulkDeleteTransactions(deleteIds);
+        if (res.deletedCount === 0) {
+          showToast(t('noTransactionsDeleted'), 'error');
+        } else {
+          showToast(t('bulkDeleteSuccess', { count: res.deletedCount }));
+        }
+        setDismissedGroupKeys((prev) => [...prev, group.id]);
+        router.refresh();
+      } catch (err: any) {
+        showToast(tErr(translateError(err)), 'error');
+      }
+    });
+  };
+
+  const handleDismissDuplicateGroup = (groupId: string) => {
+    setDismissedGroupKeys((prev) => [...prev, groupId]);
+    showToast(t('duplicateGroupDismissed'));
   };
 
   const handleExportCSV = async () => {
@@ -329,7 +400,7 @@ export default function TransactionsClient({
             <span>{t('exportCsv')}</span>
           </button>
           <span className="badge badge-neutral badge-lg font-mono font-bold py-3">
-            {t('transactionsCount', { count: initialTotalCount })}
+            {t('transactionsCount', { count: displayedTotalCount })}
           </span>
         </div>
       </div>
@@ -345,6 +416,7 @@ export default function TransactionsClient({
         pageSize={query.pageSize}
         dateRange={query.dateRange}
         isReviewed={query.isReviewed}
+        duplicates={query.duplicates}
         ruleMode={ruleMode}
         onFilterChange={handleFilterChange}
         onRuleModeChange={handleRuleModeChange}
@@ -353,8 +425,8 @@ export default function TransactionsClient({
 
       {/* Ledger Table */}
       <TransactionTable
-        transactions={initialTransactions}
-        totalCount={initialTotalCount}
+        transactions={displayedTransactions}
+        totalCount={displayedTotalCount}
         currentPage={query.page}
         pageSize={query.pageSize}
         categories={initialCategories}
@@ -368,6 +440,10 @@ export default function TransactionsClient({
         onCategoryChange={handleCategoryChange}
         onRowClick={setSelectedTx}
         onPageChange={(p) => handleFilterChange({ page: p })}
+        isDuplicateView={duplicates}
+        duplicateGroups={activeDuplicateGroups}
+        onKeepOneDeleteRest={handleKeepOneDeleteRest}
+        onDismissDuplicateGroup={handleDismissDuplicateGroup}
       />
 
       {/* Automation Rule Prompt Modal */}
@@ -396,6 +472,7 @@ export default function TransactionsClient({
         isPending={isPending}
         onClearSelection={() => setSelectedIds([])}
         onBulkCategorize={handleBulkCategorize}
+        onBulkDelete={handleBulkDelete}
       />
 
       {/* Toasts Notification Container */}

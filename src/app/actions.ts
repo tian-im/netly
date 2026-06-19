@@ -7,6 +7,7 @@ import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { Prisma } from '@prisma/client';
 import { getPeriodDates } from '@/lib/links';
 import { DATE_RANGE_TO_PERIOD_TYPE } from '@/lib/dates';
+import { detectDuplicateGroups } from '@/lib/duplicates';
 
 export async function getAccounts() {
   return db.account.findMany({
@@ -501,6 +502,26 @@ export async function bulkUpdateTransactionsCategory(
   return updated;
 }
 
+export async function bulkDeleteTransactions(ids: string[]) {
+  // WHY: Non-UUID strings are silently filtered rather than throwing errors to prevent
+  // Prisma runtime casting crashes, ensuring that valid operations in a batch delete
+  // request succeed even if malformed parameters are passed.
+  const validIds = ids.filter((id) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+  if (validIds.length === 0) {
+    return { deletedCount: 0 };
+  }
+
+  const result = await db.transaction.deleteMany({
+    where: { id: { in: validIds } }
+  });
+
+  revalidatePath('/transactions');
+  revalidatePath('/reports');
+  revalidatePath('/');
+
+  return { deletedCount: result.count };
+}
+
 export async function getFinancialReports(startDateStr: string, endDateStr: string) {
   const startDate = new Date(startDateStr);
   const endDate = new Date(endDateStr);
@@ -762,6 +783,56 @@ export async function exportAllAccounts() {
   return db.account.findMany({
     orderBy: { name: 'asc' }
   });
+}
+
+export async function findDuplicateGroups(options?: {
+  accountId?: string;
+  dateRange?: string;
+  startDateStr?: string;
+  endDateStr?: string;
+  fuzzy?: boolean;
+}) {
+  const accountId = options?.accountId;
+  const dateRange = options?.dateRange;
+  const startDateStr = options?.startDateStr;
+  const endDateStr = options?.endDateStr;
+  const fuzzy = options?.fuzzy ?? false;
+
+  const where: Prisma.TransactionWhereInput = {};
+  if (accountId) {
+    where.accountId = accountId;
+  }
+
+  if (dateRange && dateRange !== 'all') {
+    const now = new Date();
+    const periodKey = DATE_RANGE_TO_PERIOD_TYPE[dateRange as keyof typeof DATE_RANGE_TO_PERIOD_TYPE] ?? null;
+
+    if (periodKey) {
+      const { firstDay, lastDay } = getPeriodDates(periodKey, now);
+      const startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate(), 0, 0, 0, 0);
+      const endDate = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate(), 23, 59, 59, 999);
+      where.date = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
+  } else if (startDateStr || endDateStr) {
+    where.date = {
+      ...(startDateStr ? { gte: new Date(startDateStr) } : {}),
+      ...(endDateStr ? { lte: new Date(new Date(endDateStr).setHours(23, 59, 59, 999)) } : {}),
+    };
+  }
+
+  const transactions = await db.transaction.findMany({
+    where,
+    include: {
+      account: true,
+      category: true,
+    },
+    orderBy: { date: 'desc' }
+  });
+
+  return detectDuplicateGroups(transactions, fuzzy);
 }
 
 

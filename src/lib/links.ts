@@ -165,14 +165,23 @@ export function buildImportUrl(): string {
  * For account- or category-scoped URLs use `buildAccountTransactionsUrl()` or
  * `buildCategoryTransactionsUrl()` instead.
  */
-export function buildTransactionsUrl(filter?: string): string {
+export function buildTransactionsUrl(params?: URLSearchParams | string): string {
   const base = '/transactions';
-  if (!filter) return base;
-  if (filter === 'uncategorized') {
-    return `${base}?isReviewed=false`;
+  if (!params) return base;
+
+  if (typeof params === 'string') {
+    if (params === 'uncategorized') {
+      return `${base}?isReviewed=false`;
+    }
+    // If it's a query string, append it directly. Otherwise return base path.
+    if (params.includes('=') || params.startsWith('?')) {
+      return params.startsWith('?') ? `${base}${params}` : `${base}?${params}`;
+    }
+    return base;
   }
-  // Unknown filter value – no matching param on the transactions page
-  return base;
+
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 /** Build a URL to the Categories management page. */

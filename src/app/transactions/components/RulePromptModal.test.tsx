@@ -1,55 +1,59 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import RulePromptModal from './RulePromptModal';
 import enMessages from '../../../../messages/en.json';
+import { Transaction, Category } from '../types';
 
 // @ts-ignore
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockOnConfirm = vi.fn();
 
-const mockTransaction = {
+const mockTransaction: Transaction = {
   id: 'tx_1',
-  date: '2026-06-01T00:00:00.000Z',
+  date: new Date('2026-06-01T00:00:00.000Z'),
   payee: 'Uber Ride',
   description: 'Ride to airport',
   amount: -25.5,
   accountId: 'acc_1',
   categoryId: null,
   isReviewed: false,
-  updatedAt: '2026-06-01T00:00:00.000Z',
-  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+  createdAt: new Date('2026-06-01T00:00:00.000Z'),
   account: {
     id: 'acc_1',
     name: 'Checking',
     type: 'ASSET',
     currency: 'AUD',
     startingBalance: 1000,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   },
   category: null,
 };
 
-const mockCategories = [
+const mockCategories: Category[] = [
   { id: 'cat_1', name: 'Transport', type: 'EXPENSE', cashFlowType: 'OPERATING', rules: [] },
 ];
 
+let activeRoot: any = null;
+let container: HTMLDivElement | null = null;
+
 function renderModal(
   isOpen: boolean,
-  transaction: typeof mockTransaction | null,
+  transaction: Transaction | null,
   categoryId: string,
   isPending: boolean
 ) {
-  const container = document.createElement('div');
+  container = document.createElement('div');
   document.body.appendChild(container);
 
   act(() => {
-    const root = createRoot(container);
-    root.render(
+    activeRoot = createRoot(container!);
+    activeRoot.render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <RulePromptModal
           isOpen={isOpen}
@@ -69,6 +73,19 @@ function renderModal(
 describe('RulePromptModal', () => {
   beforeEach(() => {
     mockOnConfirm.mockClear();
+  });
+
+  afterEach(() => {
+    if (activeRoot) {
+      act(() => {
+        activeRoot.unmount();
+      });
+      activeRoot = null;
+    }
+    if (container) {
+      container.remove();
+      container = null;
+    }
   });
 
   it('renders nothing when isOpen is false', () => {
@@ -120,5 +137,13 @@ describe('RulePromptModal', () => {
     buttons.forEach((btn) => {
       expect(btn.hasAttribute('disabled')).toBe(true);
     });
+  });
+
+  it('calls onConfirm(false) when Escape key is pressed', () => {
+    renderModal(true, mockTransaction, 'cat_1', false);
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(mockOnConfirm).toHaveBeenCalledWith(false);
   });
 });

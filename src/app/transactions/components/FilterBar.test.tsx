@@ -25,8 +25,8 @@ const mockCategories = [
 ];
 
 const defaultProps = {
-  accounts: mockAccounts,
-  categories: mockCategories,
+  accounts: mockAccounts as any,
+  categories: mockCategories as any,
   selectedAccountId: '',
   selectedCategoryId: '',
   selectedCurrency: '',
@@ -34,6 +34,7 @@ const defaultProps = {
   pageSize: 25,
   dateRange: '',
   isReviewed: 'all',
+  duplicates: false,
   ruleMode: 'ask' as const,
   onFilterChange: mockOnFilterChange,
   onRuleModeChange: mockOnRuleModeChange,
@@ -226,5 +227,15 @@ describe('FilterBar', () => {
       (s) => s.textContent?.includes('AUD')
     );
     expect(currencySelect!.value).toBe('AUD');
+  });
+
+  it('calls onFilterChange when duplicates toggle changes', () => {
+    const container = renderFilterBar();
+    const toggle = container.querySelector('#show-duplicates-toggle');
+    expect(toggle).toBeTruthy();
+    act(() => {
+      fireEvent.click(toggle!);
+    });
+    expect(mockOnFilterChange).toHaveBeenCalledWith({ duplicates: true });
   });
 });

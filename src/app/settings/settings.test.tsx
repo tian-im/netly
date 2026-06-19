@@ -51,9 +51,9 @@ const mockDownloadCSV = vi.fn();
 const mockGenerateLedgerCSV = vi.fn(() => 'mock-ledger-csv');
 const mockGenerateAccountCSV = vi.fn(() => 'mock-account-csv');
 vi.mock('@/lib/csv-export', () => ({
-  generateLedgerCSV: (...args: any[]) => mockGenerateLedgerCSV(...args),
-  generateAccountCSV: (...args: any[]) => mockGenerateAccountCSV(...args),
-  downloadCSV: (...args: any[]) => mockDownloadCSV(...args),
+  generateLedgerCSV: mockGenerateLedgerCSV,
+  generateAccountCSV: mockGenerateAccountCSV,
+  downloadCSV: mockDownloadCSV,
 }));
 
 // Mock clipboard
@@ -395,8 +395,8 @@ describe('PassKeySection API & interactive behaviors', () => {
 
     renderSettingsClient({
       passKeys: [
-        { id: 'pk-1', deviceName: 'MacBook TouchID', createdAt: '2026-06-10T10:00:00Z' },
-        { id: 'pk-2', deviceName: 'Yubikey', createdAt: '2026-06-11T00:00:00Z' },
+        { id: 'pk-1', deviceName: 'MacBook TouchID', createdAt: '2026-06-10T10:00:00Z', lastUsedAt: null },
+        { id: 'pk-2', deviceName: 'Yubikey', createdAt: '2026-06-11T00:00:00Z', lastUsedAt: null },
       ],
     });
 
@@ -422,8 +422,8 @@ describe('PassKeySection API & interactive behaviors', () => {
   it('closes delete modal on Escape key', async () => {
     renderSettingsClient({
       passKeys: [
-        { id: 'pk-1', deviceName: 'MacBook TouchID', createdAt: '2026-06-10T10:00:00Z' },
-        { id: 'pk-2', deviceName: 'Yubikey', createdAt: '2026-06-11T00:00:00Z' },
+        { id: 'pk-1', deviceName: 'MacBook TouchID', createdAt: '2026-06-10T10:00:00Z', lastUsedAt: null },
+        { id: 'pk-2', deviceName: 'Yubikey', createdAt: '2026-06-11T00:00:00Z', lastUsedAt: null },
       ],
     });
 

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import Papa from 'papaparse';
 import { cleanAmount, parseBankDate, debitCreditToAmount } from '@/lib/csv';
 import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import { buildAccountsUrl, buildTransactionsUrl } from '@/lib/links';
 import { FileText, Inbox, XCircle, CheckCircle, AlertTriangle, BarChart3 } from 'lucide-react';
+import { findDuplicateGroups } from '@/app/actions';
 
 interface Account {
   id: string;
@@ -29,11 +31,14 @@ interface ImportClientProps {
 
 export default function ImportClient({ initialAccounts }: ImportClientProps) {
   const t = useTranslations('import');
+  const tTransactions = useTranslations('transactions');
   const format = useFormatter();
   
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [selectedAccountId, setSelectedAccountId] = useState(initialAccounts[0]?.id || '');
   const [file, setFile] = useState<File | null>(null);
+  const [duplicateCount, setDuplicateCount] = useState<number | null>(null);
+  const [duplicateScanError, setDuplicateScanError] = useState(false);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [csvRows, setCsvRows] = useState<string[][]>([]);
   const [csvSampleValues, setCsvSampleValues] = useState<Record<string, string>>({});
@@ -95,6 +100,7 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
     setFile(selectedFile);
     setImportResult(null);
     setErrorMessage('');
+    setDuplicateCount(null);
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -304,6 +310,8 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
 
     setErrorMessage('');
     setImportResult(null);
+    setDuplicateCount(null);
+    setDuplicateScanError(false);
     setImporting(true);
 
     const headerMap = useSeparateDebitCredit
@@ -345,6 +353,32 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
         setCsvText('');
         setCsvRows([]);
         setTotalRowsCount(0);
+
+        // Fetch duplicate groups for the imported date range
+        if (result.minDate && result.maxDate && result.importedCount > 0) {
+          try {
+            const allDuplicateGroups = await findDuplicateGroups({
+              accountId: selectedAccountId,
+              fuzzy: false
+            });
+            const minTime = new Date(result.minDate).getTime();
+            const maxTime = new Date(result.maxDate).getTime();
+            const duplicateGroups = allDuplicateGroups.filter(g =>
+              g.transactions.some(tx => {
+                const tTime = new Date(tx.date).getTime();
+                return tTime >= minTime && tTime <= maxTime;
+              })
+            );
+            const count = duplicateGroups.reduce((acc, g) => acc + (g.transactions.length - 1), 0);
+            if (count > 0) {
+              setDuplicateCount(count);
+            }
+          } catch (dupErr) {
+            // WHY: If the duplicate scan fails, we catch the error to prevent the successful import UI state from being blocked, but set a warning flag to alert the user.
+            console.error('Failed to find duplicates post-import:', dupErr);
+            setDuplicateScanError(true);
+          }
+        }
       } else {
         setImportResult({ success: false, message: result.error ? resolveErrorMessage(result.errorCode, result.error) : t('importFailed') });
       }
@@ -404,7 +438,9 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
           {accounts.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-base-content/60">{t('noAccountsWarning')}</p>
-              <a href={buildAccountsUrl()} className="btn btn-primary mt-4 btn-sm">{t('goCreateAccount')}</a>
+              <Link href={buildAccountsUrl()} className="btn btn-primary mt-4 btn-sm">
+                {t('goCreateAccount')}
+              </Link>
             </div>
           ) : (
             <form onSubmit={handleImport} className="space-y-6">
@@ -504,10 +540,34 @@ export default function ImportClient({ initialAccounts }: ImportClientProps) {
                     <span>{importResult.message}</span>
                   </div>
                   {importResult.success && (
-                    <a href={buildTransactionsUrl()} className="btn btn-xs btn-outline border-success-content/20 hover:bg-success-content/10">
+                    <Link href={buildTransactionsUrl()} className="btn btn-xs btn-outline border-success-content/20 hover:bg-success-content/10">
                       {t('viewTransactions')} →
-                    </a>
+                    </Link>
                   )}
+                </div>
+              )}
+
+              {duplicateCount !== null && duplicateCount > 0 && (
+                <div className="alert alert-warning text-sm py-3 shadow flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-warning-content" />
+                    <div>
+                      <span className="font-bold">{tTransactions('duplicateAlertTitle')}: </span>
+                      <span>{tTransactions('duplicateAlertDesc', { count: duplicateCount })}</span>
+                    </div>
+                  </div>
+                  <Link href={buildTransactionsUrl(new URLSearchParams({ accountId: selectedAccountId, duplicates: 'true' }))} className="btn btn-xs btn-outline border-warning-content/20 hover:bg-warning-content/10">
+                    {tTransactions('reviewDuplicatesBtn')} →
+                  </Link>
+                </div>
+              )}
+
+              {duplicateScanError && (
+                <div className="alert alert-warning text-sm py-3 shadow flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-warning-content" />
+                    <span>{t('duplicateScanFailedWarning')}</span>
+                  </div>
                 </div>
               )}
 

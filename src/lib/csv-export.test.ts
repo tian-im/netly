@@ -16,6 +16,7 @@ describe('CSV Export Utility', () => {
           categoryId: 'cat_1',
           isReviewed: true,
           createdAt: new Date(),
+          updatedAt: new Date(),
           account: {
             id: 'acc_1',
             name: 'Checking Account',
@@ -42,6 +43,7 @@ describe('CSV Export Utility', () => {
           categoryId: null,
           isReviewed: true,
           createdAt: new Date(),
+          updatedAt: new Date(),
           account: {
             id: 'acc_1',
             name: 'Checking Account',
@@ -78,6 +80,7 @@ describe('CSV Export Utility', () => {
           categoryId: null,
           isReviewed: true,
           createdAt: new Date(),
+          updatedAt: new Date(),
           account: {
             id: 'acc_2',
             name: 'Credit Card',

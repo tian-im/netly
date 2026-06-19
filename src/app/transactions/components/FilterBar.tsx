@@ -17,6 +17,7 @@ interface FilterBarProps {
   pageSize: number;
   dateRange: string;
   isReviewed: string;
+  duplicates?: boolean;
   ruleMode: 'ask' | 'always' | 'never';
   onFilterChange: (updates: {
     accountId?: string;
@@ -26,6 +27,7 @@ interface FilterBarProps {
     pageSize?: number;
     dateRange?: string;
     isReviewed?: string;
+    duplicates?: boolean;
   }) => void;
   onRuleModeChange: (mode: 'ask' | 'always' | 'never') => void;
   preferredCurrency?: string;
@@ -43,6 +45,7 @@ export default function FilterBar({
   pageSize,
   dateRange,
   isReviewed,
+  duplicates = false,
   ruleMode,
   onFilterChange,
   onRuleModeChange,
@@ -193,7 +196,7 @@ export default function FilterBar({
         </div>
 
         {/* Row 2: Select Filters (Grid format) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full border-t border-base-200/50 pt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 w-full border-t border-base-200/50 pt-3">
           {/* Account filter */}
           <div className="w-full">
             <select
@@ -275,6 +278,21 @@ export default function FilterBar({
               <option value="true">{t('filter.reviewed')}</option>
               <option value="false">{t('filter.needsReview')}</option>
             </select>
+          </div>
+
+          {/* Show duplicates toggle */}
+          <div className="w-full flex items-center justify-start gap-2 h-full py-1">
+            <label className="label cursor-pointer justify-start gap-2 w-full py-0">
+              <input
+                id="show-duplicates-toggle"
+                type="checkbox"
+                className="toggle toggle-primary toggle-sm"
+                checked={duplicates}
+                onChange={(e) => onFilterChange({ duplicates: e.target.checked })}
+                aria-label="Show duplicate transactions only"
+              />
+              <span className="label-text text-xs font-semibold whitespace-nowrap">{t('showDuplicates')}</span>
+            </label>
           </div>
         </div>
       </div>

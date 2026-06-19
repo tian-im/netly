@@ -3,6 +3,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
+import { waitFor } from '@testing-library/react';
 import TransactionsClient from './transactions-client';
 import enMessages from '../../../messages/en.json';
 
@@ -11,6 +12,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
+const mockBulkDelete = vi.fn();
 const mockInitialCategories = [
   { id: 'cat_1', name: 'Transport', type: 'EXPENSE', cashFlowType: 'OPERATING', rules: [] },
   { id: 'cat_2', name: 'Salary', type: 'INCOME', cashFlowType: 'OPERATING', rules: [] },
@@ -21,6 +23,7 @@ vi.mock('@/app/actions', () => ({
   updateTransactionCategory: vi.fn().mockResolvedValue({}),
   bulkUpdateTransactionsCategory: vi.fn().mockResolvedValue({}),
   exportAllTransactions: vi.fn().mockResolvedValue([]),
+  bulkDeleteTransactions: () => mockBulkDelete(),
 }));
 
 // Mock next/navigation
@@ -71,10 +74,10 @@ const mockTransaction = {
 };
 
 const defaultProps = {
-  initialTransactions: [mockTransaction],
+  initialTransactions: [mockTransaction] as any,
   initialTotalCount: 1,
-  initialAccounts: [mockAccount],
-  initialCategories: mockInitialCategories,
+  initialAccounts: [mockAccount] as any,
+  initialCategories: mockInitialCategories as any,
 };
 
 function renderClient(props: Partial<typeof defaultProps> = {}) {
@@ -161,7 +164,7 @@ describe('TransactionsClient', () => {
     const container = renderClient();
     const sortButtons = container.querySelectorAll('th button');
     act(() => {
-      sortButtons[0].click();
+      (sortButtons[0] as any).click();
     });
     expect(mockPush).toHaveBeenCalled();
   });
@@ -177,7 +180,7 @@ describe('TransactionsClient', () => {
   it('shows drawer when a transaction row is clicked', () => {
     const container = renderClient();
     const row = container.querySelector('tbody tr');
-    act(() => row!.click());
+    act(() => (row as any)!.click());
     // Drawer should now be visible
     expect(container.textContent).toContain('Transaction Details');
   });
@@ -186,15 +189,83 @@ describe('TransactionsClient', () => {
     const container = renderClient();
     // First open drawer by clicking a row
     const row = container.querySelector('tbody tr')!;
-    act(() => row.click());
+    act(() => (row as any).click());
     expect(container.textContent).toContain('Transaction Details');
 
     // Close drawer - find the close button in the drawer
     const closeBtn = container.querySelector('[role="dialog"] button');
     if (closeBtn) {
-      act(() => closeBtn.click());
+      act(() => (closeBtn as any).click());
       // After close, drawer content should not be visible
       // (the drawer's backdrop + content is still in DOM but the component returns null)
     }
+  });
+
+  it('handles successful bulk deletion toast', async () => {
+    mockBulkDelete.mockResolvedValue({ deletedCount: 1 });
+    const container = renderClient();
+    
+    // Select the row
+    const checkbox = container.querySelector('tbody input[type="checkbox"]') as HTMLInputElement;
+    act(() => {
+      checkbox.click();
+    });
+    
+    // Find and click the Bulk Delete button
+    const deleteBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Delete Selected')
+    );
+    expect(deleteBtn).toBeTruthy();
+    act(() => {
+      deleteBtn!.click();
+    });
+    
+    // Confirm delete in the modal
+    const confirmBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Delete Selected (1)'
+    );
+    expect(confirmBtn).toBeTruthy();
+    
+    act(() => {
+      confirmBtn!.click();
+    });
+    
+    await waitFor(() => {
+      expect(mockBulkDelete).toHaveBeenCalled();
+    });
+    expect(container.textContent).toContain('Successfully deleted 1 transactions');
+  });
+
+  it('handles warning toast when zero transactions are deleted', async () => {
+    mockBulkDelete.mockResolvedValue({ deletedCount: 0 });
+    const container = renderClient();
+    
+    // Select the row
+    const checkbox = container.querySelector('tbody input[type="checkbox"]') as HTMLInputElement;
+    act(() => {
+      checkbox.click();
+    });
+    
+    // Find and click the Bulk Delete button
+    const deleteBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.includes('Delete Selected')
+    );
+    act(() => {
+      deleteBtn!.click();
+    });
+    
+    // Confirm delete in the modal
+    const confirmBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Delete Selected (1)'
+    );
+    
+    act(() => {
+      confirmBtn!.click();
+    });
+    
+    await waitFor(() => {
+      expect(mockBulkDelete).toHaveBeenCalled();
+    });
+    expect(container.textContent).toContain('No transactions were deleted');
   });
 });

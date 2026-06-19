@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Transaction, Category } from '../types';
 
@@ -21,6 +22,17 @@ export default function RulePromptModal({
   onConfirm,
 }: RulePromptModalProps) {
   const t = useTranslations('transactions');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onConfirm]);
 
   if (!isOpen || !transaction) return null;
 

@@ -11,6 +11,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockOnClearSelection = vi.fn();
 const mockOnBulkCategorize = vi.fn();
+const mockOnBulkDelete = vi.fn();
 
 const mockCategories = [
   { id: 'cat_1', name: 'Transport', type: 'EXPENSE', cashFlowType: 'OPERATING', rules: [] },
@@ -31,6 +32,7 @@ function renderBulkPanel(selectedCount: number, isPending: boolean) {
           isPending={isPending}
           onClearSelection={mockOnClearSelection}
           onBulkCategorize={mockOnBulkCategorize}
+          onBulkDelete={mockOnBulkDelete}
         />
       </NextIntlClientProvider>
     );
@@ -43,6 +45,7 @@ describe('BulkActionPanel', () => {
   beforeEach(() => {
     mockOnClearSelection.mockClear();
     mockOnBulkCategorize.mockClear();
+    mockOnBulkDelete.mockClear();
   });
 
   it('renders nothing when selectedCount is 0', () => {
@@ -68,7 +71,9 @@ describe('BulkActionPanel', () => {
 
   it('calls onClearSelection when clear button is clicked', () => {
     const container = renderBulkPanel(3, false);
-    const clearBtn = container.querySelector('button');
+    const clearBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => !b.textContent
+    );
     act(() => clearBtn!.click());
     expect(mockOnClearSelection).toHaveBeenCalledTimes(1);
   });
@@ -87,7 +92,39 @@ describe('BulkActionPanel', () => {
     const container = renderBulkPanel(3, true);
     const select = container.querySelector('select');
     expect(select!.hasAttribute('disabled')).toBe(true);
-    const clearBtn = container.querySelector('button');
+    const clearBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => !b.textContent
+    );
     expect(clearBtn!.hasAttribute('disabled')).toBe(true);
+
+    const deleteBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Delete Selected'
+    );
+    expect(deleteBtn!.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('opens DeleteConfirmModal when delete button is clicked and triggers onBulkDelete on confirmation', async () => {
+    const container = renderBulkPanel(3, false);
+    const deleteBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Delete Selected'
+    );
+    
+    // Initially modal is not shown
+    expect(document.body.textContent).not.toContain('Confirm Delete');
+
+    act(() => deleteBtn!.click());
+
+    // Now modal is open in the portal/body
+    expect(document.body.textContent).toContain('Confirm Delete');
+
+    const modalConfirmBtn = Array.from(document.body.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Delete Selected (3)'
+    );
+
+    await act(async () => {
+      modalConfirmBtn!.click();
+    });
+
+    expect(mockOnBulkDelete).toHaveBeenCalledTimes(1);
   });
 });

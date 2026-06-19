@@ -413,4 +413,35 @@ export function registerTransactionTools(server: McpServer) {
       }
     }
   );
+
+  server.tool(
+    "delete_transactions",
+    "Permanently delete multiple transactions by their IDs.",
+    {
+      transactionIds: z.array(z.string()).describe("List of transaction UUIDs to delete"),
+    },
+    async ({ transactionIds }) => {
+      try {
+        const deleted = await db.transaction.deleteMany({
+          where: { id: { in: transactionIds } },
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                deletedCount: deleted.count,
+                success: true,
+              }),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Failed to delete transactions: ${error.message || error}` }],
+        };
+      }
+    }
+  );
 }

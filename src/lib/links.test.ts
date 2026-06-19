@@ -216,6 +216,24 @@ describe('buildTransactionsUrl', () => {
     expect(buildTransactionsUrl('needs review')).toBe('/transactions');
     expect(buildTransactionsUrl('foo')).toBe('/transactions');
   });
+
+  it('should support URLSearchParams parameters', () => {
+    const params = new URLSearchParams({ accountId: 'acc_123', duplicates: 'true' });
+    const url = buildTransactionsUrl(params);
+    expect(url).toContain('accountId=acc_123');
+    expect(url).toContain('duplicates=true');
+    expect(url.startsWith('/transactions?')).toBe(true);
+  });
+
+  it('should return /transactions when URLSearchParams is empty', () => {
+    const params = new URLSearchParams();
+    expect(buildTransactionsUrl(params)).toBe('/transactions');
+  });
+
+  it('should accept custom query string', () => {
+    expect(buildTransactionsUrl('accountId=acc_123&duplicates=true')).toBe('/transactions?accountId=acc_123&duplicates=true');
+    expect(buildTransactionsUrl('?accountId=acc_123')).toBe('/transactions?accountId=acc_123');
+  });
 });
 
 describe('buildLoginUrl', () => {

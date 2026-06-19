@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { detectDuplicateGroups } from "@/lib/duplicates";
 
 export function registerAnalysisTools(server: McpServer) {
   server.tool(
@@ -11,8 +12,9 @@ export function registerAnalysisTools(server: McpServer) {
       amountThreshold: z.number().optional().default(0.01).describe("Maximum absolute difference in amount"),
       daysThreshold: z.number().optional().default(3).describe("Maximum absolute difference in days"),
       maxResults: z.number().optional().default(100).describe("Maximum number of duplicates to return"),
+      mode: z.enum(["historical", "import"]).optional().default("historical").describe("Detection mode: 'historical' (fuzzy date/amount/payee pairs) or 'import' (strict date/amount/payee groups for deduplicating CSV imports)"),
     },
-    async ({ accountId, amountThreshold, daysThreshold, maxResults }) => {
+    async ({ accountId, amountThreshold, daysThreshold, maxResults, mode }) => {
       try {
         const where: any = {};
         if (accountId) where.accountId = accountId;
@@ -26,49 +28,66 @@ export function registerAnalysisTools(server: McpServer) {
         const limit = maxResults ?? 100;
         const duplicates: { transaction1: any; transaction2: any; matchScore: number }[] = [];
 
-        // Simple duplicate detection: O(N^2) over transactions but capped by index distances
-        for (let i = 0; i < transactions.length; i++) {
-          if (duplicates.length >= limit) break;
-          const t1 = transactions[i];
-          for (let j = i + 1; j < transactions.length; j++) {
+        if (mode === "import") {
+          const groups = detectDuplicateGroups(transactions as any, true);
+          for (const group of groups) {
             if (duplicates.length >= limit) break;
-            const t2 = transactions[j];
-
-            // Only compare within the same account (cross-account pairs are not duplicates)
-            if (t1.accountId !== t2.accountId) continue;
-
-            const timeDiff = Math.abs(t1.date.getTime() - t2.date.getTime()) / (1000 * 60 * 60 * 24);
-            // Since sorted by date, we can break early if time difference exceeds threshold
-            if (timeDiff > daysThreshold) break;
-
-            const amountDiff = Math.abs(t1.amount - t2.amount);
-            if (amountDiff > amountThreshold) continue;
-
-            // Simple string matching score for payee names
-            const p1 = t1.payee.toLowerCase().trim();
-            const p2 = t2.payee.toLowerCase().trim();
-
-            let matchScore = 0;
-            if (p1 === p2) {
-              matchScore = 1.0;
-            } else if (p1.includes(p2) || p2.includes(p1)) {
-              matchScore = 0.8;
-            } else {
-              // Check partial overlap
-              const words1 = p1.split(/\s+/);
-              const words2 = p2.split(/\s+/);
-              const intersection = words1.filter((w) => words2.includes(w));
-              if (intersection.length > 0) {
-                matchScore = 0.5;
-              }
-            }
-
-            if (matchScore >= 0.5) {
+            const original = group.transactions[0];
+            for (let i = 1; i < group.transactions.length; i++) {
+              if (duplicates.length >= limit) break;
+              const tx = group.transactions[i];
               duplicates.push({
-                transaction1: { id: t1.id, date: t1.date.toISOString(), payee: t1.payee, amount: t1.amount, account: t1.account.name },
-                transaction2: { id: t2.id, date: t2.date.toISOString(), payee: t2.payee, amount: t2.amount, account: t2.account.name },
-                matchScore,
+                transaction1: { id: original.id, date: original.date.toISOString(), payee: original.payee, amount: original.amount, account: original.account.name },
+                transaction2: { id: tx.id, date: tx.date.toISOString(), payee: tx.payee, amount: tx.amount, account: tx.account.name },
+                matchScore: 1.0,
               });
+            }
+          }
+        } else {
+          // Simple duplicate detection: O(N^2) over transactions but capped by index distances
+          for (let i = 0; i < transactions.length; i++) {
+            if (duplicates.length >= limit) break;
+            const t1 = transactions[i];
+            for (let j = i + 1; j < transactions.length; j++) {
+              if (duplicates.length >= limit) break;
+              const t2 = transactions[j];
+
+              // Only compare within the same account (cross-account pairs are not duplicates)
+              if (t1.accountId !== t2.accountId) continue;
+
+              const timeDiff = Math.abs(t1.date.getTime() - t2.date.getTime()) / (1000 * 60 * 60 * 24);
+              // Since sorted by date, we can break early if time difference exceeds threshold
+              if (timeDiff > daysThreshold) break;
+
+              const amountDiff = Math.abs(t1.amount - t2.amount);
+              if (amountDiff > amountThreshold) continue;
+
+              // Simple string matching score for payee names
+              const p1 = t1.payee.toLowerCase().trim();
+              const p2 = t2.payee.toLowerCase().trim();
+
+              let matchScore = 0;
+              if (p1 === p2) {
+                matchScore = 1.0;
+              } else if (p1.includes(p2) || p2.includes(p1)) {
+                matchScore = 0.8;
+              } else {
+                // Check partial overlap
+                const words1 = p1.split(/\s+/);
+                const words2 = p2.split(/\s+/);
+                const intersection = words1.filter((w) => words2.includes(w));
+                if (intersection.length > 0) {
+                  matchScore = 0.5;
+                }
+              }
+
+              if (matchScore >= 0.5) {
+                duplicates.push({
+                  transaction1: { id: t1.id, date: t1.date.toISOString(), payee: t1.payee, amount: t1.amount, account: t1.account.name },
+                  transaction2: { id: t2.id, date: t2.date.toISOString(), payee: t2.payee, amount: t2.amount, account: t2.account.name },
+                  matchScore,
+                });
+              }
             }
           }
         }

@@ -864,7 +864,7 @@ describe('CategoriesClient — scrolling on tab switch', () => {
     vi.clearAllMocks();
     cleanup();
     // Mock scrollTo
-    window.scrollTo = vi.fn();
+    window.scrollTo = vi.fn() as any;
   });
 
   it('calls scrollTo when switching tabs', async () => {

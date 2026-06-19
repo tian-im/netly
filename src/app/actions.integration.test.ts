@@ -48,6 +48,8 @@ import {
   exportAllTransactions,
   exportAllAccounts,
   bulkUpdateTransactionsCategory,
+  bulkDeleteTransactions,
+  findDuplicateGroups,
 } from '@/app/actions';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -842,6 +844,133 @@ describe('System settings and backup actions', () => {
       expect(updated1?.isReviewed).toBe(true);
       expect(updated2?.categoryId).toBe(category.id);
       expect(updated2?.isReviewed).toBe(true);
+    });
+  });
+
+  describe('bulkDeleteTransactions', () => {
+    it('deletes one transaction successfully', async () => {
+      const account = await seedAccount();
+      const tx = await seedTransaction(account.id);
+      const res = await bulkDeleteTransactions([tx.id]);
+      expect(res.deletedCount).toBe(1);
+
+      const found = await db.transaction.findUnique({ where: { id: tx.id } });
+      expect(found).toBeNull();
+    });
+
+    it('deletes multiple transactions successfully', async () => {
+      const account = await seedAccount();
+      const tx1 = await seedTransaction(account.id, { payee: 'Store A' });
+      const tx2 = await seedTransaction(account.id, { payee: 'Store B' });
+
+      const res = await bulkDeleteTransactions([tx1.id, tx2.id]);
+      expect(res.deletedCount).toBe(2);
+
+      const found1 = await db.transaction.findUnique({ where: { id: tx1.id } });
+      const found2 = await db.transaction.findUnique({ where: { id: tx2.id } });
+      expect(found1).toBeNull();
+      expect(found2).toBeNull();
+    });
+
+    it("returns deletedCount: 0 when IDs don't exist (no error)", async () => {
+      const fakeId = '00000000-0000-0000-0000-000000000000';
+      const res = await bulkDeleteTransactions([fakeId]);
+      expect(res.deletedCount).toBe(0);
+    });
+
+    it("returns correct count when some IDs exist and some don't", async () => {
+      const account = await seedAccount();
+      const tx = await seedTransaction(account.id);
+      const fakeId = '00000000-0000-0000-0000-000000000000';
+
+      const res = await bulkDeleteTransactions([tx.id, fakeId]);
+      expect(res.deletedCount).toBe(1);
+
+      const found = await db.transaction.findUnique({ where: { id: tx.id } });
+      expect(found).toBeNull();
+    });
+
+    it('handles empty array input gracefully', async () => {
+      const res = await bulkDeleteTransactions([]);
+      expect(res.deletedCount).toBe(0);
+    });
+
+    it('handles invalid UUID format gracefully without throwing', async () => {
+      const res = await bulkDeleteTransactions(['not-a-uuid', 'another-bad-id']);
+      expect(res.deletedCount).toBe(0);
+    });
+  });
+
+  describe('findDuplicateGroups', () => {
+    it('returns duplicate groups from DB correctly', async () => {
+      const account = await seedAccount();
+      // create two transactions (same date/payee/amount, different description)
+      const tx1 = await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Uber', description: 'Ride A', amount: -12.5, accountId: account.id }
+      });
+      const tx2 = await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Uber', description: 'Ride B', amount: -12.5, accountId: account.id }
+      });
+
+      const groups = await findDuplicateGroups({ accountId: account.id });
+      expect(groups).toHaveLength(1);
+      expect(groups[0].transactions).toHaveLength(2);
+      expect(groups[0].transactions.map(t => t.id)).toContain(tx1.id);
+      expect(groups[0].transactions.map(t => t.id)).toContain(tx2.id);
+    });
+
+    it('scopes by accountId', async () => {
+      const account1 = await seedAccount({ name: 'Account 1' });
+      const account2 = await seedAccount({ name: 'Account 2' });
+
+      // duplicates in account 1
+      await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Uber', description: 'Ride A', amount: -12.5, accountId: account1.id }
+      });
+      await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Uber', description: 'Ride B', amount: -12.5, accountId: account1.id }
+      });
+
+      // duplicates in account 2
+      await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Coles', description: 'Shopping A', amount: -50.0, accountId: account2.id }
+      });
+      await db.transaction.create({
+        data: { date: new Date('2026-06-01'), payee: 'Coles', description: 'Shopping B', amount: -50.0, accountId: account2.id }
+      });
+
+      const groups1 = await findDuplicateGroups({ accountId: account1.id });
+      expect(groups1).toHaveLength(1);
+      expect(groups1[0].payee).toBe('Uber');
+
+      const groups2 = await findDuplicateGroups({ accountId: account2.id });
+      expect(groups2).toHaveLength(1);
+      expect(groups2[0].payee).toBe('Coles');
+    });
+
+    it('scopes by dateRange', async () => {
+      const account = await seedAccount();
+      // duplicate within the current month
+      const now = new Date();
+      await db.transaction.create({
+        data: { date: now, payee: 'Uber', description: 'Ride A', amount: -12.5, accountId: account.id }
+      });
+      await db.transaction.create({
+        data: { date: now, payee: 'Uber', description: 'Ride B', amount: -12.5, accountId: account.id }
+      });
+
+      // duplicate from last year
+      const lastYear = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      await db.transaction.create({
+        data: { date: lastYear, payee: 'Coles', description: 'Shopping A', amount: -50.0, accountId: account.id }
+      });
+      await db.transaction.create({
+        data: { date: lastYear, payee: 'Coles', description: 'Shopping B', amount: -50.0, accountId: account.id }
+      });
+
+      const groupsMonth = await findDuplicateGroups({ accountId: account.id, dateRange: 'month' });
+      expect(groupsMonth).toHaveLength(1);
+      expect(groupsMonth[0].payee).toBe('Uber');
     });
   });
 });

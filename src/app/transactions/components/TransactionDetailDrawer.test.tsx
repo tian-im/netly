@@ -5,6 +5,7 @@ import { act } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import TransactionDetailDrawer from './TransactionDetailDrawer';
 import enMessages from '../../../../messages/en.json';
+import { Transaction, Category } from '../types';
 
 // @ts-ignore
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -17,35 +18,35 @@ vi.mock('@/app/providers', () => ({
   useLocaleContext: () => ({ locale: 'en' }),
 }));
 
-const mockCategories = [
+const mockCategories: Category[] = [
   { id: 'cat_1', name: 'Transport', type: 'EXPENSE', cashFlowType: 'OPERATING', rules: [] },
   { id: 'cat_2', name: 'Salary', type: 'INCOME', cashFlowType: 'OPERATING', rules: [] },
 ];
 
-const mockTransactionWithCategory = {
+const mockTransactionWithCategory: Transaction = {
   id: 'tx_1',
-  date: '2026-06-01T00:00:00.000Z',
+  date: new Date('2026-06-01T00:00:00.000Z'),
   payee: 'Uber Ride',
   description: 'Ride to airport',
   amount: -25.5,
   accountId: 'acc_1',
   categoryId: 'cat_1',
   isReviewed: true,
-  updatedAt: '2026-06-01T00:00:00.000Z',
-  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+  createdAt: new Date('2026-06-01T00:00:00.000Z'),
   account: {
     id: 'acc_1',
     name: 'Checking',
     type: 'ASSET',
     currency: 'AUD',
     startingBalance: 1000,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   },
   category: { id: 'cat_1', name: 'Transport', type: 'EXPENSE', cashFlowType: 'OPERATING' },
 };
 
-const mockTransactionUncategorized = {
+const mockTransactionUncategorized: Transaction = {
   ...mockTransactionWithCategory,
   id: 'tx_2',
   categoryId: null,
@@ -54,7 +55,7 @@ const mockTransactionUncategorized = {
 };
 
 function renderDrawer(
-  transaction: typeof mockTransactionWithCategory | null,
+  transaction: Transaction | null,
   isPending: boolean
 ) {
   const container = document.createElement('div');
@@ -153,7 +154,7 @@ describe('TransactionDetailDrawer', () => {
   it('calls onClose when close button is clicked', () => {
     const container = renderDrawer(mockTransactionWithCategory, false);
     const closeBtn = container.querySelector('button');
-    act(() => closeBtn!.click());
+    act(() => (closeBtn as any)!.click());
     expect(mockOnClose).toHaveBeenCalled();
   });
 

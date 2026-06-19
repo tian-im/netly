@@ -118,6 +118,8 @@ export async function POST(req: Request) {
       success: true,
       importedCount,
       skippedCount,
+      minDate: parsedTx.length > 0 ? minDate.toISOString() : null,
+      maxDate: parsedTx.length > 0 ? maxDate.toISOString() : null,
       message: `Successfully imported ${importedCount} transactions. Skipped ${skippedCount} duplicate(s).`
     });
 

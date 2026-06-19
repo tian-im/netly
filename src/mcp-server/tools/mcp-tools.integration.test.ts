@@ -394,6 +394,24 @@ describe('MCP Tools Integration Tests', () => {
       const rule = await db.categoryRule.findFirst({ where: { categoryId: cat.id } });
       expect(rule?.pattern).toBe('Uber');
     });
+
+    it('delete_transactions: deletes transactions successfully', async () => {
+      const acc = await seedAccount();
+      const tx1 = await seedTransaction(acc.id, { payee: 'Delete Me 1' });
+      const tx2 = await seedTransaction(acc.id, { payee: 'Delete Me 2' });
+      const tx3 = await seedTransaction(acc.id, { payee: 'Keep Me' });
+
+      const handler = getHandler('delete_transactions');
+      const result = await handler({ transactionIds: [tx1.id, tx2.id] });
+      const data = JSON.parse(result.content[0].text);
+
+      expect(data.success).toBe(true);
+      expect(data.deletedCount).toBe(2);
+
+      const remaining = await db.transaction.findMany({ where: { accountId: acc.id } });
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].id).toBe(tx3.id);
+    });
   });
 
   // Test report tools
@@ -508,6 +526,22 @@ describe('MCP Tools Integration Tests', () => {
       expect(data.recurring).toHaveLength(1);
       expect(data.recurring[0].frequency).toBe('monthly');
       expect(data.recurring[0].merchantPattern).toBe('netflix');
+    });
+
+    it('detect_duplicates: in mode="import" detects duplicate groups correctly', async () => {
+      const acc = await seedAccount();
+      // Three identical amount, payee, and date transactions -> duplicates in import mode
+      const t1 = await seedTransaction(acc.id, { payee: 'Netflix', amount: -15.99, date: new Date('2026-06-01') });
+      const t2 = await seedTransaction(acc.id, { payee: 'Netflix', amount: -15.99, date: new Date('2026-06-01') });
+      const t3 = await seedTransaction(acc.id, { payee: 'Netflix', amount: -15.99, date: new Date('2026-06-01') });
+
+      const handler = getHandler('detect_duplicates');
+      const result = await handler({ accountId: acc.id, mode: 'import' });
+      const data = JSON.parse(result.content[0].text);
+
+      // t2 and t3 should be paired with t1 (lexicographically first ID is the original because seedTransaction creates them sequentially)
+      expect(data.duplicates.length).toBe(2);
+      expect(data.duplicates[0].matchScore).toBe(1.0);
     });
   });
 });
