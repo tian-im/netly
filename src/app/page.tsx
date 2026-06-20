@@ -200,6 +200,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       netWorthTrendByCurrency={netWorthTrendByCurrency}
       defaultCurrency={defaultCurrency}
       preferredCurrency={preferredCurrency}
+      serverNow={now.toISOString()}
     />
   );
 }

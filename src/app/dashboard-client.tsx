@@ -81,6 +81,15 @@ interface DashboardClientProps {
   defaultCurrency: string;
   /** User's preferred default currency from cookie (fallback when no accounts). */
   preferredCurrency?: string;
+  /**
+   * ISO string of the server's `new Date()` at render time.
+   * WHY: Passing this from the server prevents hydration mismatches when
+   * the client computes `getPeriodDates(period, now)` in a different timezone.
+   * `new Date()` on server vs browser can produce different local-time
+   * interpretations, and getPeriodDates uses local-time Date constructors
+   * internally (new Date(year, month, day)), which amplifies the drift.
+   */
+  serverNow: string;
 }
 
 export default function DashboardClient({
@@ -97,6 +106,7 @@ export default function DashboardClient({
   netWorthTrendByCurrency,
   defaultCurrency: serverDefaultCurrency,
   preferredCurrency = DEFAULT_CURRENCY,
+  serverNow,
 }: DashboardClientProps) {
   const t = useTranslations('dashboard');
   const tAccounts = useTranslations('accounts');
@@ -135,7 +145,11 @@ export default function DashboardClient({
   }, [activeCurrencies, selectedVisualCurrency, preferredCurrency]);
   const symbol = getCurrencySymbol(currentVisualCurrency);
 
-  const now = useMemo(() => new Date(), []);
+  // WHY: Use the server's now (passed as ISO string) instead of new Date() to
+  // avoid hydration mismatch. The server and browser may be in different timezones,
+  // and getPeriodDates uses local-time Date constructors internally. By sharing
+  // the server's reference point, both sides compute identical period boundaries.
+  const now = useMemo(() => new Date(serverNow), [serverNow]);
   const { firstDay: displayFirstDay, lastDay: displayLastDay } = useMemo(
     () => getPeriodDates(period, now),
     [period, now],

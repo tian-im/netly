@@ -56,6 +56,9 @@ vi.mock('next/link', () => {
 
 
 describe('DashboardClient Component', () => {
+  // Fixed server timestamp for deterministic date calculations across all tests
+  const serverNow = new Date('2026-06-15T12:00:00.000Z').toISOString();
+
   const mockAccounts = [
     { id: 'acc_1', name: 'Checking Account', type: 'ASSET', startingBalance: 1000, currency: 'AUD' },
     { id: 'acc_2', name: 'Credit Card', type: 'LIABILITY', startingBalance: -200, currency: 'AUD' },
@@ -153,7 +156,7 @@ describe('DashboardClient Component', () => {
             uncategorizedCount={0}
             period="current"
             defaultCurrency={getDefaultCurrency(mockAccounts)}
-            {...helperProps}
+            serverNow={serverNow} {...helperProps}
           />
         </NextIntlClientProvider>
       );
@@ -188,7 +191,7 @@ describe('DashboardClient Component', () => {
             uncategorizedCount={3}
             period="current"
             defaultCurrency={getDefaultCurrency(mockAccounts)}
-            {...helperProps}
+            serverNow={serverNow} {...helperProps}
           />
         </NextIntlClientProvider>
       );
@@ -216,7 +219,7 @@ describe('DashboardClient Component', () => {
             uncategorizedCount={0}
             period="current"
             defaultCurrency={getDefaultCurrency([])}
-            {...helperProps}
+            serverNow={serverNow} {...helperProps}
           />
         </NextIntlClientProvider>
       );
@@ -255,7 +258,7 @@ describe('DashboardClient Component', () => {
             uncategorizedCount={0}
             period="current"
             defaultCurrency={getDefaultCurrency(mockAccounts)}
-            {...helperProps}
+            serverNow={serverNow} {...helperProps}
           />
         </NextIntlClientProvider>
       );
@@ -294,7 +297,7 @@ describe('DashboardClient Component', () => {
             uncategorizedCount={0}
             period="current"
             defaultCurrency={getDefaultCurrency(mockMultiCurrencyAccounts)}
-            {...helperProps}
+            serverNow={serverNow} {...helperProps}
           />
         </NextIntlClientProvider>
       );
@@ -331,7 +334,7 @@ describe('DashboardClient Component', () => {
             uncategorizedCount={0}
             period="current"
             defaultCurrency={getDefaultCurrency(mockAccounts)}
-            {...helperProps}
+            serverNow={serverNow} {...helperProps}
           />
         </NextIntlClientProvider>
       );

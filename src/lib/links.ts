@@ -21,53 +21,63 @@ export interface PeriodDates {
 }
 
 export function getPeriodDates(period: PeriodType, now: Date): PeriodDates {
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  // WHY: Use Date.UTC + getUTC* methods instead of local-time Date constructors.
+  // `new Date(year, month, day)` creates a date at midnight in the local timezone,
+  // which causes hydration mismatches when the server (UTC) and client browser
+  // (e.g., UTC+8) interpret the same numeric (year, month, day) as different
+  // absolute moments. Date.UTC always produces UTC-midnight timestamps, making
+  // this function timezone-independent.
+  const nowY = now.getUTCFullYear();
+  const nowM = now.getUTCMonth();
+  const nowD = now.getUTCDate();
+
+  const lastDay = new Date(Date.UTC(nowY, nowM + 1, 0));
 
   let firstDay: Date;
   switch (period) {
     case '3m':
-      firstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      firstDay = new Date(Date.UTC(nowY, nowM - 2, 1));
       break;
     case '6m':
-      firstDay = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      firstDay = new Date(Date.UTC(nowY, nowM - 5, 1));
       break;
     case '12m':
-      firstDay = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      firstDay = new Date(Date.UTC(nowY, nowM - 11, 1));
       break;
     case 'ytd':
-      firstDay = new Date(now.getFullYear(), 0, 1);
+      firstDay = new Date(Date.UTC(nowY, 0, 1));
       break;
     default: // 'current'
-      firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      firstDay = new Date(Date.UTC(nowY, nowM, 1));
       break;
   }
+
+  const firstY = firstDay.getUTCFullYear();
+  const firstM = firstDay.getUTCMonth();
+  const lastY = lastDay.getUTCFullYear();
+  const lastM = lastDay.getUTCMonth();
 
   let prevPeriodStart: Date;
   let prevPeriodEnd: Date;
 
   if (period === 'ytd') {
     // For YTD, compare against the same calendar window in the prior year
-    prevPeriodStart = new Date(now.getFullYear() - 1, 0, 1);
+    prevPeriodStart = new Date(Date.UTC(nowY - 1, 0, 1));
     const lastDayOfPrevYearSameMonth = new Date(
-      now.getFullYear() - 1,
-      now.getMonth() + 1,
-      0,
-    ).getDate();
-    const safeDay = Math.min(now.getDate(), lastDayOfPrevYearSameMonth);
-    prevPeriodEnd = new Date(now.getFullYear() - 1, now.getMonth(), safeDay);
+      Date.UTC(nowY - 1, nowM + 1, 0),
+    ).getUTCDate();
+    const safeDay = Math.min(nowD, lastDayOfPrevYearSameMonth);
+    prevPeriodEnd = new Date(Date.UTC(nowY - 1, nowM, safeDay));
   } else {
     // For all other periods, the prior period has the same duration and
     // ends the day before the current period starts.
-    prevPeriodEnd = new Date(firstDay.getFullYear(), firstDay.getMonth(), 0);
+    prevPeriodEnd = new Date(Date.UTC(firstY, firstM, 0));
     const durationMonths =
-      (lastDay.getFullYear() - firstDay.getFullYear()) * 12 +
-      lastDay.getMonth() -
-      firstDay.getMonth() +
+      (lastY - firstY) * 12 +
+      lastM - firstM +
       1;
     prevPeriodStart = new Date(
-      firstDay.getFullYear(),
-      firstDay.getMonth() - durationMonths,
-      1,
+      Date.UTC(firstY, firstM - durationMonths, 1),
     );
   }
 
