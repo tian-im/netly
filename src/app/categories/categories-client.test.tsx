@@ -9,6 +9,9 @@ import CategoriesClient from './categories-client';
 // @ts-ignore
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
+// Silence jsdom "Not implemented: window.scrollTo" errors
+window.scrollTo = vi.fn() as any;
+
 // Mock server actions
 const mockCreateCategory = vi.fn();
 const mockDeleteCategory = vi.fn();
@@ -45,6 +48,8 @@ vi.mock('lucide-react', () => ({
   CheckCircle: ({ className }: any) => <div data-testid="check-circle-icon" className={className} />,
   XCircle: ({ className }: any) => <div data-testid="x-circle-icon" className={className} />,
   Info: ({ className }: any) => <div data-testid="info-icon" className={className} />,
+  ChevronDown: ({ className }: any) => <div data-testid="chevron-down-icon" className={className} />,
+  Search: ({ className }: any) => <div data-testid="search-icon" className={className} />,
 }));
 
 // Mock next/link
@@ -727,6 +732,46 @@ describe('CategoriesClient — Match Rules tab', () => {
 
     await waitFor(() => {
       expect(mockCreateCategoryRule).toHaveBeenCalledWith('Uber', '1');
+    });
+  });
+
+  it('allows selecting a category using autocomplete search in the rule form', async () => {
+    mockCreateCategoryRule.mockResolvedValue({ id: 'new-rule', pattern: 'Spotify' });
+    const cats = [
+      makeCategory('1', { name: 'Transport' }),
+      makeCategory('2', { name: 'Entertainment' }),
+    ];
+    renderCategoriesClient(cats);
+
+    // Switch to rules tab
+    const rulesTab = screen.getAllByText('Match Rules')[0];
+    await userEvent.click(rulesTab);
+
+    // Fill pattern
+    const patternInput = screen.getByPlaceholderText('e.g. Uber, Coles');
+    await userEvent.type(patternInput, 'Spotify');
+
+    // Find autocomplete input for categories
+    const autocompleteInput = screen.getByLabelText('Assign Category') as HTMLInputElement;
+    expect(autocompleteInput.value).toBe('Transport'); // default selection
+
+    // Focus and search for 'Enter'
+    fireEvent.focus(autocompleteInput);
+    await userEvent.clear(autocompleteInput);
+    await userEvent.type(autocompleteInput, 'Enter');
+
+    // Select the filtered option
+    const option = screen.getByText('Entertainment');
+    fireEvent.mouseDown(option);
+
+    expect(autocompleteInput.value).toBe('Entertainment');
+
+    // Submit form
+    const submitBtn = screen.getByRole('button', { name: 'Create Rule' });
+    await userEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockCreateCategoryRule).toHaveBeenCalledWith('Spotify', '2');
     });
   });
 

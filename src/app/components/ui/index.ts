@@ -7,3 +7,4 @@ export { ToastContainer, type ToastContainerProps, type ToastMessage } from './t
 export { Select, type SelectProps } from './select';
 export { Card, type CardProps, type CardBodyProps, type CardTitleProps, type CardActionsProps } from './card';
 export { Modal, type ModalProps, type ModalHeaderProps, type ModalTitleProps, type ModalBodyProps, type ModalActionsProps } from './modal';
+export { Autocomplete, type AutocompleteProps, type AutocompleteOption } from './autocomplete';

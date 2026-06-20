@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings, X } from 'lucide-react';
-import { Button, Input, Select, Card } from '@/app/components/ui';
+import { Button, Input, Card, Autocomplete } from '@/app/components/ui';
 import type { Category } from '../types';
 
 interface RulesPanelProps {
@@ -149,21 +149,18 @@ export default function RulesPanel({
                 helperText={t('regexHint')}
               />
 
-              <Select
+              <Autocomplete
                 id="new-rule-category"
                 label={t('assignCategory')}
                 value={newRuleCatId}
-                onChange={(e) => setNewRuleCatId(e.target.value)}
+                onChange={(val) => setNewRuleCatId(val)}
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
                 size="sm"
                 required
                 disabled={isCreatingRule || categories.length === 0}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
+                placeholder={t('searchPlaceholder')}
+                noMatchesText={t('noCategoriesFound')}
+              />
 
               <Button
                 type="submit"

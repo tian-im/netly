@@ -203,6 +203,25 @@ describe('import-utils', () => {
       expect(res.error).toBe('ERR_INVALID_TYPE');
     });
 
+    it("should fail if type is undefined (covers || '' fallback branch)", () => {
+      // WHY: account.type || '' is the only uncovered branch at 99.81%.
+      // When type is undefined, the || '' fallback produces '' which fails validation.
+      const res = validateAccountImport(
+        { name: 'Checking' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe('ERR_INVALID_TYPE');
+    });
+
+    it('should validate LIABILITY type accounts', () => {
+      const res = validateAccountImport(
+        { name: 'Credit Card', type: 'LIABILITY', currency: 'USD' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(true);
+    });
+
     it('should fail if currency is not supported', () => {
       const res = validateAccountImport(
         { name: 'Checking', type: 'ASSET', currency: 'EUR' },

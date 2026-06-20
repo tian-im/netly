@@ -133,7 +133,7 @@ To maintain absolute consistency with your real-world bank records and prevent m
 To minimize manual bookkeeping, Netly Ledger uses keyword-matching rules to categorize incoming bank transactions.
 
 ### Creating Match Rules
-- **From Category Manager** (`/categories` -> **Match Rules** tab): Enter a **Merchant Keyword** (e.g., "Uber" or "Coles") and select the target category.
+- **From Category Manager** (`/categories` -> **Match Rules** tab): Enter a **Merchant Keyword** (e.g., "Uber" or "Coles") and search or select the target category using the autocomplete selector.
 - **From Transaction Drawer**: Click "Create Rule from Payee". The app will prompt you to save the rule.
 - **Regex Support**: Keywords support Regular Expressions. For example, a pattern of `^Netflix.*Subscription$` will match any payee starting with "Netflix" and ending with "Subscription".
 
