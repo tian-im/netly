@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BarChart3 } from 'lucide-react';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
@@ -11,6 +10,7 @@ import {
   Tooltip,
   Cell,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import { getCurrencySymbol, formatCompactNumber, DEFAULT_CURRENCY } from '@/lib/currencies';
 
 import { Card } from '@/app/components/ui';
@@ -29,6 +29,34 @@ interface IncomeVsExpensesChartProps {
   tooltipLabel?: string;
 }
 
+export const CustomTooltip = ({
+  active,
+  payload,
+  tooltipLabel,
+  locale,
+}: Partial<TooltipContentProps<number, string>> & {
+  tooltipLabel: string;
+  locale?: string;
+}) => {
+  if (active && payload && payload.length) {
+    const entry = payload[0].payload;
+    const isIncome = entry.isIncome;
+    return (
+      <div className="bg-base-100 border border-base-content/10 p-3 rounded-xl shadow-lg text-xs font-sans">
+        <p className="font-semibold text-base-content mb-1">{entry.name}</p>
+        <div className="flex items-center gap-2">
+          <span className={`w-2.5 h-2.5 rounded-full ${isIncome ? 'bg-success' : 'bg-error'}`} />
+          <span className="text-base-content/70">{tooltipLabel}:</span>
+          <span className={`font-bold ${isIncome ? 'text-success' : 'text-error'}`}>
+            {formatCompactNumber(Number(entry.amount), locale)}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function IncomeVsExpensesChart({
   title,
   subtitle,
@@ -42,9 +70,9 @@ export default function IncomeVsExpensesChart({
   locale,
   tooltipLabel = 'Amount',
 }: IncomeVsExpensesChartProps) {
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setMounted(true);
   }, []);
 
@@ -67,49 +95,42 @@ export default function IncomeVsExpensesChart({
 
         <div className="w-full h-40" role="img" aria-label={`${title}: ${incomeLabel} ${symbol}${totalIncome}, ${expenseLabel} ${symbol}${totalExpenses}`}>
           {mounted ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <XAxis
-                  dataKey="name"
-                  stroke="var(--bc)"
-                  strokeOpacity={0.6}
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="var(--bc)"
-                  strokeOpacity={0.6}
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) => formatCompactNumber(val, locale)}
-                  width={40}
-                />
-                <Tooltip
-                  cursor={{ fill: 'transparent' }}
-                  contentStyle={{
-                    backgroundColor: 'var(--b1)',
-                    borderColor: 'color-mix(in srgb, var(--bc) 10%, transparent)',
-                    borderRadius: '12px',
-                    color: 'var(--bc)',
-                    fontSize: '12px',
-                  }}
-                  formatter={(value: any) => [
-                      formatCompactNumber(Number(value), locale),
-                      tooltipLabel,
-                    ]}
-                />
-                <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
-                  {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.isIncome ? 'var(--su)' : 'var(--er)'}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <BarChart
+              style={{ width: '100%', height: '100%' }}
+              responsive
+              data={data}
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="name"
+                stroke="var(--color-base-content)"
+                style={{ opacity: 0.6 }}
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="var(--color-base-content)"
+                style={{ opacity: 0.6 }}
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val) => formatCompactNumber(val, locale)}
+                width={40}
+              />
+              <Tooltip
+                cursor={{ fill: 'transparent' }}
+                content={<CustomTooltip tooltipLabel={tooltipLabel} locale={locale} />}
+              />
+              <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.isIncome ? 'var(--color-success)' : 'var(--color-error)'}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           ) : (
             <div className="w-full h-full bg-base-200/50 animate-pulse rounded-lg" />
           )}

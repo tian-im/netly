@@ -54,18 +54,6 @@ vi.mock('next/link', () => {
   };
 });
 
-// Mock Recharts to avoid JSDOM layout dimension issues
-vi.mock('recharts', async () => {
-  const original = await vi.importActual('recharts') as any;
-  return {
-    ...original,
-    ResponsiveContainer: ({ children }: any) => (
-      <div data-testid="responsive-container" style={{ width: 500, height: 300 }}>
-        {children}
-      </div>
-    ),
-  };
-});
 
 describe('DashboardClient Component', () => {
   const mockAccounts = [
