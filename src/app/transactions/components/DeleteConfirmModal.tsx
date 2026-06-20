@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/app/components/ui';
+import { Button, Modal } from '@/app/components/ui';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -20,54 +19,45 @@ export default function DeleteConfirmModal({
   const t = useTranslations('transactions');
   const tCommon = useTranslations('common');
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   return (
-    <div
-      className="modal modal-open z-55"
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      zIndex="z-55"
+      maxWidth="md"
+      className="border-error/20"
       aria-labelledby="delete-modal-title"
       aria-describedby="delete-modal-description"
     >
-      <div className="modal-box border border-error/20 shadow-2xl bg-base-100 max-w-md">
-        <h3 id="delete-modal-title" className="font-black text-lg text-error">
+      <Modal.Header>
+        <Modal.Title color="error" className="font-black" id="delete-modal-title">
           {t('deleteConfirmTitle')}
-        </h3>
-        <p id="delete-modal-description" className="py-4 text-sm text-base-content/85">
-          {count === 1 ? t('deleteConfirmDesc') : t('bulkDeleteConfirmDesc', { count })}
-        </p>
-        <div className="modal-action">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-          >
-            {tCommon('cancel')}
-          </Button>
-          <Button
-            type="button"
-            variant="error"
-            size="sm"
-            className="font-bold"
-            onClick={onConfirm}
-          >
-            {t('bulkDelete')} ({count})
-          </Button>
-        </div>
-      </div>
-    </div>
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body id="delete-modal-description">
+        {count === 1 ? t('deleteConfirmDesc') : t('bulkDeleteConfirmDesc', { count })}
+      </Modal.Body>
+      <Modal.Actions>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onClose}
+        >
+          {tCommon('cancel')}
+        </Button>
+        <Button
+          type="button"
+          variant="error"
+          size="sm"
+          className="font-bold"
+          onClick={onConfirm}
+        >
+          {t('bulkDelete')} ({count})
+        </Button>
+      </Modal.Actions>
+    </Modal>
   );
 }

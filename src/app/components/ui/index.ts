@@ -6,3 +6,4 @@ export { Toast, type ToastProps, type ToastType } from './toast';
 export { ToastContainer, type ToastContainerProps, type ToastMessage } from './toast-container';
 export { Select, type SelectProps } from './select';
 export { Card, type CardProps, type CardBodyProps, type CardTitleProps, type CardActionsProps } from './card';
+export { Modal, type ModalProps, type ModalHeaderProps, type ModalTitleProps, type ModalBodyProps, type ModalActionsProps } from './modal';
