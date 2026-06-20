@@ -131,7 +131,7 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 5. **Codemaps** — After any significant feature addition, refactoring, or structural change, update `docs/CODEMAPS/*.md` using the `doc-updater` agent. This keeps the token-lean architecture docs fresh for future sessions.
 6. **Verify** — Run tests (`docker compose exec -T web yarn test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
 7. **Commit** — ONLY commit when the user explicitly requests it. Never auto-commit after completing work.
-8. **User Manual Update** — After any change to application features, workflows, configuration options, or UI layouts, the agent must update the public user manual in `docs/user_manual.md` to keep the user documentation synchronized with the implementation.
+8. **User Manual Update** — After any change to application features, workflows, configuration options, or UI layouts, the agent must update the public user manual in both `docs/user_manual.en.md` and `docs/user_manual.zh.md` to keep the user documentation synchronized with the implementation.
 
 ## Workflow Surface Policy
 

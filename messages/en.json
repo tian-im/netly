@@ -38,7 +38,6 @@
     "import": "Bank CSV Import",
     "settings": "Settings",
     "docs": "User Manual",
-    "docsSubtitle": "Learn how to manage your accounts, import bank statements, configure rules, and compile statements.",
     "supportLink": "Support",
     "runningLocally": "Running Locally",
     "dbPath": "SQLite database: prisma/dev.db",
