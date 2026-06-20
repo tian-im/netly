@@ -104,6 +104,17 @@ describe('Button Component', () => {
     expect(screen.getByRole('button').className).toContain('btn-secondary');
   });
 
+  it('applies accent variant class correctly', () => {
+    render(<Button variant="accent">Accent</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-accent');
+  });
+
+  it('applies outline-accent variant class correctly', () => {
+    render(<Button variant="outline-accent">Outline Accent</Button>);
+    expect(screen.getByRole('button').className).toContain('btn-outline');
+    expect(screen.getByRole('button').className).toContain('btn-accent');
+  });
+
   it('applies neutral, warning, and link variant classes correctly', () => {
     const { rerender } = render(<Button variant="neutral">Neutral</Button>);
     expect(screen.getByRole('button').className).toContain('btn-neutral');

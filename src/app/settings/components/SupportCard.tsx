@@ -12,7 +12,7 @@ export default function SupportCard() {
   return (
     <Card className="border-l-4 border-l-accent">
       <Card.Body>
-        <Card.Title icon={<Heart className="h-5 w-5 text-accent" />} className="text-accent">
+        <Card.Title icon={<Heart className="h-5 w-5 text-accent" />} color="accent">
           {t('cardTitle')}
         </Card.Title>
         <p className="text-sm text-base-content/70">{t('cardDescription')}</p>
@@ -22,8 +22,9 @@ export default function SupportCard() {
             href={buildKoFiUrl()}
             target="_blank"
             rel="noopener noreferrer"
+            variant="accent"
             size="sm"
-            className="gap-1"
+            className="gap-1 text-white"
           >
             {t('ctaButton')}
           </Button>

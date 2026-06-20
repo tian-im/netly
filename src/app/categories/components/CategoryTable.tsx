@@ -179,12 +179,12 @@ export default function CategoryTable({
                       </td>
                       <td className="whitespace-normal">
                         <span
-                          className={`badge badge-sm font-semibold block w-fit truncate ${
+                          className={`badge badge-sm font-semibold block w-fit truncate text-white ${
                             cat.type === 'INCOME'
-                              ? 'badge-success text-success-content'
+                              ? 'badge-success'
                               : cat.type === 'EXPENSE'
-                              ? 'badge-error text-error-content'
-                              : 'badge-warning text-warning-content'
+                              ? 'badge-error'
+                              : 'badge-warning'
                           }`}
                         >
                           {cat.type === 'INCOME'
@@ -195,7 +195,15 @@ export default function CategoryTable({
                         </span>
                       </td>
                       <td className="whitespace-normal">
-                        <span className="badge badge-outline badge-sm font-bold opacity-75 block w-fit truncate">
+                        <span
+                          className={`badge badge-sm font-bold block w-fit truncate text-white ${
+                            cat.cashFlowType === 'OPERATING'
+                              ? 'badge-info'
+                              : cat.cashFlowType === 'INVESTING'
+                              ? 'badge-primary'
+                              : 'badge-secondary'
+                          }`}
+                        >
                           {cat.cashFlowType === 'OPERATING'
                             ? t('cfOperating')
                             : cat.cashFlowType === 'INVESTING'

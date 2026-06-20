@@ -100,5 +100,8 @@ describe('Card Component', () => {
 
     rerender(<Card.Title color="base" data-testid="card-title" />);
     expect(screen.getByTestId('card-title').className).toContain('text-base-content');
+
+    rerender(<Card.Title color="accent" data-testid="card-title" />);
+    expect(screen.getByTestId('card-title').className).toContain('text-accent');
   });
 });

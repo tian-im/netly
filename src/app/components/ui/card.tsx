@@ -28,7 +28,7 @@ CardBody.displayName = 'Card.Body';
 
 export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
   icon?: React.ReactNode;
-  color?: 'primary' | 'error' | 'success' | 'warning' | 'base' | 'default';
+  color?: 'primary' | 'error' | 'success' | 'warning' | 'base' | 'default' | 'accent';
 }
 const CardTitle = ({ className = '', icon, color = 'default', children, ...props }: CardTitleProps) => {
   const colorClass = {
@@ -38,6 +38,7 @@ const CardTitle = ({ className = '', icon, color = 'default', children, ...props
     warning: 'text-warning',
     base: 'text-base-content',
     default: 'text-primary',
+    accent: 'text-accent',
   }[color];
 
   return (

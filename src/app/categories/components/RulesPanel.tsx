@@ -76,12 +76,12 @@ export default function RulesPanel({
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="font-bold text-base">{cat.name}</h3>
                     <span
-                      className={`badge badge-sm font-semibold ${
+                      className={`badge badge-sm font-semibold text-white ${
                         cat.type === 'INCOME'
-                          ? 'badge-success text-success-content'
+                          ? 'badge-success'
                           : cat.type === 'EXPENSE'
-                          ? 'badge-error text-error-content'
-                          : 'badge-warning text-warning-content'
+                          ? 'badge-error'
+                          : 'badge-warning'
                       }`}
                     >
                       {cat.type === 'INCOME'

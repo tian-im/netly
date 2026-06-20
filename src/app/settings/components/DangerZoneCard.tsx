@@ -79,7 +79,7 @@ export default function DangerZoneCard({
     <>
       <Card className="border border-error/20">
         <Card.Body>
-          <Card.Title icon={<AlertTriangle className="h-5 w-5 text-error" />} className="text-error">
+          <Card.Title icon={<AlertTriangle className="h-5 w-5 text-error" />} color="error">
             {t('dangerZoneTitle')}
           </Card.Title>
           <p className="text-sm text-base-content/70">

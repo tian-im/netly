@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'error' | 'success' | 'outline-error' | 'outline-primary' | 'outline-secondary' | 'neutral' | 'warning' | 'link' | 'tab' | 'segmented';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'error' | 'success' | 'outline-error' | 'outline-primary' | 'outline-secondary' | 'neutral' | 'warning' | 'link' | 'tab' | 'segmented' | 'accent' | 'outline-accent';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   loading?: boolean;
   href?: string;
@@ -28,12 +28,14 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, Bu
       success: 'btn-success text-success-content',
       'outline-primary': 'btn-outline btn-primary',
       'outline-secondary': 'btn-outline btn-secondary',
-      'outline-error': 'btn-outline btn-error',
+      'outline-error': 'btn-outline btn-error hover:text-white',
       neutral: 'btn-neutral text-neutral-content',
       warning: 'btn-warning text-warning-content',
       link: 'btn-link p-0 h-auto min-h-0 text-left justify-start',
       tab: 'tab',
       segmented: 'bg-transparent text-base-content/70 hover:bg-base-300 border-0',
+      accent: 'btn-accent text-accent-content',
+      'outline-accent': 'btn-outline btn-accent hover:text-white',
     }[variant];
 
 
