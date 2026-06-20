@@ -68,3 +68,73 @@ export function disambiguateDescriptions(txs: ParsedTransaction[]): void {
     }
   }
 }
+
+export interface AccountImportItem {
+  id?: string;
+  name: string;
+  type?: string;
+  currency?: string;
+}
+
+export interface AccountImportInput {
+  id?: string;
+  name?: string;
+  type?: string;
+  currency?: string;
+}
+
+/**
+ * Validates a single account import row.
+ * Returns { isValid: boolean, error?: string }.
+ */
+export function validateAccountImport(
+  account: AccountImportInput,
+  supportedCurrencies: Set<string>
+): { isValid: boolean; error?: string } {
+  const name = String(account.name || '').trim();
+  if (!name) {
+    return { isValid: false, error: 'ERR_ACCOUNT_NAME_REQUIRED' };
+  }
+
+  const type = String(account.type || '').trim().toUpperCase();
+  if (type !== 'ASSET' && type !== 'LIABILITY') {
+    return { isValid: false, error: 'ERR_INVALID_TYPE' };
+  }
+
+  const currency = String(account.currency || '').trim().toUpperCase();
+  if (currency && !supportedCurrencies.has(currency)) {
+    return { isValid: false, error: 'ERR_INVALID_CURRENCY' };
+  }
+
+  const id = account.id ? String(account.id).trim() : undefined;
+  if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return { isValid: false, error: 'ERR_INVALID_ID' };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Checks if an account import row is a duplicate in the database or the current batch.
+ */
+export function isAccountDuplicate(
+  account: AccountImportItem,
+  existingIds: Set<string>,
+  existingNames: Set<string>,
+  batchIds: Set<string>,
+  batchNames: Set<string>
+): { isDuplicate: boolean; duplicateType?: 'db' | 'batch' } {
+  const name = account.name.trim().toLowerCase();
+  const id = account.id?.trim().toLowerCase();
+
+  if (existingNames.has(name) || (id && existingIds.has(id))) {
+    return { isDuplicate: true, duplicateType: 'db' };
+  }
+
+  if (batchNames.has(name) || (id && batchIds.has(id))) {
+    return { isDuplicate: true, duplicateType: 'batch' };
+  }
+
+  return { isDuplicate: false };
+}
+

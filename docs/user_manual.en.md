@@ -207,9 +207,10 @@ Saved to your browser's local storage:
 - **Database Metrics**: Quick counts of your managed accounts, imported transactions, and matching rules.
 - **Danger Zone**: Wipe Database — Clears all data, letting you start fresh. You must type `WIPE` to execute.
 
-### Data Export
+### Data Export & Import
 - **Export Transactions**: Download a CSV containing all transaction ledger records.
 - **Export Accounts**: Download a CSV containing all account structural details.
+- **Import Accounts**: Restore or import accounts from a CSV backup file. The tool parses the file and displays an interactive preview modal showing the parsed account names, types, currencies, and starting balances. Accounts that already exist in the database (by name or ID) are flagged and automatically skipped on confirmation.
 - **Export Full Ledger**: From the reports page, download a comprehensive CSV pack containing all data.
 
 ### Model Context Protocol (MCP) Access

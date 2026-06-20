@@ -53,7 +53,7 @@ export default function SettingsClient({
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const toastIdRef = useRef(0);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
     toastIdRef.current += 1;
     const id = `toast-${toastIdRef.current}`;
     setToasts((prev) => [...prev, { id, message, type }]);

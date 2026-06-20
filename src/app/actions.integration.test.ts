@@ -47,6 +47,7 @@ import {
   vacuumDatabase,
   exportAllTransactions,
   exportAllAccounts,
+  importAccounts,
   bulkUpdateTransactionsCategory,
   bulkDeleteTransactions,
   findDuplicateGroups,
@@ -776,6 +777,97 @@ describe('System settings and backup actions', () => {
       expect(accs[1].name).toBe('Zeta');
     });
   });
+
+  describe('importAccounts', () => {
+    it('imports new accounts successfully and ignores empty names', async () => {
+      const data = [
+        { name: 'Imported Checking', type: 'ASSET', startingBalance: 100, currency: 'USD' },
+        { name: 'Imported Card', type: 'LIABILITY', startingBalance: 200, currency: 'AUD' },
+        { name: ' ', type: 'ASSET', startingBalance: 50, currency: 'AUD' }, // Should be skipped
+      ];
+
+      const res = await importAccounts(data);
+      expect(res.importedCount).toBe(2);
+      expect(res.skippedCount).toBe(1);
+
+      const accounts = await db.account.findMany({ orderBy: { name: 'asc' } });
+      expect(accounts).toHaveLength(2);
+      expect(accounts[0].name).toBe('Imported Card');
+      expect(accounts[0].type).toBe('LIABILITY');
+      expect(accounts[0].startingBalance).toBe(200);
+      expect(accounts[0].currency).toBe('AUD');
+
+      expect(accounts[1].name).toBe('Imported Checking');
+      expect(accounts[1].type).toBe('ASSET');
+      expect(accounts[1].startingBalance).toBe(100);
+      expect(accounts[1].currency).toBe('USD');
+    });
+
+    it('skips duplicate names or duplicate IDs already in the database', async () => {
+      // Seed one account with a specific ID and one with a name
+      await seedAccount({ name: 'Existing Account' });
+      const seeded2 = await seedAccount({ name: 'Unique Account' });
+
+      const data = [
+        { name: 'Existing Account', type: 'ASSET', startingBalance: 0 }, // Duplicate name
+        { id: seeded2.id, name: 'Brand New Name', type: 'ASSET', startingBalance: 0 }, // Duplicate ID
+        { name: 'New Account 1', type: 'ASSET', startingBalance: 50 }, // Should succeed
+      ];
+
+      const res = await importAccounts(data);
+      expect(res.importedCount).toBe(1);
+      expect(res.skippedCount).toBe(2);
+
+      const accounts = await db.account.findMany();
+      // Should have the 2 seeded ones and 1 new one
+      expect(accounts).toHaveLength(3);
+      expect(accounts.map((a) => a.name)).toContain('New Account 1');
+    });
+
+    it('skips batch-level duplicates (same name or same ID in the imported list)', async () => {
+      const data = [
+        { id: '11111111-2222-3333-4444-555555555555', name: 'Batch Unique 1', type: 'ASSET', startingBalance: 0 },
+        { id: '22222222-3333-4444-5555-666666666666', name: 'Batch Unique 1', type: 'ASSET', startingBalance: 0 }, // Same name
+        { id: '11111111-2222-3333-4444-555555555555', name: 'Batch Unique 2', type: 'ASSET', startingBalance: 0 }, // Same ID
+        { id: '33333333-4444-5555-6666-777777777777', name: 'Batch Unique 3', type: 'ASSET', startingBalance: 0 }, // Success
+      ];
+
+      const res = await importAccounts(data);
+      expect(res.importedCount).toBe(2);
+      expect(res.skippedCount).toBe(2);
+
+      const accounts = await db.account.findMany();
+      expect(accounts).toHaveLength(2);
+      expect(accounts.map((a) => a.name)).toContain('Batch Unique 1');
+      expect(accounts.map((a) => a.name)).toContain('Batch Unique 3');
+    });
+
+    it('preserves valid UUID IDs and parses fields/defaults correctly', async () => {
+      const customId = 'abcdefaf-abcd-abcd-abcd-abcdefabcdef';
+      const data = [
+        {
+          id: customId,
+          name: 'Custom Account',
+          type: 'ASSET',
+          startingBalance: '123.45', // String starting balance should be parsed
+          currency: '', // Empty currency should default to AUD
+          createdAt: '2026-06-15T12:00:00Z',
+        },
+      ];
+
+      const res = await importAccounts(data);
+      expect(res.importedCount).toBe(1);
+
+      const acc = await db.account.findUnique({ where: { id: customId } });
+      expect(acc).not.toBeNull();
+      expect(acc?.name).toBe('Custom Account');
+      expect(acc?.type).toBe('ASSET');
+      expect(acc?.startingBalance).toBe(123.45);
+      expect(acc?.currency).toBe('AUD');
+      expect(new Date(acc!.createdAt).toISOString()).toBe('2026-06-15T12:00:00.000Z');
+    });
+  });
+
 
   describe('getTransactions with dateRange and isReviewed filters', () => {
     it('filters transactions by review status', async () => {

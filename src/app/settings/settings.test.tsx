@@ -15,11 +15,15 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 const mockVacuumDatabase = vi.fn();
 const mockExportAllTransactions = vi.fn();
 const mockExportAllAccounts = vi.fn();
+const mockImportAccounts = vi.fn();
+const mockGetAccounts = vi.fn();
 
 vi.mock('@/app/actions', () => ({
   vacuumDatabase: () => mockVacuumDatabase(),
   exportAllTransactions: () => mockExportAllTransactions(),
   exportAllAccounts: () => mockExportAllAccounts(),
+  importAccounts: (...args: any[]) => mockImportAccounts(...args),
+  getAccounts: () => mockGetAccounts(),
 }));
 
 // Mock next/navigation
@@ -308,6 +312,109 @@ describe('ExportCard', () => {
       expect(mockGenerateAccountCSV).toHaveBeenCalled();
       expect(mockDownloadCSV).toHaveBeenCalled();
       expect(screen.getByText('Export successful')).toBeDefined();
+    });
+  });
+
+  it('triggers account CSV file import, parses file, shows preview modal, and confirms import', async () => {
+    mockGetAccounts.mockResolvedValue([
+      { id: '12345678-1234-1234-1234-123456789012', name: 'Existing Account', type: 'ASSET', startingBalance: 0, currency: 'AUD' },
+    ]);
+    mockImportAccounts.mockResolvedValue({ importedCount: 1, skippedCount: 0 });
+
+    renderSettingsClient();
+
+    const importBtn = screen.getByRole('button', { name: /Import Accounts/i });
+    expect(importBtn).toBeDefined();
+
+    // Mock a CSV file matching the export structure
+    const file = new File(
+      [
+        'ID,Name,Type,Starting Balance,Currency,Created At\n' +
+        '12345678-1234-1234-1234-123456789012,Existing Account,ASSET,100,AUD,2026-06-15\n' + // Duplicate ID/name
+        '78901234-5678-1234-1234-123456789012,New Import Account,LIABILITY,50,USD,2026-06-16\n', // New account
+      ],
+      'accounts.csv',
+      { type: 'text/csv' }
+    );
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+
+    // Trigger file select
+    await userEvent.upload(fileInput, file);
+
+    // Wait for the modal to open
+    await waitFor(() => {
+      expect(mockGetAccounts).toHaveBeenCalled();
+      expect(screen.getByText('Import Accounts from CSV')).toBeDefined();
+    });
+
+    // Check parsed accounts render in table
+    expect(screen.getByText('New Import Account')).toBeDefined();
+    expect(screen.getByText('Existing Account')).toBeDefined();
+    
+    // Check status badges
+    expect(screen.getByText('New')).toBeDefined();
+    expect(screen.getByText('Duplicate')).toBeDefined();
+
+    // Confirm button should be active since there is 1 new account
+    const confirmBtn = screen.getByRole('button', { name: 'Confirm Import' }) as HTMLButtonElement;
+    expect(confirmBtn.disabled).toBe(false);
+
+    // Click confirm
+    await userEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      // Should call importAccounts with only the new account
+      expect(mockImportAccounts).toHaveBeenCalledWith([
+        expect.objectContaining({
+          id: '78901234-5678-1234-1234-123456789012',
+          name: 'New Import Account',
+          type: 'LIABILITY',
+          startingBalance: 50,
+          currency: 'USD',
+        }),
+      ]);
+      expect(screen.getByText(/Successfully imported 1 accounts/)).toBeDefined();
+      expect(screen.queryByText('Import Accounts from CSV')).toBeNull();
+    });
+  });
+
+  it('handles invalid CSV format or parsing errors gracefully', async () => {
+    renderSettingsClient();
+
+    // File with missing required columns (Name/Type)
+    const file = new File(
+      [
+        'ID,Starting Balance,Currency\n' +
+        'acc-123,100,AUD\n',
+      ],
+      'invalid.csv',
+      { type: 'text/csv' }
+    );
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await userEvent.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(screen.getByText('Invalid CSV file format. Please make sure it matches the exported account CSV template.')).toBeDefined();
+      expect(screen.queryByText('Import Accounts from CSV')).toBeNull();
+    });
+  });
+
+  it('shows error toast and rejects files larger than 5MB', async () => {
+    renderSettingsClient();
+
+    // Create a large file object by overriding the size property
+    const file = new File([''], 'large.csv', { type: 'text/csv' });
+    Object.defineProperty(file, 'size', { value: 6 * 1024 * 1024 }); // 6MB
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await userEvent.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(screen.getByText('File is too large. Maximum allowed size is 5MB.')).toBeDefined();
+      expect(screen.queryByText('Import Accounts from CSV')).toBeNull();
     });
   });
 });

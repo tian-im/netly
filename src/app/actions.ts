@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { getPeriodDates } from '@/lib/links';
 import { DATE_RANGE_TO_PERIOD_TYPE } from '@/lib/dates';
 import { detectDuplicateGroups } from '@/lib/duplicates';
+import { validateAccountImport, isAccountDuplicate } from '@/lib/import-utils';
 
 export async function getAccounts() {
   return db.account.findMany({
@@ -784,6 +785,106 @@ export async function exportAllAccounts() {
     orderBy: { name: 'asc' }
   });
 }
+
+export async function importAccounts(
+  accountsData: Array<{
+    id?: string;
+    name: string;
+    type: string;
+    startingBalance?: number | string;
+    currency?: string;
+    createdAt?: string;
+  }>
+) {
+  const existingAccounts = await db.account.findMany();
+  const existingNames = new Set(existingAccounts.map((a) => a.name.trim().toLowerCase()));
+  const existingIds = new Set(existingAccounts.map((a) => a.id));
+
+  let importedCount = 0;
+  let skippedCount = 0;
+
+  const toCreate: any[] = [];
+  const batchNames = new Set<string>();
+  const batchIds = new Set<string>();
+
+  for (const item of accountsData) {
+    const validation = validateAccountImport(item, SUPPORTED_CURRENCIES);
+    if (!validation.isValid) {
+      skippedCount++;
+      continue;
+    }
+
+    const rawName = item.name.trim();
+    const type = String(item.type || '').trim().toUpperCase() === 'LIABILITY' ? 'LIABILITY' : 'ASSET';
+    const startingBalance = typeof item.startingBalance === 'number' 
+      ? item.startingBalance 
+      : parseFloat(String(item.startingBalance || '0')) || 0;
+    
+    const currency = String(item.currency || '').trim().toUpperCase() || DEFAULT_CURRENCY;
+
+    const rawId = item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id) 
+      ? item.id.toLowerCase() 
+      : undefined;
+
+    const dupCheck = isAccountDuplicate(
+      { id: rawId, name: rawName },
+      existingIds,
+      existingNames,
+      batchIds,
+      batchNames
+    );
+
+    if (dupCheck.isDuplicate) {
+      skippedCount++;
+      continue;
+    }
+
+    batchNames.add(rawName.toLowerCase());
+    if (rawId) {
+      batchIds.add(rawId);
+    }
+
+    const data: any = {
+      name: rawName,
+      type,
+      startingBalance,
+      currency,
+    };
+
+    if (rawId) {
+      data.id = rawId;
+    }
+
+    if (item.createdAt) {
+      const parsedDate = new Date(item.createdAt);
+      if (!isNaN(parsedDate.getTime())) {
+        data.createdAt = parsedDate;
+      }
+    }
+
+    toCreate.push(data);
+  }
+
+  if (toCreate.length > 0) {
+    await db.$transaction(
+      toCreate.map((data) => db.account.create({ data }))
+    );
+    importedCount = toCreate.length;
+  }
+
+  revalidatePath('/');
+  revalidatePath('/accounts');
+  revalidatePath('/import');
+  revalidatePath('/reports');
+  revalidatePath('/transactions');
+  revalidatePath('/settings');
+
+  return {
+    importedCount,
+    skippedCount,
+  };
+}
+
 
 export async function findDuplicateGroups(options?: {
   accountId?: string;

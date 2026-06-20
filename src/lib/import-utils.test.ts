@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { makeHash, disambiguateDescriptions } from './import-utils';
+import { makeHash, disambiguateDescriptions, validateAccountImport, isAccountDuplicate } from './import-utils';
 import type { ParsedTransaction } from './csv';
 
 describe('import-utils', () => {
@@ -171,6 +171,104 @@ describe('import-utils', () => {
       disambiguateDescriptions(txs);
       expect(txs[0].description).toBeNull();
       expect(txs[1].description).toBe(' (2)');
+    });
+  });
+
+  describe('validateAccountImport', () => {
+    const supportedCurrencies = new Set(['AUD', 'USD', 'CNY']);
+
+    it('should validate valid account successfully', () => {
+      const res = validateAccountImport(
+        { name: 'Checking', type: 'ASSET', currency: 'AUD' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(true);
+    });
+
+    it('should fail if name is empty or missing', () => {
+      const res1 = validateAccountImport({ name: '', type: 'ASSET' }, supportedCurrencies);
+      const res2 = validateAccountImport({ type: 'ASSET' }, supportedCurrencies);
+      expect(res1.isValid).toBe(false);
+      expect(res1.error).toBe('ERR_ACCOUNT_NAME_REQUIRED');
+      expect(res2.isValid).toBe(false);
+      expect(res2.error).toBe('ERR_ACCOUNT_NAME_REQUIRED');
+    });
+
+    it('should fail if type is invalid', () => {
+      const res = validateAccountImport(
+        { name: 'Checking', type: 'INVALID' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe('ERR_INVALID_TYPE');
+    });
+
+    it('should fail if currency is not supported', () => {
+      const res = validateAccountImport(
+        { name: 'Checking', type: 'ASSET', currency: 'EUR' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe('ERR_INVALID_CURRENCY');
+    });
+
+    it('should fail if ID is present but not a valid UUID', () => {
+      const res = validateAccountImport(
+        { id: 'not-a-uuid', name: 'Checking', type: 'ASSET' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(false);
+      expect(res.error).toBe('ERR_INVALID_ID');
+    });
+
+    it('should pass if ID is a valid UUID', () => {
+      const res = validateAccountImport(
+        { id: '12345678-1234-1234-1234-123456789012', name: 'Checking', type: 'ASSET' },
+        supportedCurrencies
+      );
+      expect(res.isValid).toBe(true);
+    });
+  });
+
+  describe('isAccountDuplicate', () => {
+    it('should return true for DB duplicate ID or name', () => {
+      const existingIds = new Set(['id-1']);
+      const existingNames = new Set(['checking']);
+      const batchIds = new Set<string>();
+      const batchNames = new Set<string>();
+
+      const res1 = isAccountDuplicate({ id: 'id-1', name: 'Savings' }, existingIds, existingNames, batchIds, batchNames);
+      const res2 = isAccountDuplicate({ name: 'Checking' }, existingIds, existingNames, batchIds, batchNames);
+      
+      expect(res1.isDuplicate).toBe(true);
+      expect(res1.duplicateType).toBe('db');
+      expect(res2.isDuplicate).toBe(true);
+      expect(res2.duplicateType).toBe('db');
+    });
+
+    it('should return true for batch duplicate ID or name', () => {
+      const existingIds = new Set<string>();
+      const existingNames = new Set<string>();
+      const batchIds = new Set(['id-2']);
+      const batchNames = new Set(['savings']);
+
+      const res1 = isAccountDuplicate({ id: 'id-2', name: 'Checking' }, existingIds, existingNames, batchIds, batchNames);
+      const res2 = isAccountDuplicate({ name: 'Savings' }, existingIds, existingNames, batchIds, batchNames);
+
+      expect(res1.isDuplicate).toBe(true);
+      expect(res1.duplicateType).toBe('batch');
+      expect(res2.isDuplicate).toBe(true);
+      expect(res2.duplicateType).toBe('batch');
+    });
+
+    it('should return false for unique accounts', () => {
+      const existingIds = new Set(['id-1']);
+      const existingNames = new Set(['checking']);
+      const batchIds = new Set(['id-2']);
+      const batchNames = new Set(['savings']);
+
+      const res = isAccountDuplicate({ id: 'id-3', name: 'Credit' }, existingIds, existingNames, batchIds, batchNames);
+      expect(res.isDuplicate).toBe(false);
     });
   });
 });
