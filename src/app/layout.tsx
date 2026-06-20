@@ -4,6 +4,7 @@ import LayoutClient from './layout-client';
 import { cookies, headers } from 'next/headers';
 import { parseAcceptLanguage } from '@/lib/locale';
 import { PREFERENCES } from '@/lib/preferences';
+import { getSessionCookieName } from '@/lib/session-crypto';
 
 export const metadata: Metadata = {
   title: 'Netly Ledger - Financial Statements & Bank CSV Analyzer',
@@ -28,6 +29,10 @@ export default function RootLayout({
   const cookieLocale = cookieStore.get(PREFERENCES.locale.key)?.value;
   const headerLocale = parseAcceptLanguage(headers().get('Accept-Language'));
   const locale = cookieLocale || headerLocale;
+
+  const sessionCookieName = getSessionCookieName();
+  const hasSession = !!cookieStore.get(sessionCookieName)?.value;
+
   return (
     <html lang={locale} className="h-full">
       <head>
@@ -37,7 +42,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="h-full bg-base-300">
-        <LayoutClient ssrLocale={locale}>
+        <LayoutClient ssrLocale={locale} hasSession={hasSession}>
           {children}
         </LayoutClient>
       </body>

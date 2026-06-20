@@ -16,9 +16,17 @@ function MobileNavBrand() {
   );
 }
 
-export default function LayoutClient({ children, ssrLocale }: { children: React.ReactNode; ssrLocale?: string }) {
+export default function LayoutClient({
+  children,
+  ssrLocale,
+  hasSession,
+}: {
+  children: React.ReactNode;
+  ssrLocale?: string;
+  hasSession?: boolean;
+}) {
   const pathname = usePathname();
-  const isPublicPage = pathname === '/login' || pathname === '/setup';
+  const isPublicPage = pathname === '/login' || pathname === '/setup' || (pathname === '/docs' && !hasSession);
 
   if (isPublicPage) {
     return (

@@ -9,8 +9,8 @@
 FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
 # ─── Stage 2: Build the application ───
 FROM node:20-alpine AS builder
@@ -25,7 +25,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 
 # Build Next.js with standalone output
-RUN npm run build
+RUN yarn build
 
 # ─── Stage 3: Production runner (minimal) ───
 FROM node:20-alpine AS runner

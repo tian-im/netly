@@ -129,8 +129,9 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
    - If the current task already produces the relevant docs or code comments, do not duplicate the same information elsewhere
    - If there is no obvious project doc location, ask before creating a new top-level file
 5. **Codemaps** — After any significant feature addition, refactoring, or structural change, update `docs/CODEMAPS/*.md` using the `doc-updater` agent. This keeps the token-lean architecture docs fresh for future sessions.
-6. **Verify** — Run tests (`docker compose exec -T web npm run test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
+6. **Verify** — Run tests (`docker compose exec -T web yarn test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
 7. **Commit** — ONLY commit when the user explicitly requests it. Never auto-commit after completing work.
+8. **User Manual Update** — After any change to application features, workflows, configuration options, or UI layouts, the agent must update the public user manual in `docs/user_manual.md` to keep the user documentation synchronized with the implementation.
 
 ## Workflow Surface Policy
 
@@ -142,20 +143,18 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 
 > **RULE: ALL commands (npm, npx, prisma, tsc, vitest, sqlite3, etc.) MUST be run inside the container via `docker compose exec -T web <command>`. Never run them directly on the host machine.**
 
-### Common commands (always use these forms):
-
 | Host command | Docker equivalent |
 |---|---|
-| `npm install` | `docker compose exec -T web npm install` |
-| `npm run dev` | Already running in container; no action needed |
-| `npm run build` | `docker compose exec -T web npm run build` |
-| `npm run lint` | `docker compose exec -T web npm run lint` |
-| `npm run test` | `docker compose exec -T web npm run test` |
-| `npm run test:coverage` | `docker compose exec -T web npm run test:coverage` |
-| `npx prisma generate` | `docker compose exec -T web npx prisma generate` |
-| `npx prisma migrate dev` | `docker compose exec -T web npx prisma migrate dev` |
-| `npx tsc --noEmit` | `docker compose exec -T web npx tsc --noEmit` |
-| `npm install <pkg>` | Rebuild container with `docker compose build web` or run `docker compose exec -T web npm install <pkg>` |
+| `yarn install` | `docker compose exec -T web yarn install` |
+| `yarn dev` | Already running in container; no action needed |
+| `yarn build` | `docker compose exec -T web yarn build` |
+| `yarn lint` | `docker compose exec -T web yarn lint` |
+| `yarn test` | `docker compose exec -T web yarn test` |
+| `yarn test:coverage` | `docker compose exec -T web yarn test:coverage` |
+| `yarn prisma generate` | `docker compose exec -T web yarn prisma generate` |
+| `yarn prisma migrate dev` | `docker compose exec -T web yarn prisma migrate dev` |
+| `yarn tsc --noEmit` | `docker compose exec -T web yarn tsc --noEmit` |
+| `yarn add <pkg>` | Rebuild container with `docker compose build web` or run `docker compose exec -T web yarn add <pkg>` |
 
 **Container must be running** (`docker compose up -d`) before executing any of these commands.
 

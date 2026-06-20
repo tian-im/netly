@@ -7,8 +7,9 @@ import { startRegistration } from '@simplewebauthn/browser';
 import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
-import { buildLoginUrl, buildDashboardUrl } from '@/lib/links';
+import { buildLoginUrl, buildDashboardUrl, buildDocsUrl } from '@/lib/links';
 import { Button, Input, Select, Card } from '@/app/components/ui';
+import Link from 'next/link';
 
 function getDefaultDeviceName(): string {
   if (typeof navigator === 'undefined') return '';
@@ -24,6 +25,7 @@ function getDefaultDeviceName(): string {
 export default function SetupPage() {
   const router = useRouter();
   const t = useTranslations('passkey.setup');
+  const tNav = useTranslations('nav');
   const tErrors = useTranslations('errors');
   const { locale, setLocale } = useLocaleContext();
 
@@ -206,6 +208,12 @@ export default function SetupPage() {
           >
             {loading ? t('registering') : t('createBtn')}
           </Button>
+
+          <div className="pt-4 border-t border-base-300 w-full text-center mt-4">
+            <Link href={buildDocsUrl()} className="text-primary hover:underline font-medium text-xs">
+              {tNav('docs')}
+            </Link>
+          </div>
         </Card.Body>
       </Card>
     </div>

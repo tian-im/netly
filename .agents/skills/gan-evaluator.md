@@ -210,8 +210,8 @@ For APIs/libraries: run tests, check build, analyze code quality. No browser.
 
 ```bash
 # Code-only evaluation
-docker compose exec -T web npm run build 2>&1 | tee /tmp/build-output.txt
-docker compose exec -T web npm test 2>&1 | tee /tmp/test-output.txt
+docker compose exec -T web yarn build 2>&1 | tee /tmp/build-output.txt
+docker compose exec -T web yarn test 2>&1 | tee /tmp/test-output.txt
 docker compose exec -T web npx eslint . 2>&1 | tee /tmp/lint-output.txt
 ```
 

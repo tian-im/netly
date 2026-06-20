@@ -9,7 +9,7 @@ const COOKIE_NAME = getSessionCookieName();
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/health') || pathname.startsWith('/api/mcp') || pathname.startsWith('/_next') || pathname.startsWith('/icons') || pathname === '/favicon.ico') {
+  if (pathname === '/docs' || pathname.startsWith('/api/auth') || pathname.startsWith('/api/health') || pathname.startsWith('/api/mcp') || pathname.startsWith('/_next') || pathname.startsWith('/icons') || pathname === '/favicon.ico') {
     return NextResponse.next();
   }
 

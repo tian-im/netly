@@ -42,3 +42,7 @@ The Feature Implementation Workflow describes the development pipeline: research
    - Resolve any merge conflicts
    - Ensure branch is up to date with target branch
    - Only request review after these checks pass
+
+6. **User Manual Update**
+   - Check if any code change updates features, options, database structures, APIs, or UI interfaces.
+   - Update the public user manual in `docs/user_manual.md` accordingly before committing.

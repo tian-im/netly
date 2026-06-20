@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Heart } from 'lucide-react';
+import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Heart, BookOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   buildDashboardUrl,
@@ -12,6 +12,7 @@ import {
   buildImportUrl,
   buildReportsUrl,
   buildSettingsUrl,
+  buildDocsUrl,
   buildKoFiUrl,
 } from '@/lib/links';
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: buildImportUrl(),     labelKey: 'import',       icon: Inbox      },
   { href: buildReportsUrl(),    labelKey: 'reports',      icon: TrendingUp },
   { href: buildSettingsUrl(),   labelKey: 'settings',     icon: Settings   },
+  { href: buildDocsUrl(),       labelKey: 'docs',         icon: BookOpen   },
 ] as const;
 
 function closeDrawer() {

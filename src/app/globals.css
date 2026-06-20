@@ -54,3 +54,81 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Premium User Manual Typography Styling */
+.user-manual-prose {
+  line-height: 1.75;
+}
+.user-manual-prose h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary-10);
+  padding-bottom: 0.5rem;
+}
+.user-manual-prose h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 2.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-base-300);
+}
+.user-manual-prose h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+.user-manual-prose p {
+  margin-bottom: 1.25rem;
+}
+.user-manual-prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.user-manual-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.user-manual-prose li {
+  margin-bottom: 0.5rem;
+}
+.user-manual-prose a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  font-weight: 500;
+}
+.user-manual-prose a:hover {
+  opacity: 0.8;
+}
+.user-manual-prose code {
+  background-color: var(--color-base-200);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: monospace;
+}
+.user-manual-prose pre {
+  background-color: var(--color-base-200);
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-base-300);
+}
+.user-manual-prose pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.875rem;
+}
+.user-manual-prose hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-base-300);
+}
+

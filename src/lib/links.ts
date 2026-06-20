@@ -194,6 +194,13 @@ export function buildSettingsUrl(): string {
   return '/settings';
 }
 
+/** Build a URL to the User Manual documentation page. */
+// WHY: Centralising this path in links.ts allows us to define and modify
+// the route to the public manual in a single location.
+export function buildDocsUrl(): string {
+  return '/docs';
+}
+
 /** Build a URL to the login page. */
 export function buildLoginUrl(): string {
   return '/login';

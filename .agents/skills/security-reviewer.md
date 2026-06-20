@@ -30,14 +30,14 @@ You are an expert security specialist focused on identifying and remediating vul
 ## Analysis Commands
 
 ```bash
-docker compose exec -T web npm audit --audit-level=high
+docker compose exec -T web yarn audit
 docker compose exec -T web npx eslint . --plugin security
 ```
 
 ## Review Workflow
 
 ### 1. Initial Scan
-- Run `docker compose exec -T web npm audit`, `docker compose exec -T web npx eslint . --plugin security`, search for hardcoded secrets
+- Run `docker compose exec -T web yarn audit`, `docker compose exec -T web npx eslint . --plugin security`, search for hardcoded secrets
 - Review high-risk areas: auth, API endpoints, DB queries, file uploads, payments, webhooks
 
 ### 2. OWASP Top 10 Check
@@ -49,7 +49,7 @@ docker compose exec -T web npx eslint . --plugin security
 6. **Misconfiguration** — Default creds changed? Debug mode off in prod? Security headers set?
 7. **XSS** — Output escaped? CSP set? Framework auto-escaping?
 8. **Insecure Deserialization** — User input deserialized safely?
-9. **Known Vulnerabilities** — Dependencies up to date? `docker compose exec -T web npm audit` clean?
+9. **Known Vulnerabilities** — Dependencies up to date? `docker compose exec -T web yarn audit` clean?
 10. **Insufficient Logging** — Security events logged? Alerts configured?
 
 ### 3. Code Pattern Review

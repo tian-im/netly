@@ -32,7 +32,7 @@ You are an expert build error resolution specialist. Your mission is to get buil
 ```bash
 docker compose exec -T web npx tsc --noEmit --pretty
 docker compose exec -T web npx tsc --noEmit --pretty --incremental false   # Show all errors
-docker compose exec -T web npm run build
+docker compose exec -T web yarn build
 docker compose exec -T web npx eslint . --ext .ts,.tsx,.js,.jsx
 ```
 
@@ -93,7 +93,7 @@ For each error:
 
 ```bash
 # Nuclear option: clear all caches
-docker compose exec -T web sh -c "rm -rf .next node_modules/.cache && npm run build"
+docker compose exec -T web sh -c "rm -rf .next node_modules/.cache && yarn build"
 
 # Reinstall dependencies (rebuild container instead)
 docker compose build --no-cache web
@@ -105,7 +105,7 @@ docker compose exec -T web npx eslint . --fix
 ## Success Metrics
 
 - `docker compose exec -T web npx tsc --noEmit` exits with code 0
-- `docker compose exec -T web npm run build` completes successfully
+- `docker compose exec -T web yarn build` completes successfully
 - No new errors introduced
 - Minimal lines changed (< 5% of affected file)
 - Tests still passing

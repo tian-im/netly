@@ -13,6 +13,7 @@ import {
   buildSetupUrl,
   buildCategoriesUrl,
   buildSettingsUrl,
+  buildDocsUrl,
   buildKoFiUrl,
 } from './links';
 
@@ -265,6 +266,12 @@ describe('buildCategoriesUrl', () => {
 describe('buildSettingsUrl', () => {
   it('should return /settings', () => {
     expect(buildSettingsUrl()).toBe('/settings');
+  });
+});
+
+describe('buildDocsUrl', () => {
+  it('should return /docs', () => {
+    expect(buildDocsUrl()).toBe('/docs');
   });
 });
 

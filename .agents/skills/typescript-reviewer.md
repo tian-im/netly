@@ -100,11 +100,11 @@ You DO NOT refactor or rewrite code — you report findings only.
 ## Diagnostic Commands
 
 ```bash
-docker compose exec -T web npm run typecheck --if-present       # Canonical TypeScript check when the project defines one
+docker compose exec -T web yarn typecheck --if-present       # Canonical TypeScript check when the project defines one
 docker compose exec -T web tsc --noEmit -p <relevant-config>    # Fallback type check for the tsconfig that owns the changed files
 docker compose exec -T web npx eslint . --ext .ts,.tsx,.js,.jsx    # Linting
 docker compose exec -T web npx prettier --check .                  # Format check
-docker compose exec -T web npm audit                           # Dependency vulnerabilities (or the equivalent yarn/pnpm/bun audit command)
+docker compose exec -T web yarn audit                           # Dependency vulnerabilities (or the equivalent yarn/pnpm/bun audit command)
 docker compose exec -T web vitest run                          # Tests (Vitest)
 docker compose exec -T web npx jest --ci                           # Tests (Jest)
 ```

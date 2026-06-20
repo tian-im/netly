@@ -7,12 +7,14 @@ import { startAuthentication } from '@simplewebauthn/browser';
 import { KeyRound, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
-import { buildSetupUrl, buildDashboardUrl } from '@/lib/links';
+import { buildSetupUrl, buildDashboardUrl, buildDocsUrl } from '@/lib/links';
 import { Button, Input, Select, Card } from '@/app/components/ui';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
   const t = useTranslations('passkey.login');
+  const tNav = useTranslations('nav');
   const tErrors = useTranslations('errors');
   const { locale, setLocale } = useLocaleContext();
 
@@ -244,18 +246,25 @@ export default function LoginPage() {
                 {loading ? t('authenticating') : t('signInBtn')}
               </Button>
 
-              <div className="text-xs text-base-content/50 pt-2">
-                <span>{t('cantUsePasskey')} </span>
-                <Button
-                  onClick={() => {
-                    setUseSetupCodeMode(true);
-                    setError('');
-                  }}
-                  variant="link"
-                  className="font-semibold"
-                >
-                  {t('useSetupCode')}
-                </Button>
+              <div className="text-xs text-base-content/50 pt-2 flex flex-col items-center gap-2">
+                <div>
+                  <span>{t('cantUsePasskey')} </span>
+                  <Button
+                    onClick={() => {
+                      setUseSetupCodeMode(true);
+                      setError('');
+                    }}
+                    variant="link"
+                    className="font-semibold"
+                  >
+                    {t('useSetupCode')}
+                  </Button>
+                </div>
+                <div className="pt-2 border-t border-base-300 w-full text-center">
+                  <Link href={buildDocsUrl()} className="text-primary hover:underline font-medium">
+                    {tNav('docs')}
+                  </Link>
+                </div>
               </div>
             </div>
           )}

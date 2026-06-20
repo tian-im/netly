@@ -123,14 +123,14 @@ You DO NOT refactor or rewrite code — you report findings only.
 ```bash
 # Required
 docker compose exec -T web npx eslint . --ext .tsx,.jsx                          # ensure eslint-plugin-react-hooks is configured
-docker compose exec -T web npm run typecheck --if-present                        # respect project's canonical command
+docker compose exec -T web yarn typecheck --if-present                        # respect project's canonical command
 docker compose exec -T web tsc --noEmit -p <tsconfig>                            # fallback if no script
 
 # Useful
 docker compose exec -T web npx eslint . --ext .tsx,.jsx --rule 'react-hooks/exhaustive-deps: error'
 docker compose exec -T web npx eslint . --rule 'jsx-a11y/alt-text: error' --rule 'jsx-a11y/anchor-is-valid: error'
 docker compose exec -T web npx prettier --check .
-docker compose exec -T web npm audit                                             # supply-chain advisories
+docker compose exec -T web yarn audit                                             # supply-chain advisories
 ```
 
 If `eslint-plugin-react-hooks` or `eslint-plugin-jsx-a11y` is not in the project, recommend installing during the review.
