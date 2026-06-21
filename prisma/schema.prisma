@@ -66,6 +66,8 @@ model CategoryRule {
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([categoryId])
 }
 
 // WebAuthn / PassKey credentials for single-user auth
@@ -86,6 +88,8 @@ model Session {
   token     String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime // Sessions auto-expire after 7 days (matches cookie maxAge)
+
+  @@index([expiresAt])
 }
 
 // Audit log for security events
