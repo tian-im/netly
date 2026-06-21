@@ -41,7 +41,6 @@ export default function CreateCategoryForm({ isCreating, onSubmit }: CreateCateg
             onChange={(e) => setName(e.target.value)}
             required
             disabled={isCreating}
-            autoFocus
           />
 
           <Select

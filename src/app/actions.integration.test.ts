@@ -866,6 +866,17 @@ describe('System settings and backup actions', () => {
       expect(acc?.currency).toBe('AUD');
       expect(new Date(acc!.createdAt).toISOString()).toBe('2026-06-15T12:00:00.000Z');
     });
+
+    it('throws ERR_ACCOUNT_NAME_EXISTS when database throws a unique constraint violation P2002', async () => {
+      const originalTransaction = db.$transaction;
+      try {
+        db.$transaction = vi.fn().mockRejectedValue({ code: 'P2002' });
+        const data = [{ name: 'Test Account Unique', type: 'ASSET' }];
+        await expect(importAccounts(data)).rejects.toThrow('ERR_ACCOUNT_NAME_EXISTS');
+      } finally {
+        db.$transaction = originalTransaction;
+      }
+    });
   });
 
 

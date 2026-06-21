@@ -116,6 +116,7 @@ export async function createAccount(name: string, type: 'ASSET' | 'LIABILITY', s
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
+  revalidatePath('/settings');
   revalidatePath('/');
   return account;
 }
@@ -129,6 +130,7 @@ export async function deleteAccount(id: string) {
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
+  revalidatePath('/settings');
   revalidatePath('/');
 }
 
@@ -178,6 +180,7 @@ export async function updateAccount(
   revalidatePath('/import');
   revalidatePath('/reports');
   revalidatePath('/transactions');
+  revalidatePath('/settings');
   revalidatePath('/');
   return account;
 }
@@ -518,6 +521,7 @@ export async function bulkDeleteTransactions(ids: string[]) {
 
   revalidatePath('/transactions');
   revalidatePath('/reports');
+  revalidatePath('/settings');
   revalidatePath('/');
 
   return { deletedCount: result.count };
@@ -866,10 +870,17 @@ export async function importAccounts(
   }
 
   if (toCreate.length > 0) {
-    await db.$transaction(
-      toCreate.map((data) => db.account.create({ data }))
-    );
-    importedCount = toCreate.length;
+    try {
+      await db.$transaction(
+        toCreate.map((data) => db.account.create({ data }))
+      );
+      importedCount = toCreate.length;
+    } catch (err: any) {
+      if (err.code === 'P2002') {
+        throw new Error('ERR_ACCOUNT_NAME_EXISTS');
+      }
+      throw err;
+    }
   }
 
   revalidatePath('/');

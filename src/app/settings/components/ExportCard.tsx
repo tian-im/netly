@@ -6,6 +6,7 @@ import { formatDateISO } from '@/lib/dates';
 import { Button, Card, Modal } from '@/app/components/ui';
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '@/lib/currencies';
 import { validateAccountImport, isAccountDuplicate } from '@/lib/import-utils';
+import { translateError } from '@/lib/translateError';
 import Papa from 'papaparse';
 
 interface ExportCardProps {
@@ -25,13 +26,21 @@ interface ParsedAccount {
 }
 
 const findHeader = (headers: string[], possibleNames: string[]): string | undefined => {
-  return headers.find((h) => possibleNames.includes(h.trim().toLowerCase().replace(/[\s_]/g, '')));
+  // 1. Try exact case-insensitive match first (trimmed)
+  const cleanPossible = possibleNames.map((p) => p.trim().toLowerCase());
+  const exactMatch = headers.find((h) => cleanPossible.includes(h.trim().toLowerCase()));
+  if (exactMatch) return exactMatch;
+
+  // 2. Fallback to normalized match (stripping spaces and underscores)
+  const normalizedPossible = cleanPossible.map((p) => p.replace(/[\s_]/g, ''));
+  return headers.find((h) => normalizedPossible.includes(h.trim().toLowerCase().replace(/[\s_]/g, '')));
 };
 
 export default function ExportCard({ accountsCount, transactionsCount, showToast }: ExportCardProps) {
   const t = useTranslations('settings');
   const tAccounts = useTranslations('accounts');
   const tCommon = useTranslations('common');
+  const tErr = useTranslations('errors');
   const [isExportingTransactions, setIsExportingTransactions] = useState(false);
   const [isExportingAccounts, setIsExportingAccounts] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -236,7 +245,7 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
     setIsImporting(true);
     try {
       const res = await importAccounts(toImport);
-      const skippedCount = res.skippedCount + parsedAccounts.filter((a) => a.status === 'duplicate').length;
+      const skippedCount = parsedAccounts.length - res.importedCount;
       showToast(
         t('importAccountsSuccess', {
           importedCount: res.importedCount,
@@ -245,8 +254,7 @@ export default function ExportCard({ accountsCount, transactionsCount, showToast
       );
       setIsModalOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      showToast(msg || t('importAccountsFailed'), 'error');
+      showToast(tErr(translateError(err)), 'error');
     } finally {
       setIsImporting(false);
     }

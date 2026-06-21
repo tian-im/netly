@@ -108,7 +108,19 @@ describe('import-utils', () => {
       ];
       disambiguateDescriptions(txs);
       expect(txs[0].description).toBeNull();
-      expect(txs[1].description).toBe(' (2)');
+      expect(txs[1].description).toBe('(2)');
+    });
+
+    it('should handle mixed arrays of unique and duplicate transactions', () => {
+      const txs: ParsedTransaction[] = [
+        { date: new Date(2026, 5, 1), payee: 'Uber', amount: -15.5, description: 'Trip' },
+        { date: new Date(2026, 5, 1), payee: 'Coles', amount: -50.0, description: 'Groceries' },
+        { date: new Date(2026, 5, 1), payee: 'Uber', amount: -15.5, description: 'Trip' },
+      ];
+      disambiguateDescriptions(txs);
+      expect(txs[0].description).toBe('Trip');
+      expect(txs[1].description).toBe('Groceries');
+      expect(txs[2].description).toBe('Trip (2)');
     });
 
     it('should not disambiguate transactions with different amounts', () => {
@@ -170,7 +182,7 @@ describe('import-utils', () => {
       // disambiguateDescriptions should recognise the duplicates
       disambiguateDescriptions(txs);
       expect(txs[0].description).toBeNull();
-      expect(txs[1].description).toBe(' (2)');
+      expect(txs[1].description).toBe('(2)');
     });
   });
 

@@ -63,7 +63,8 @@ export function disambiguateDescriptions(txs: ParsedTransaction[]): void {
       const occurrence = (keyOccurrence.get(key) || 0) + 1;
       keyOccurrence.set(key, occurrence);
       if (occurrence > 1) {
-        tx.description = `${tx.description ?? ''} (${occurrence})`;
+        const descPrefix = tx.description ? `${tx.description} ` : '';
+        tx.description = `${descPrefix}(${occurrence})`;
       }
     }
   }

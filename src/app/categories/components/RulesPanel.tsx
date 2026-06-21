@@ -145,7 +145,6 @@ export default function RulesPanel({
                 className="input-sm"
                 required
                 disabled={isCreatingRule || categories.length === 0}
-                autoFocus
                 helperText={t('regexHint')}
               />
 
