@@ -86,13 +86,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const prevBS = generateBalanceSheet(mappedAccounts, mappedTransactions, prevPeriodEnd);
   const prevIS = generateIncomeStatement(mappedTransactions, prevPeriodStart, prevPeriodEnd);
 
-  // Generate Net Worth Trend over the selected period (trailing or fixed to period size)
-  let trendLength = 12;
-  if (period === 'current') trendLength = 6;
-  else if (period === '3m') trendLength = 3;
-  else if (period === '6m') trendLength = 6;
-  else if (period === 'ytd') trendLength = now.getMonth() + 1;
-  else if (period === '12m') trendLength = 12;
+  // WHY: Always compute 12 months of trend data on the server using the
+  // O(N) incremental algorithm. The client-side NetWorthTrendChart now has
+  // its own local 3M/6M/12M range toggle that slices the pre-computed data.
+  // Computing a variable-length trend tied to the main dashboard period was
+  // confusing — e.g., a 3M period showed only 3 data points, making the
+  // "trend" meaningless. Sending a fixed 12 points adds negligible payload
+  // (~<1KB) and gives the chart full context for any local range selection.
+  const trendLength = 12;
 
   const trendMonths = Array.from({ length: trendLength }).map((_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (trendLength - 1 - i), 1);

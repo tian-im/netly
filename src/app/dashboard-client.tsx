@@ -37,6 +37,16 @@ interface Account {
 
 type PeriodType = 'current' | '3m' | '6m' | 'ytd' | '12m';
 
+// WHY: Centralised config replaces the previous ternary-chain + Map-lookup
+// duplication. The months field drives slicedNetWorthTrend, while titleKey
+// and labelKey feed i18n lookups — a single source of truth for all three
+// range-dependent computations.
+const NET_WORTH_RANGES = [
+  { id: '3m', months: 3, titleKey: 'periodTitle3m', labelKey: 'periodLabel3m' },
+  { id: '6m', months: 6, titleKey: 'periodTitle6m', labelKey: 'periodLabel6m' },
+  { id: '12m', months: 12, titleKey: 'periodTitle12m', labelKey: 'periodLabel12m' },
+] as const;
+
 interface DashboardClientProps {
   accounts: Account[];
   categories: { id: string; name: string }[];
@@ -131,6 +141,7 @@ export default function DashboardClient({
   const defaultCurrency = serverDefaultCurrency;
 
   const [selectedVisualCurrency, setSelectedVisualCurrency] = useState(defaultCurrency);
+  const [netWorthRange, setNetWorthRange] = useState<'3m' | '6m' | '12m'>('12m');
 
   // Sync selected visual currency state when defaultCurrency prop-derived value changes
   useEffect(() => {
@@ -236,6 +247,44 @@ export default function DashboardClient({
       value: item.value,
     }));
   }, [netWorthTrendByCurrency, currentVisualCurrency, format]);
+
+  // Find the selected range configuration (always exists since netWorthRange is of type '3m' | '6m' | '12m')
+  const rangeOpt = NET_WORTH_RANGES.find((r) => r.id === netWorthRange);
+
+  // Sliced trend data based on the local range toggle
+  const slicedNetWorthTrend = useMemo(() => {
+    // Defensive fallback of 12 is used, though rangeOpt is guaranteed to exist for all valid keys
+    const sliceCount = rangeOpt ? rangeOpt.months : 12;
+    return netWorthTrend.slice(-sliceCount);
+  }, [netWorthTrend, netWorthRange]);
+
+  // Dynamic net worth chart title reflecting the local range (cheap lookup, no useMemo needed)
+  const netWorthTrendTitle = t('netWorthTrend', {
+    period: rangeOpt ? t(rangeOpt.titleKey) : '',
+    currency: currentVisualCurrency,
+  });
+
+  // Range selector component for the net worth card header (cheap render, no useMemo needed)
+  const netWorthRangeSelector = (
+    <div className="flex gap-1 bg-base-200 p-0.5 rounded-lg shrink-0 self-start sm:self-center" role="group" aria-label={t('netWorthRangeLabel')}>
+      {NET_WORTH_RANGES.map((r) => {
+        const isActive = netWorthRange === r.id;
+        return (
+          <Button
+            key={r.id}
+            data-range={r.id}
+            onClick={() => setNetWorthRange(r.id)}
+            size="xs"
+            className="rounded-md px-3"
+            variant={isActive ? "primary" : "segmented"}
+            aria-pressed={isActive}
+          >
+            {t(r.labelKey)}
+          </Button>
+        );
+      })}
+    </div>
+  );
 
   // Selected currency metrics
   const visualIS = useMemo(() => {
@@ -580,12 +629,13 @@ export default function DashboardClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Net Worth Trend (Line Chart) */}
         <NetWorthTrendChart
-          title={t('netWorthTrend', { period: periodTitle, currency: currentVisualCurrency })}
-          data={netWorthTrend}
+          title={netWorthTrendTitle}
+          data={slicedNetWorthTrend}
           noDataText={t('noDataAccounts')}
           isEmpty={accounts.length === 0}
           locale={locale}
           tooltipLabel={t('chartTooltipNetWorth')}
+          rangeSelector={netWorthRangeSelector}
         />
 
         {/* Income vs Expenses Summary */}

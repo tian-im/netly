@@ -71,6 +71,20 @@ describe('NetWorthTrendChart', () => {
     useEffectSpy.mockRestore();
   });
 
+  it('renders rangeSelector when provided', () => {
+    render(
+      <NetWorthTrendChart
+        title="Net Worth Trend"
+        data={mockData}
+        noDataText="No data available"
+        isEmpty={false}
+        rangeSelector={<button>Custom Range Selector</button>}
+      />
+    );
+    expect(screen.getByText('Net Worth Trend')).toBeDefined();
+    expect(screen.getByText('Custom Range Selector')).toBeDefined();
+  });
+
   describe('CustomTooltip', () => {
     it('renders null when not active', () => {
       const { container } = render(

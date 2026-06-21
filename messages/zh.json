@@ -106,7 +106,8 @@
     "chartExpenseLabel": "支出",
     "chartTooltipNetWorth": "净资产",
     "chartTooltipAmount": "金额",
-    "dateRangeLabel": "{start} ～ {end}"
+    "dateRangeLabel": "{start} ～ {end}",
+    "netWorthRangeLabel": "净资产范围"
   },
   "accounts": {
     "title": "账户管理",

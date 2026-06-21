@@ -106,7 +106,8 @@
     "chartExpenseLabel": "Expenses",
     "chartTooltipNetWorth": "Net Worth",
     "chartTooltipAmount": "Amount",
-    "dateRangeLabel": "{start} — {end}"
+    "dateRangeLabel": "{start} — {end}",
+    "netWorthRangeLabel": "Net Worth Range"
   },
   "accounts": {
     "title": "Accounts Manager",

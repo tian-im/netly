@@ -351,4 +351,76 @@ describe('DashboardClient Component', () => {
 
     document.body.removeChild(container);
   });
+
+  it('supports local net worth range toggling', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const helperProps = getHelperProps(mockAccounts, mockTransactions);
+    
+    // Provide 12 months of net worth trend data
+    const mockTrendData = Array.from({ length: 12 }).map((_, i) => ({
+      date: `2026-0${(i % 9) + 1}-01T00:00:00.000Z`,
+      value: 1000 + i * 100,
+    }));
+    helperProps.netWorthTrendByCurrency = {
+      AUD: mockTrendData,
+    };
+
+    await act(async () => {
+      const root = createRoot(container);
+      root.render(
+        <NextIntlClientProvider locale="en" messages={enMessages} timeZone="UTC">
+          <DashboardClient
+            accounts={mockAccounts}
+            categories={[]}
+            uncategorizedCount={0}
+            period="current"
+            defaultCurrency="AUD"
+            serverNow={serverNow}
+            {...helperProps}
+          />
+        </NextIntlClientProvider>
+      );
+    });
+    // By default, the range should be 12M, showing all 12 points
+    let rows = container.querySelectorAll('table[aria-label*="Net Worth Trend"] tbody tr');
+    expect(rows.length).toBe(12);
+
+    // Find the Net Worth Trend card using the data-testid
+    const netWorthCard = container.querySelector('[data-testid="net-worth-trend-card"]');
+    expect(netWorthCard).not.toBeNull();
+
+    // Find the range selector group by its unique accessibility label
+    const rangeSelectorGroup = netWorthCard!.querySelector('[aria-label="Net Worth Range"]');
+    expect(rangeSelectorGroup).not.toBeNull();
+
+    // Find and click the 3M range toggle button using its robust data-range attribute
+    const threeMButton = rangeSelectorGroup!.querySelector('button[data-range="3m"]') as HTMLButtonElement;
+    expect(threeMButton).not.toBeNull();
+
+    // Click 3M
+    await act(async () => {
+      threeMButton.click();
+    });
+
+    // Verify it updates to show only 3 points
+    rows = container.querySelectorAll('table[aria-label*="Net Worth Trend"] tbody tr');
+    expect(rows.length).toBe(3);
+
+    // Find and click the 6M range toggle button using its robust data-range attribute
+    const sixMButton = rangeSelectorGroup!.querySelector('button[data-range="6m"]') as HTMLButtonElement;
+    expect(sixMButton).not.toBeNull();
+
+    // Click 6M
+    await act(async () => {
+      sixMButton.click();
+    });
+
+    // Verify it updates to show only 6 points
+    rows = container.querySelectorAll('table[aria-label*="Net Worth Trend"] tbody tr');
+    expect(rows.length).toBe(6);
+
+    document.body.removeChild(container);
+  });
 });

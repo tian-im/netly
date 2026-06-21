@@ -47,7 +47,7 @@ At the top of the dashboard are four key metrics cards:
 4. **Cash Runway**: An estimation of how many months your liquid assets can sustain you based on your trailing average monthly spending (burn rate). If your net cash flow is positive, the card displays **Cash Flow Positive**.
 
 ### Interactive Charts
-- **Net Worth Trend**: A line chart showing your net worth progression over the selected period. If you have accounts in multiple currencies, you can filter the chart by currency.
+- **Net Worth Trend**: A line chart showing your cumulative net worth trend. It features a dedicated range selector (supporting **3M**, **6M**, and **12M** trailing scopes) decoupled from the main dashboard period filter to ensure a meaningful trend trajectory even when analyzing a single month. If you have accounts in multiple currencies, you can filter the chart by currency.
 - **Income vs Expenses**: A comparison bar chart showing total revenue vs. total spending.
 - **Cash Flow Metrics**: Provides a breakdown of your cash inflows and outflows categorized by **Operating Cash Flow (OCF)** (daily living), **Free Cash Flow (FCF)** (liquid surplus), **Investing Cash Flow Net** (buying/selling assets), and **Financing Cash Flow Net** (debt repayments).
 

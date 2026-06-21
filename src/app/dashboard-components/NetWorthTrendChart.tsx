@@ -27,6 +27,7 @@ interface NetWorthTrendChartProps {
   isEmpty: boolean;
   locale?: string;
   tooltipLabel?: string;
+  rangeSelector?: React.ReactNode;
 }
 
 export const CustomTooltip = ({
@@ -63,6 +64,7 @@ export default function NetWorthTrendChart({
   isEmpty,
   locale,
   tooltipLabel = 'Net Worth',
+  rangeSelector,
 }: NetWorthTrendChartProps) {
   const [mounted, setMounted] = React.useState(false);
 
@@ -71,11 +73,14 @@ export default function NetWorthTrendChart({
   }, []);
 
   return (
-    <Card shadow="lg" className="lg:col-span-2">
+    <Card shadow="lg" className="lg:col-span-2" data-testid="net-worth-trend-card">
       <Card.Body className="p-6">
-        <Card.Title icon={<TrendingUp className="h-5 w-5" aria-hidden="true" />} className="text-base">
-          {title}
-        </Card.Title>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <Card.Title icon={<TrendingUp className="h-5 w-5" aria-hidden="true" />} className="text-base">
+            {title}
+          </Card.Title>
+          {rangeSelector}
+        </div>
 
         {isEmpty ? (
           <div className="flex items-center justify-center h-56 text-base-content/50">
