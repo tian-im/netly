@@ -49,7 +49,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         </select>
         {(error || helperText) && (
           <label className="label py-0.5">
-            <span className={`label-text-alt text-xs ${error ? 'text-error font-medium' : 'text-base-content/50'}`}>
+            <span className={`label-text-alt text-xs whitespace-normal break-words w-full ${error ? 'text-error font-medium' : 'text-base-content/50'}`}>
               {error || helperText}
             </span>
           </label>

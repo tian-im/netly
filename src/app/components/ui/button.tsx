@@ -59,7 +59,10 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, Bu
       : (isLink || isJoinItem)
       ? 'transition-all duration-200 no-animation '
       : 'rounded-md transition-all duration-200 no-animation hover:scale-[0.98] ';
-    const baseClass = `${prefix}${btnExtras}font-medium gap-2 normal-case ${variantClasses} ${sizeClasses} ${className}`.trim();
+    // WHY: We add 'disabled:text-base-content' to override variant-specific utility text classes
+    // (such as text-primary-content) that would otherwise make the text white/light-colored
+    // on a light-colored disabled background. This keeps the text color legible and consistent.
+    const baseClass = `${prefix}${btnExtras}font-medium gap-2 normal-case ${variantClasses} ${sizeClasses} disabled:text-base-content ${className}`.trim();
 
     // WHY: If href is provided, this component acts as a Next.js Link. We extract button-specific
     // props (type, disabled, form, etc.) to prevent passing them to the anchor element, which

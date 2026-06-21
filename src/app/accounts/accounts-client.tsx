@@ -382,7 +382,7 @@ export default function AccountsClient({
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as any)}
                     size="sm"
-                    className="bg-base-200/50 focus:bg-base-100 font-normal text-xs text-base-content !w-auto"
+                    className="!w-auto"
                     aria-label="Filter accounts by type"
                   >
                     <option value="ALL">{t('filterAllTypes')}</option>
@@ -398,7 +398,7 @@ export default function AccountsClient({
                       placeholder={tCommon('search') || 'Search accounts...'}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="input-sm w-full pl-9 bg-base-200/50 focus:bg-base-100 transition-colors text-base-content font-normal text-xs"
+                      className="input-sm w-full pl-9"
                     />
                   </div>
                 </div>
