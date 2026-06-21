@@ -499,7 +499,8 @@
       "thisMonth": "本月",
       "lastQuarter": "上季度",
       "thisYear": "今年",
-      "allTime": "所有时间"
+      "allTime": "所有时间",
+      "custom": "自定义范围"
     },
     "drillDown": {
       "title": "分类钻取明细：{category}",

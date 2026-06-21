@@ -169,7 +169,7 @@ If duplicates are found, a banner will appear at the top of the Transaction Ledg
 The **Financial Statements** page (`/reports`) compiles your ledger records into standard accounting statements.
 
 ### Compilation Controls
-- **Date Selectors**: Enter a custom Start Date and End Date, or select a preset (Last Month, Trailing 3/6/12 Months, YTD, All Time).
+- **Date Selectors**: Enter a custom Start Date and End Date, or choose a preset period from the dropdown (Last Month, Trailing 3/6/12 Months, YTD, All Time).
 - **Compare to Prior Period**: Toggle this option to generate a period-over-period comparison, displaying absolute and percentage differences.
 - **View Currency**: Since calculations must be performed in a single currency, select which currency statement to compile.
 - **Drill-down Modal**: Clicking on any category row on a statement opens a drill-down modal showing all ledger transactions that make up that total.

@@ -497,7 +497,8 @@
       "thisMonth": "This Month",
       "lastQuarter": "Last Quarter",
       "thisYear": "This Year",
-      "allTime": "All Time"
+      "allTime": "All Time",
+      "custom": "Custom Range"
     },
     "drillDown": {
       "title": "Drill-down: {category}",

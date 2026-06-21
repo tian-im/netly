@@ -279,6 +279,9 @@ export default function ReportsClient({
                   className="input-sm"
                 />
               </div>
+              <div className="flex-1">
+                <DateRangePresets onSelectRange={handlePresetSelect} startDateStr={startDateStr} endDateStr={endDateStr} />
+              </div>
             </div>
             <div className="flex flex-col gap-2 w-full md:w-auto">
               <label className="cursor-pointer label justify-start gap-2 self-start md:self-auto">
@@ -300,7 +303,6 @@ export default function ReportsClient({
               </Button>
             </div>
           </div>
-          <DateRangePresets onSelectRange={handlePresetSelect} startDateStr={startDateStr} endDateStr={endDateStr} />
         </div>
       </div>
 
