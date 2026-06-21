@@ -4,7 +4,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import enMessages from '../../../../messages/en.json';
 import SupportCard from './SupportCard';
-import { buildKoFiUrl } from '@/lib/links';
+import { buildKoFiUrl, buildGitHubIssuesUrl } from '@/lib/links';
 
 // Make React Testing Library aware
 // @ts-ignore
@@ -57,6 +57,20 @@ describe('SupportCard', () => {
   it('link opens in a new tab with noopener noreferrer', () => {
     renderSupportCard();
     const link = screen.getByRole('link', { name: /Buy me a coffee on Ko-fi/i });
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('renders a link to the GitHub issues URL', () => {
+    renderSupportCard();
+    const link = screen.getByRole('link', { name: /Report an Issue/i });
+    expect(link).toBeDefined();
+    expect(link.getAttribute('href')).toBe(buildGitHubIssuesUrl());
+  });
+
+  it('GitHub issues link opens in a new tab with noopener noreferrer', () => {
+    renderSupportCard();
+    const link = screen.getByRole('link', { name: /Report an Issue/i });
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });

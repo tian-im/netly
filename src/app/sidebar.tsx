@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Heart, BookOpen } from 'lucide-react';
+import { BarChart3, Wallet, FolderTree, Tags, TrendingUp, Inbox, Settings, Heart, BookOpen, Github } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   buildDashboardUrl,
@@ -14,6 +14,7 @@ import {
   buildSettingsUrl,
   buildDocsUrl,
   buildKoFiUrl,
+  buildGitHubIssuesUrl,
 } from '@/lib/links';
 
 // WHY: navItems is a module-level const array. The builder functions are pure and
@@ -77,8 +78,8 @@ export default function Sidebar() {
       </div>
 
       <div className="border-t border-base-300/50 pt-3 space-y-2">
-        {/* Support link — subtle, directly above the status bar */}
-        <div className="px-4">
+        {/* Support & Feedback links — subtle, directly above the status bar */}
+        <div className="px-4 flex items-center justify-between gap-2">
           <a
             href={buildKoFiUrl()}
             target="_blank"
@@ -87,6 +88,15 @@ export default function Sidebar() {
           >
             <Heart className="w-3.5 h-3.5" />
             {t('supportLink')}
+          </a>
+          <a
+            href={buildGitHubIssuesUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs text-base-content/50 hover:text-primary transition-colors"
+          >
+            <Github className="w-3.5 h-3.5" />
+            {t('feedbackLink')}
           </a>
         </div>
 

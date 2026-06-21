@@ -39,6 +39,7 @@
     "settings": "Settings",
     "docs": "User Manual",
     "supportLink": "Support",
+    "feedbackLink": "Report Issue",
     "runningLocally": "Running Locally",
     "dbPath": "SQLite database: prisma/dev.db",
     "languageLabel": "Language:",
@@ -625,7 +626,8 @@
     "cardTitle": "Support Netly Ledger",
     "cardDescription": "Netly Ledger is a free, open-source personal finance tool built by a solo developer. It runs 100% on your device — no cloud, no ads, no tracking.",
     "cardMessage": "If Netly Ledger helps you stay on top of your finances, consider buying me a coffee. Your support fuels late-night coding sessions and keeps the project independent.",
-    "ctaButton": "Buy me a coffee on Ko-fi"
+    "ctaButton": "Buy me a coffee on Ko-fi",
+    "lodgeIssueButton": "Report an Issue"
   },
   "errorPage": {
     "title": "Application Error",

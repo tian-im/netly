@@ -233,3 +233,12 @@ const KOFI_USERNAME = 'tianim'; // TODO: replace with real username
 export function buildKoFiUrl(): string {
   return `https://ko-fi.com/${KOFI_USERNAME}`;
 }
+
+// WHY: GitHub issues URL is an external link. Centralising it here
+// means updating it in one place instead of hunting down every
+// hardcoded string across components.
+/** Build a URL to lodge GitHub issues. */
+export function buildGitHubIssuesUrl(): string {
+  return 'https://github.com/tian-im/netly/issues/new';
+}
+

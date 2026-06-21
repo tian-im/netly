@@ -15,6 +15,7 @@ import {
   buildSettingsUrl,
   buildDocsUrl,
   buildKoFiUrl,
+  buildGitHubIssuesUrl,
 } from './links';
 
 describe('getPeriodDates', () => {
@@ -290,3 +291,15 @@ describe('buildKoFiUrl', () => {
     expect(() => new URL(url)).not.toThrow();
   });
 });
+
+describe('buildGitHubIssuesUrl', () => {
+  it('should return the correct issue creation URL', () => {
+    expect(buildGitHubIssuesUrl()).toBe('https://github.com/tian-im/netly/issues/new');
+  });
+
+  it('should return a valid URL format', () => {
+    const url = buildGitHubIssuesUrl();
+    expect(() => new URL(url)).not.toThrow();
+  });
+});
+

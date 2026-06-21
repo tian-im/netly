@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Heart } from 'lucide-react';
-import { buildKoFiUrl } from '@/lib/links';
+import { Heart, Github } from 'lucide-react';
+import { buildKoFiUrl, buildGitHubIssuesUrl } from '@/lib/links';
 
 import { Card, Button } from '@/app/components/ui';
 
@@ -27,6 +27,17 @@ export default function SupportCard() {
             className="gap-1 text-white"
           >
             {t('ctaButton')}
+          </Button>
+          <Button
+            href={buildGitHubIssuesUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+            size="sm"
+            icon={<Github className="h-4 w-4" />}
+            className="gap-1"
+          >
+            {t('lodgeIssueButton')}
           </Button>
         </Card.Actions>
       </Card.Body>

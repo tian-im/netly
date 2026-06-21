@@ -39,6 +39,7 @@
     "settings": "设置",
     "docs": "用户手册",
     "supportLink": "支持",
+    "feedbackLink": "反馈问题",
     "runningLocally": "本地运行中",
     "dbPath": "SQLite 数据库: prisma/dev.db",
     "languageLabel": "语言：",
@@ -627,7 +628,8 @@
     "cardTitle": "支持 Netly Ledger",
     "cardDescription": "Netly Ledger 是一款由独立开发者打造的免费开源个人理财工具，100% 运行在你的设备上——无云端、无广告、无追踪。",
     "cardMessage": "如果 Netly Ledger 帮你更好地管理财务，请考虑请我喝杯咖啡。你的支持是深夜写代码的动力，也让这个项目保持独立。",
-    "ctaButton": "在 Ko-fi 上请我喝杯咖啡"
+    "ctaButton": "在 Ko-fi 上请我喝杯咖啡",
+    "lodgeIssueButton": "反馈问题"
   },
   "errorPage": {
     "title": "应用错误",

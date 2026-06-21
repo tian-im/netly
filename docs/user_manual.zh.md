@@ -240,3 +240,9 @@ Netly Ledger 不直接连接银行 API，以此保护您的隐私。相反，您
 - **会话机密**：活动会话和 PassKey 验证挑战依赖于在工作区根目录中生成的 `.session-secret` 文件。
 - **创建备份**：只需复制 `prisma/dev.db` 和 `.session-secret` 文件并将其存储在安全的辅助位置（例如加密驱动器或私有云存储中）。确保在复制前停止服务器容器或使其处于空闲状态，以防止部分写入。
 - **恢复数据**：要恢复数据，请用备份副本替换工作区目录中的 `prisma/dev.db` 和 `.session-secret` 文件。
+
+### 反馈与报告问题
+如果您遇到任何错误（Bug）、有功能建议或想提供一般性反馈，请在我们的 GitHub 仓库中提交 Issue：
+- **GitHub Issue 跟踪器**：[提交新 Issue](https://github.com/tian-im/netly/issues/new)
+- 您也可以直接从**设置**页面上的**支持 Netly Ledger**卡片中访问此链接。
+

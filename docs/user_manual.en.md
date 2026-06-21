@@ -240,3 +240,9 @@ Since Netly Ledger runs 100% on your local machine, your data is completely unde
 - **Session Secrets**: Active sessions and PassKey verification challenges rely on the `.session-secret` file generated in the workspace root.
 - **Creating a Backup**: Simply make a copy of the `prisma/dev.db` and `.session-secret` files and store them in a secure secondary location (such as an encrypted drive or private cloud storage). Make sure the server container is stopped or idle before copying to prevent partial writes.
 - **Restoring Data**: To restore your data, replace the `prisma/dev.db` and `.session-secret` files in your workspace directory with your backed-up copies.
+
+### Submitting Issues & Feedback
+If you encounter any bugs, have feature requests, or want to provide general feedback, please lodge an issue on our GitHub repository:
+- **GitHub Issue Tracker**: [Lodge a new issue](https://github.com/tian-im/netly/issues/new)
+- You can also access this link directly from the **Support Netly Ledger** card on the **Settings** page.
+
