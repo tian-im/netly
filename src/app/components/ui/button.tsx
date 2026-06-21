@@ -39,10 +39,15 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, Bu
     }[variant];
 
 
+    // WHY: Square and circle buttons are equal width/height by design, so horizontal padding
+    // (px-2, px-3, etc.) would distort their shape. We use the same compact size classes as the
+    // 'link' variant (btn-xs, btn-sm, etc. without extra px-* suffixes).
+    const isSquare = className.includes('btn-square') || className.includes('btn-circle');
+
     // Map size to DaisyUI classes
     const sizeClasses = variant === 'tab'
       ? { xs: 'tab-xs', sm: 'tab-sm', md: 'tab-md', lg: 'tab-lg', xl: 'tab-xl' }[size]
-      : variant === 'link'
+      : (variant === 'link' || isSquare)
       ? { xs: 'btn-xs', sm: 'btn-sm', md: 'btn-md', lg: 'btn-lg', xl: 'btn-xl' }[size]
       : { xs: 'btn-xs px-2', sm: 'btn-sm px-3', md: 'btn-md px-5', lg: 'btn-lg px-6', xl: 'btn-xl px-7' }[size];
 

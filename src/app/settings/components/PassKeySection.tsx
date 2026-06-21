@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
-import { KeyRound, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
+import { KeyRound, Trash2, Plus, Copy, AlertTriangle, Check } from 'lucide-react';
 import { Button, Input, Card } from '@/app/components/ui';
 import { PassKeyInfo } from '@/types/settings';
 
@@ -323,11 +323,14 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                       type="button"
                       onClick={() => handleCopyToken(setupToken.token)}
                       className="btn-square px-0 shrink-0"
-                      title={tCommon('copy')}
-                      aria-label={tCommon('copy')}
+                      title={copiedToken ? tCommon('copiedSuccess') : tCommon('copy')}
+                      aria-label={copiedToken ? tCommon('copiedSuccess') : tCommon('copy')}
                     >
                       {copiedToken ? (
-                        <span className="text-xs font-bold">{tCommon('copiedSuccess')}</span>
+                        <>
+                          <Check className="h-4 w-4 text-success" />
+                          <span className="sr-only">{tCommon('copiedSuccess')}</span>
+                        </>
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
@@ -351,11 +354,14 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
                       type="button"
                       onClick={() => handleCopyUrl(setupToken.url)}
                       className="btn-square px-0 shrink-0"
-                      title={tCommon('copy')}
-                      aria-label={tCommon('copy')}
+                      title={copiedUrl ? tCommon('copiedSuccess') : tCommon('copy')}
+                      aria-label={copiedUrl ? tCommon('copiedSuccess') : tCommon('copy')}
                     >
                       {copiedUrl ? (
-                        <span className="text-xs font-bold">{tCommon('copiedSuccess')}</span>
+                        <>
+                          <Check className="h-4 w-4 text-success" />
+                          <span className="sr-only">{tCommon('copiedSuccess')}</span>
+                        </>
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}

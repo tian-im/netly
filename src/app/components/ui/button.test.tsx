@@ -173,6 +173,22 @@ describe('Button Component', () => {
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener');
   });
+
+  it('does not apply horizontal padding classes when className contains btn-square', () => {
+    render(<Button className="btn-square">Square</Button>);
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('btn-md');
+    expect(button.className).not.toContain('px-5');
+    expect(button.className).toContain('btn-square');
+  });
+
+  it('does not apply horizontal padding classes when className contains btn-circle', () => {
+    render(<Button className="btn-circle" size="sm">Circle</Button>);
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('btn-sm');
+    expect(button.className).not.toContain('px-3');
+    expect(button.className).toContain('btn-circle');
+  });
 });
 
 

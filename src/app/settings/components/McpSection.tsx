@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
-import { Bot, Trash2, Plus, Copy, AlertTriangle } from 'lucide-react';
+import { Bot, Trash2, Plus, Copy, AlertTriangle, Check } from 'lucide-react';
 import { Button, Input, Card } from '@/app/components/ui';
 import { McpTokenInfo } from '@/types/settings';
 
@@ -230,11 +230,14 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
                         type="button"
                         onClick={() => handleCopyToken(generatedMcpToken.token)}
                         className="btn-square px-0 shrink-0"
-                        title={tCommon('copy')}
-                        aria-label={tCommon('copy')}
+                        title={copiedMcpToken ? tCommon('copiedSuccess') : tCommon('copy')}
+                        aria-label={copiedMcpToken ? tCommon('copiedSuccess') : tCommon('copy')}
                       >
                         {copiedMcpToken ? (
-                          <span className="text-xs font-bold">{tCommon('copiedSuccess')}</span>
+                          <>
+                            <Check className="h-4 w-4 text-success" />
+                            <span className="sr-only">{tCommon('copiedSuccess')}</span>
+                          </>
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
