@@ -43,6 +43,9 @@ netly/
 │   │   ├── session-secret.ts — Auto-generate + persist session secret to file
 │   │   ├── challenge-store.ts / webauthn.ts — PassKey auth
 │   │   ├── rate-limiter.ts — In-memory sliding-window rate limiter
+│   │   ├── csrf.ts        — CSRF validation helper
+│   │   ├── request-utils.ts— Request utilities (getClientIp, checkPayloadSize)
+│   │   ├── audit.ts       — Audit logging helper
 │   │   └── translateError.ts
 │   │
 │   └── mcp-server/        — AI/LLM tool interface (MCP SDK)
@@ -95,5 +98,8 @@ lib/links.ts (URL builders) ← used by:
 | `lib/auth-session.ts` | `createSessionCookie()`, `verifySessionCookie()`, `verifySessionWithDb()` | Login/setup pages |
 | `lib/session-secret.ts` | `getSessionSecret()` | `auth-session.ts` (auto-generate + file persist) |
 | `lib/rate-limiter.ts` | `checkRateLimit()`, `resetRateLimiter()` | Auth API routes (login, register, setup-token) |
+| `lib/csrf.ts` | `verifyCsrf()` | State-changing API routes |
+| `lib/request-utils.ts` | `getClientIp()`, `checkPayloadSize()` | API and auth routes |
+| `lib/audit.ts` | `auditLog()` | Auth, import, and token routes |
 | `mcp-server/tools/transactions.ts` | `import_csv`, `list_transactions`, `categorize_uncategorized` | AI agents |
 | `mcp-server/tools/reports.ts` | `get_dashboard_summary`, `get_financial_reports`, `get_net_worth_trend` | AI agents |

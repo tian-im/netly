@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { getTestDb, clearTestDb, disconnectTestDb } from '@/lib/test-db';
 import { POST } from './route';
 import { NextRequest } from 'next/server';
+import { resetRateLimiter } from '@/lib/rate-limiter';
 
 vi.mock('@/lib/db', async () => {
   const { getTestDb } = await import('@/lib/test-db');
@@ -30,6 +31,7 @@ function mockRequest(body: any): NextRequest {
 describe('POST /api/import', () => {
   beforeEach(async () => {
     await clearTestDb();
+    resetRateLimiter();
   });
 
   afterAll(async () => {

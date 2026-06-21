@@ -17,9 +17,10 @@ import { checkRateLimit } from '@/lib/rate-limiter';
 import { auditLog } from '@/lib/audit';
 import { resolveLocale, getDefaultCategories } from '@/lib/locale';
 import { DEFAULT_USER_ID } from '@/lib/constants';
+import { getClientIp } from '@/lib/request-utils';
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  const ip = getClientIp(request);
   /* v8 ignore next 3 */
   if (!checkRateLimit(`register-complete:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });

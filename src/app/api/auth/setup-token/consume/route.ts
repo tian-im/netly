@@ -9,14 +9,35 @@ import {
 import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit';
 import { checkRateLimit } from '@/lib/rate-limiter';
-
-const SETUP_TOKEN_TTL_MS = 15 * 60 * 1000;
+import { getClientIp, checkPayloadSize } from '@/lib/request-utils';
+import { verifyCsrf } from '@/lib/csrf';
+import { SETUP_TOKEN_TTL_MS } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  if (!verifyCsrf(request)) {
+    const url = new URL(request.url);
+    await auditLog('CSRF_FAILURE', `endpoint=${url.pathname}`);
+    return NextResponse.json({ error: 'ERR_CSRF_FAILED' }, { status: 403 });
+  }
+
+  if (!checkPayloadSize(request, 1024 * 1024)) { // 1MB limit
+    return NextResponse.json({ error: 'ERR_PAYLOAD_TOO_LARGE' }, { status: 413 });
+  }
+
+  const ip = getClientIp(request);
   /* v8 ignore next 3 */
   if (!checkRateLimit(`setup-token-consume:${ip}`, 5, 60_000)) {
     return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
+  // Cleanup expired setup tokens from DB to prevent accumulation (Point 5)
+  const expirationThreshold = new Date(Date.now() - SETUP_TOKEN_TTL_MS);
+  try {
+    await db.setupToken.deleteMany({
+      where: { createdAt: { lt: expirationThreshold } }
+    });
+  } catch (err) {
+    console.error('Failed to clean up expired setup tokens:', err);
   }
 
   let body: Record<string, unknown>;

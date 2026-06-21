@@ -1,13 +1,41 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { parseCSV } from '@/lib/csv';
 import { matchRule } from '@/lib/rules';
 import { seedDefaultCategoriesIfEmpty } from '@/lib/default-categories';
 import { makeHash, disambiguateDescriptions } from '@/lib/import-utils';
+import { verifyCsrf } from '@/lib/csrf';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { getClientIp, checkPayloadSize } from '@/lib/request-utils';
+import { auditLog } from '@/lib/audit';
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
+  if (!verifyCsrf(request)) {
+    const url = new URL(request.url);
+    await auditLog('CSRF_FAILURE', `endpoint=${url.pathname}`);
+    return NextResponse.json(
+      { success: false, error: 'CSRF verification failed', errorCode: 'ERR_CSRF_FAILED' },
+      { status: 403 }
+    );
+  }
+
+  if (!checkPayloadSize(request, 4 * 1024 * 1024)) { // 4MB limit
+    return NextResponse.json(
+      { success: false, error: 'Payload too large', errorCode: 'ERR_PAYLOAD_TOO_LARGE' },
+      { status: 413 }
+    );
+  }
+
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`import-api:${ip}`, 10, 60_000)) {
+    return NextResponse.json(
+      { success: false, error: 'Too many import requests', errorCode: 'ERR_RATE_LIMITED' },
+      { status: 429 }
+    );
+  }
+
   try {
-    const { csvText, accountId, headerMap, dateFormatHint, hasHeaders } = await req.json();
+    const { csvText, accountId, headerMap, dateFormatHint, hasHeaders } = await request.json();
 
     if (!csvText || !accountId || !headerMap) {
       return NextResponse.json(
@@ -126,7 +154,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Import API error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal Server Error', errorCode: 'ERR_IMPORT_INTERNAL' },
+      { success: false, error: 'An internal error occurred during import.', errorCode: 'ERR_IMPORT_INTERNAL' },
       { status: 500 }
     );
   }

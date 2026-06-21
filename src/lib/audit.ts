@@ -10,7 +10,8 @@ export type AuditAction =
   | 'SETUP_TOKEN_GENERATED'
   | 'SETUP_TOKEN_CONSUMED'
   | 'SETUP_TOKEN_FAILED'
-  | 'RATE_LIMITED';
+  | 'RATE_LIMITED'
+  | 'CSRF_FAILURE';
 
 /**
  * Record an audit log entry.

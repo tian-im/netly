@@ -599,7 +599,7 @@ describe('Auth API routes', () => {
 
   describe('GET /api/auth/credentials', () => {
     it('returns empty list when no credentials exist', async () => {
-      const response = await listCredentials();
+      const response = await listCredentials(mockRequest('http://localhost:3000/api/auth/credentials'));
       const data = await response.json();
       expect(data).toEqual([]);
     });
@@ -628,7 +628,7 @@ describe('Auth API routes', () => {
         },
       });
 
-      const response = await listCredentials();
+      const response = await listCredentials(mockRequest('http://localhost:3000/api/auth/credentials'));
       const data = await response.json();
       expect(data).toHaveLength(2);
       expect(data[0].deviceName).toBe('Second');
@@ -645,7 +645,7 @@ describe('Auth API routes', () => {
         data: { id: 'cred-2', publicKey: Buffer.from([2]), counter: BigInt(1), transports: '[]', deviceName: 'Two', userId: 'default' },
       });
 
-      const req = new Request('http://localhost:3000/api/auth/credentials', {
+      const req = new NextRequest('http://localhost:3000/api/auth/credentials', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: 'cred-1' }),
@@ -663,7 +663,7 @@ describe('Auth API routes', () => {
         data: { id: 'cred-1', publicKey: Buffer.from([1]), counter: BigInt(1), transports: '[]', deviceName: 'Only', userId: 'default' },
       });
 
-      const req = new Request('http://localhost:3000/api/auth/credentials', {
+      const req = new NextRequest('http://localhost:3000/api/auth/credentials', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: 'cred-1' }),
@@ -675,7 +675,7 @@ describe('Auth API routes', () => {
     });
 
     it('returns 404 when credential does not exist', async () => {
-      const req = new Request('http://localhost:3000/api/auth/credentials', {
+      const req = new NextRequest('http://localhost:3000/api/auth/credentials', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: 'nonexistent' }),

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 import { getChallenge } from '@/lib/challenge-store';
 import {
@@ -13,9 +13,10 @@ import { db } from '@/lib/db';
 import { getWebAuthnConfig } from '@/lib/webauthn';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { auditLog } from '@/lib/audit';
+import { getClientIp } from '@/lib/request-utils';
 
-export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
   if (!checkRateLimit(`login-complete:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
   }

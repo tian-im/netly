@@ -4,6 +4,8 @@ import { createHash } from "crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { McpToken } from "@prisma/client";
+import { checkRateLimit } from "@/lib/rate-limiter";
+import { getClientIp, checkPayloadSize } from "@/lib/request-utils";
 
 import { registerTransactionTools } from "@/mcp-server/tools/transactions";
 import { registerCategoryTools } from "@/mcp-server/tools/categories";
@@ -120,6 +122,11 @@ async function validateAuth(request: NextRequest): Promise<McpToken | null> {
 
 // GET /api/mcp - Establish SSE Connection
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`mcp-api-get:${ip}`, 60, 60_000)) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+
   const mcpToken = await validateAuth(request);
   if (!mcpToken) {
     return new Response("Unauthorized", { status: 401 });
@@ -171,6 +178,15 @@ export async function GET(request: NextRequest) {
 
 // POST /api/mcp?sessionId=... - Receive client JSON-RPC requests
 export async function POST(request: NextRequest) {
+  if (!checkPayloadSize(request, 1024 * 1024)) { // 1MB limit
+    return new Response("Payload Too Large", { status: 413 });
+  }
+
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`mcp-api-post:${ip}`, 200, 60_000)) {
+    return new Response("Too Many Requests", { status: 429 });
+  }
+
   const mcpToken = await validateAuth(request);
   if (!mcpToken) {
     return new Response("Unauthorized", { status: 401 });
@@ -195,6 +211,6 @@ export async function POST(request: NextRequest) {
     return new Response("OK", { status: 200 });
   } catch (error: any) {
     console.error("Error processing POST message:", error);
-    return new Response(`Error: ${error.message || error}`, { status: 500 });
+    return new Response("Internal Server Error", { status: 500 });
   }
 }

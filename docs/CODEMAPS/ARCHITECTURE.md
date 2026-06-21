@@ -69,6 +69,7 @@ AI/LLM → MCP SDK Server → Tools:
 - **MCP SDK** enables AI agents to interact with the ledger programmatically
 - **PassKey auth**: WebAuthn-based passwordless auth, no email/password storage
 - **Session secret**: Auto-generated on first run, persisted to `.session-secret` file. Survives restarts without `.env` setup.
+- **Security Hardening**: Standardized Origin/Referer matching for CSRF validation, secure proxy/socket client IP resolution, payload size checks (max limits & content-length validation), and a robust database audit logging system for security events (CSRF failures, WebAuthn registrations, logouts).
 - **Health check**: `/api/health` endpoint with database connectivity verification, used by Docker HEALTHCHECK.
 
 ## Related Codemaps

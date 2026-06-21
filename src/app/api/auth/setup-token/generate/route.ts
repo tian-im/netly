@@ -4,8 +4,37 @@ import { setSetupToken } from '@/lib/challenge-store';
 import { getWebAuthnConfig } from '@/lib/webauthn';
 import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit';
+import { verifyCsrf } from '@/lib/csrf';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { getClientIp, checkPayloadSize } from '@/lib/request-utils';
+import { SETUP_TOKEN_TTL_MS } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrf(request)) {
+    const url = new URL(request.url);
+    await auditLog('CSRF_FAILURE', `endpoint=${url.pathname}`);
+    return NextResponse.json({ error: 'ERR_CSRF_FAILED' }, { status: 403 });
+  }
+
+  if (!checkPayloadSize(request, 1024 * 1024)) { // 1MB limit
+    return NextResponse.json({ error: 'ERR_PAYLOAD_TOO_LARGE' }, { status: 413 });
+  }
+
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`setup-token-generate:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
+  // Cleanup expired setup tokens from DB to prevent accumulation (Point 5)
+  const expirationThreshold = new Date(Date.now() - SETUP_TOKEN_TTL_MS);
+  try {
+    await db.setupToken.deleteMany({
+      where: { createdAt: { lt: expirationThreshold } }
+    });
+  } catch (err) {
+    console.error('Failed to clean up expired setup tokens:', err);
+  }
+
   const cookieValue = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 
   if (!cookieValue) {
@@ -36,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   const { origin } = getWebAuthnConfig(request);
   const setupUrl = `${origin}/login?setupToken=${setupToken}`;
-  const expiresAt = Date.now() + 15 * 60 * 1000;
+  const expiresAt = Date.now() + SETUP_TOKEN_TTL_MS;
 
   return NextResponse.json({
     token: setupToken,

@@ -6,6 +6,8 @@ const prismaClientSingleton = () => {
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 
+  // WARNING: Never accept user input or dynamic variables in $executeRawUnsafe.
+  // These PRAGMA statements are safe because they use static, hardcoded strings.
   // Enable SQLite WAL mode for better concurrent read performance
   // WAL mode allows concurrent reads during writes, which is beneficial
   // for the local web UI reading reports while imports are running.

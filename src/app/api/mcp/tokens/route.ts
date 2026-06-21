@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySessionWithDb, SESSION_COOKIE_NAME } from '@/lib/auth-session';
 import { createHash, randomBytes } from 'crypto';
+import { verifyCsrf } from '@/lib/csrf';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { getClientIp, checkPayloadSize } from '@/lib/request-utils';
+import { auditLog } from '@/lib/audit';
 
 // Helper to check user session authorization
 async function isAuthorized(request: NextRequest): Promise<boolean> {
@@ -12,6 +16,11 @@ async function isAuthorized(request: NextRequest): Promise<boolean> {
 }
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`mcp-tokens-get:${ip}`, 60, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
   if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: 'ERR_UNAUTHORIZED' }, { status: 401 });
   }
@@ -35,6 +44,21 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrf(request)) {
+    const url = new URL(request.url);
+    await auditLog('CSRF_FAILURE', `endpoint=${url.pathname}`);
+    return NextResponse.json({ error: 'ERR_CSRF_FAILED' }, { status: 403 });
+  }
+
+  if (!checkPayloadSize(request, 1024 * 1024)) { // 1MB limit
+    return NextResponse.json({ error: 'ERR_PAYLOAD_TOO_LARGE' }, { status: 413 });
+  }
+
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`mcp-tokens-post:${ip}`, 20, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
   if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: 'ERR_UNAUTHORIZED' }, { status: 401 });
   }
@@ -74,6 +98,21 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!verifyCsrf(request)) {
+    const url = new URL(request.url);
+    await auditLog('CSRF_FAILURE', `endpoint=${url.pathname}`);
+    return NextResponse.json({ error: 'ERR_CSRF_FAILED' }, { status: 403 });
+  }
+
+  if (!checkPayloadSize(request, 1024 * 1024)) { // 1MB limit
+    return NextResponse.json({ error: 'ERR_PAYLOAD_TOO_LARGE' }, { status: 413 });
+  }
+
+  const ip = getClientIp(request);
+  if (!checkRateLimit(`mcp-tokens-delete:${ip}`, 20, 60_000)) {
+    return NextResponse.json({ error: 'ERR_RATE_LIMITED' }, { status: 429 });
+  }
+
   if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: 'ERR_UNAUTHORIZED' }, { status: 401 });
   }
