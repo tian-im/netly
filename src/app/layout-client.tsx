@@ -29,9 +29,12 @@ export default function LayoutClient({
   const isPublicPage = pathname === '/login' || pathname === '/setup' || (pathname === '/docs' && !hasSession);
 
   if (isPublicPage) {
+    const isDocs = pathname === '/docs';
     return (
       <LocaleProvider ssrLocale={ssrLocale}>
-        {children}
+        <div className={`h-full overflow-y-auto bg-base-300 ${isDocs ? 'p-4 pb-8 lg:p-8 lg:pb-8' : ''}`}>
+          {children}
+        </div>
       </LocaleProvider>
     );
   }
