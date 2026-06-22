@@ -14,7 +14,7 @@
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:integration:coverage": "vitest run --config vitest.integration.config.ts --coverage",
-    "test:all": "npm run test:coverage && npm run test:integration"
+    "test:all": "yarn test:coverage && yarn test:integration"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

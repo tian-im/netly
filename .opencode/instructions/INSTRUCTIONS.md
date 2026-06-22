@@ -308,21 +308,22 @@ The ECC plugin (`.opencode/plugins/ecc-hooks.ts`) provides hooks for file editin
 
 ### Web & UI Verification
 
-- Run the full test suite (`docker compose exec -T web npm run test:coverage`) as the **default** verification method after every change.
+- Run the full test suite (`docker compose exec -T web yarn test:coverage`) as the **default** verification method after every change.
 - Use **chrome-devtools** (via MCP) for web/UI verification **only when the user explicitly requests it**. Do NOT use browser_subagent or curl for UI checks.
 
 ### Command Execution Environment
+- **Package Manager**: This project uses **Yarn** (lockfile: `yarn.lock`). NEVER change `yarn` to `npm` or `npx` in any project file. All commands in scripts, docs, and agent instructions must use `yarn`.
 - All compiler checks, test suites, database tools (Prisma, SQLite), and code formatters MUST be executed inside the running container using `docker compose exec web <command>` (or `docker compose exec -T web <command>`). Do not run them on the host.
 
 ### After Writing/Editing Code
-- Run `docker compose exec web npx prettier --write <file>` to format JS/TS files
-- Run `docker compose exec web npx tsc --noEmit` to check for TypeScript errors
+- Run `docker compose exec web yarn prettier --write <file>` to format JS/TS files
+- Run `docker compose exec web yarn tsc --noEmit` to check for TypeScript errors
 - Check for console.log statements and remove them
 
 ### Before Committing
 - Run security checks manually
 - Verify no secrets in code
-- Run full test suite: `docker compose exec web npm run test:coverage`
+- Run full test suite: `docker compose exec web yarn test:coverage`
 
 ### Commands Available
 

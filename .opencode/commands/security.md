@@ -56,7 +56,7 @@ Analyze the specified code for security vulnerabilities following OWASP guidelin
    - Implement integrity checks
 
 9. **Using Components with Known Vulnerabilities**
-   - Run `docker compose exec -T web npm audit`
+   - Run `docker compose exec -T web yarn audit`
    - Check for outdated dependencies
 
 10. **Insufficient Logging & Monitoring**

@@ -1,6 +1,6 @@
 # Netly Ledger — Architecture
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-06-22
 **Stack:** Next.js 14 (App Router) + SQLite (Prisma) + Tailwind CSS v4 + DaisyUI v5
 **Auth:** WebAuthn (PassKeys) + Session cookies
 **i18n:** next-intl (en/zh)

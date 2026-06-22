@@ -141,6 +141,8 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 
 ## Command Execution
 
+> **RULE: This project uses Yarn as its package manager (lockfile: `yarn.lock`). NEVER change `yarn` to `npm` or `npx` in any project file. If you encounter `npm`/`npx` in project docs, scripts, or instructions, fix it by converting to `yarn`.**
+>
 > **RULE: ALL commands (yarn, prisma, tsc, vitest, sqlite3, etc.) MUST be run inside the container via `docker compose exec -T web <command>`. Never run them directly on the host machine.**
 
 | Host command | Docker equivalent |

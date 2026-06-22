@@ -102,9 +102,10 @@ generator client {
 // Represents financial accounts (Assets & Liabilities)
 model Account {
   id              String        @id @default(uuid())
-  name            String
-  type            String        // "ASSET" (Checking, Savings, Investment) or "LIABILITY" (Credit Card, Loan)
-  startingBalance Decimal       @default(0)
+  name            String        @unique
+  type            String        // "ASSET" or "LIABILITY"
+  startingBalance Float         @default(0)
+  currency        String        @default("AUD")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   transactions    Transaction[]
@@ -115,24 +116,29 @@ model Category {
   id           String        @id @default(uuid())
   name         String        @unique
   type         String        // "INCOME", "EXPENSE", "TRANSFER"
-  cashFlowType String        // "OPERATING", "INVESTING", "FINANCING" (maps to cash flow statement)
+  cashFlowType String        // "OPERATING", "INVESTING", "FINANCING"
   transactions Transaction[]
   rules        CategoryRule[]
 }
 
 // A ledger transaction record
 model Transaction {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   date        DateTime
   payee       String
   description String?
-  amount      Decimal  // Positive for inflow, Negative for outflow (or vice versa per standard)
+  amount      Float     // Positive for inflow, Negative for outflow
   accountId   String
-  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  isReviewed  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isReviewed  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([date, payee, amount, description, accountId])
+  @@index([accountId, date])
+  @@index([categoryId, date])
 }
 
 // Simple rules for payee text matching auto-categorization
@@ -141,6 +147,8 @@ model CategoryRule {
   pattern    String   // Regex or substring to match, e.g. "Uber", "Woolworths"
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 ```
 

@@ -1,13 +1,13 @@
 # Netly Ledger — Module Map
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-06-22
 
 ## Directory Layout
 
 ```
 netly/
 ├── prisma/
-│   ├── schema.prisma        — 9 models (Account, Transaction, Category, Rule, PassKey, Session, Challenge, SetupToken, AuditLog, McpToken)
+│   ├── schema.prisma        — 9 models (Account, Category, Transaction, CategoryRule, PassKeyCredential, Session, AuditLog, McpToken, SetupToken)
 │   ├── migrations/
 │   ├── dev.db               — SQLite (local)
 │   └── seed-csv.ts

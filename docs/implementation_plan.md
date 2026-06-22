@@ -62,7 +62,7 @@ This plan details the addition of Category Management features to the Netly Ledg
 
 ### Automated Verification
 - Run typescript compilation checks: `docker compose exec -T web npx tsc --noEmit`
-- Run core tests and verify coverage: `docker compose exec -T web npm run test:coverage`
+- Run core tests and verify coverage: `docker compose exec -T web yarn test:coverage`
 
 ### Manual Verification
 - Deploy changes and verify navigation to `/categories` works.

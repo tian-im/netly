@@ -1,6 +1,6 @@
 # Netly Ledger — Data Layer
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-06-22
 **Database:** SQLite via Prisma ORM
 **Location:** `prisma/schema.prisma`
 
@@ -51,9 +51,11 @@ McpToken           (MCP API tokens)
 | categoryId | String? | FK → Category (SetNull on delete) |
 | isReviewed | Boolean | @default(false) |
 
-**Dedup key**: `@@unique([date, payee, amount, accountId])` — enforced at both
+**Dedup key**: `@@unique([date, payee, amount, description, accountId])` — enforced at both
 application level (skip during import) and database level (unique index prevents
-insertion even in race conditions or direct DB writes).
+insertion even in race conditions or direct DB writes). The `description` field is
+included in the constraint because credit card CSVs often produce multiple same-day
+transactions with the same payee and amount that differ only by reference/description.
 
 ### CategoryRule
 | Field | Type | Notes |

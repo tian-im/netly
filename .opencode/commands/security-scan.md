@@ -28,7 +28,7 @@ docker compose exec -T web npx ecc-agentshield scan --path "${TARGET_PATH:-.}" -
 For local AgentShield development, run from the AgentShield checkout:
 
 ```bash
-docker compose exec -T web npm run scan -- --path "${TARGET_PATH:-.}" --format text
+docker compose exec -T web yarn scan -- --path "${TARGET_PATH:-.}" --format text
 ```
 
 Do not invent findings. Use AgentShield output as the source of truth and separate scanner facts from follow-up judgment.

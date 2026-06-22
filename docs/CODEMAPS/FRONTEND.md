@@ -1,6 +1,6 @@
 # Netly Ledger — Frontend
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-06-22
 **UI Library:** Tailwind CSS v4 + DaisyUI v5 + lucide-react icons
 **Charts:** recharts (LineChart, BarChart)
 **Frameworks:** next-intl i18n, WebAuthn via @simplewebauthn/browser

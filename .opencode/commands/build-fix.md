@@ -47,9 +47,9 @@ Fix build and TypeScript errors with minimal changes: $ARGUMENTS
 ## Verification Steps
 
 After fixes:
-1. `docker compose exec -T web npx tsc --noEmit` - should show 0 errors
-2. `docker compose exec -T web npm run build` - should succeed
-3. `docker compose exec -T web npm test` - tests should still pass
+1. `docker compose exec -T web yarn tsc --noEmit` - should show 0 errors
+2. `docker compose exec -T web yarn build` - should succeed
+3. `docker compose exec -T web yarn test` - tests should still pass
 
 ---
 

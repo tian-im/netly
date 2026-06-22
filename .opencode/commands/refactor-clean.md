@@ -75,9 +75,9 @@ docker compose exec -T web npx ts-prune
 
 After cleanup:
 
-1. `docker compose exec -T web npm run build` - builds successfully
-2. `docker compose exec -T web npm test` - all tests pass
-3. `docker compose exec -T web npm run lint` - no new lint errors
+1. `docker compose exec -T web yarn build` - builds successfully
+2. `docker compose exec -T web yarn test` - all tests pass
+3. `docker compose exec -T web yarn lint` - no new lint errors
 4. Manual smoke test - features work
 
 ## Report Format

@@ -9,32 +9,39 @@ You are a specialized senior software engineer agent tasked with implementing th
    - Run tests, ensure they are red (fail), implement the logic to make them green (pass), and refactor.
 2. **100% Code Coverage Target**:
    - You MUST ensure 100% statement, branch, function, and line coverage for all files in `/src/lib/`.
-   - Run coverage analysis via Vitest inside the container (`docker compose exec web npm run test:coverage`) after implementing each component.
+   - Run coverage analysis via Vitest inside the container (`docker compose exec web yarn test:coverage`) after implementing each component.
 3. **Relational SQLite Design**:
    - Maintain data locally on SQLite using Prisma. No blockchain or remote network tunneling architectures.
    - Database schema and calculations must follow the specifications in the architectural review.
-4. **Execution via Docker Compose**:
-   - All runtime, check, db, and test commands (e.g., `npm`, `npx`, `prisma`, `vitest`, `tsc`, `sqlite3`) MUST be executed inside the running container using `docker compose exec web <command>` (or `docker compose exec -T web <command>`). Do not run them directly on the host machine.
-5. **Web & UI Verification**:
-   - Run `docker compose exec -T web npm run test:coverage` as the **default** verification method after every change.
+4. **Package Manager Locked to Yarn**:
+   - This project uses **Yarn** as its package manager. The lockfile is `yarn.lock`.
+   - ALL commands in documentation, scripts, and agent instructions MUST use `yarn` (not `npm`, not `npx`).
+   - NEVER change `yarn` to `npm` or `npx` in any project file. This includes `package.json` scripts, documentation, command templates, and agent instructions.
+   - If you see `npm` or `npx` used in a project context, it is a bug — fix it by converting to `yarn`.
+   - Examples of correct usage: `yarn install`, `yarn dev`, `yarn test:coverage`, `yarn tsc --noEmit`, `yarn prisma generate`.
+5. **Execution via Docker Compose**:
+   - All runtime, check, db, and test commands (e.g., `yarn`, `prisma`, `vitest`, `tsc`, `sqlite3`) MUST be executed inside the running container using `docker compose exec web <command>` (or `docker compose exec -T web <command>`). Do not run them directly on the host machine.
+6. **Web & UI Verification**:
+   - Run `docker compose exec -T web yarn test:coverage` as the **default** verification method after every change.
    - Use **chrome-devtools** (via MCP) for web/UI verification **only when the user explicitly requests it**. Do NOT use browser_subagent or curl for visual UI checks.
-6. **Git Commits on User Request Only**:
+7. **Git Commits on User Request Only**:
    - NEVER run `git commit` or `git push` autonomously. Only commit when the user explicitly asks for it.
-7. **URL Helper for All Routes**:
+8. **URL Helper for All Routes**:
    - NEVER hardcode route paths (e.g. `href="/"`, `router.push('/accounts')`) anywhere in the app.
    - Always import and use the URL builder functions from `@/lib/links` (e.g. `buildDashboardUrl()`, `buildAccountsUrl()`, `buildCategoriesUrl()`, `buildImportUrl()`, `buildTransactionsUrl()`, `buildReportsUrl()`, `buildSettingsUrl()`, `buildLoginUrl()`, `buildSetupUrl()`, `buildAccountTransactionsUrl()`, `buildCategoryTransactionsUrl()`).
    - If a new route is added, first add a builder function in `@/lib/links.ts`, then use it everywhere. This centralises path logic so future route changes require only a single edit.
-8. **Decision Rationale in Comments ("Why" Comments)**:
+9. **Decision Rationale in Comments ("Why" Comments)**:
    - When you choose one implementation approach among multiple viable options, write a comment explaining **why** that specific choice was made.
    - Format: `// WHY: <rationale>` — e.g., `// WHY: We use client-side case-insensitive comparison instead of a DB UNIQUE constraint because SQLite with Prisma doesn't support case-insensitive unique indexes, and the account count (<100) makes this safe.`
    - If you later read such a `// WHY:` comment and consider changing the code, **confirm with the user before making any changes** to ensure the original trade-off is still understood.
 
-9. **User Manual Maintenance**:
-   - The user manual lives at [`content/docs/`](./content/docs/) (English: `en/`, Chinese: `zh/`).
-   - When you add, change, or remove a feature, check whether the corresponding pages in `content/docs/en/` need updating. Update them as part of the same work.
-   - If you add English content, flag the equivalent Chinese page(s) in `content/docs/zh/` as needing translation by adding an HTML comment: `<!-- TODO: translate from en/... -->` at the top of the file.
-   - When adding a new doc page to `content/docs/en/`, always create the mirror file in `content/docs/zh/` (even if it only contains the translation notice) so the sidebar stays structurally consistent.
-   - If a feature change affects the user workflow enough to warrant a changelog entry, add a bullet to `content/docs/en/CHANGELOG.md` (and the translation notice in `content/docs/zh/CHANGELOG.md`).
+10. **User Manual Maintenance**:
+   - The user manual consists of two files in the [`docs/`](./docs/) directory:
+     - English: [`docs/user_manual.en.md`](./docs/user_manual.en.md)
+     - Chinese: [`docs/user_manual.zh.md`](./docs/user_manual.zh.md)
+   - When you add, change, or remove a feature, check whether the user manual pages need updating. Update them as part of the same work.
+   - If you add English content, flag the equivalent Chinese page as needing translation by ensuring the `<!-- TODO: translate from en/user_manual.en.md -->` comment is present at the top of `docs/user_manual.zh.md`.
+   - If a feature change affects the user workflow enough to warrant a changelog entry, add a bullet to `docs/CHANGELOG.md` (create it if it doesn't exist).
    - The user manual is public (no auth required); keep language clear, avoid internal jargon, and write for a non-technical audience.
 
 ## References
@@ -42,14 +49,15 @@ You are a specialized senior software engineer agent tasked with implementing th
 Always ground your decisions and implementation steps in the following project documents:
 - **Implementation Plan**: [docs/implementation_plan.md](./docs/implementation_plan.md)
 - **System Architecture Review**: [docs/architect_review.md](./docs/architect_review.md)
-- **User Manual Plan**: [docs/user_manual_plan.md](./docs/user_manual_plan.md)
+- **User Manual (English)**: [docs/user_manual.en.md](./docs/user_manual.en.md)
+- **User Manual (Chinese)**: [docs/user_manual.zh.md](./docs/user_manual.zh.md)
 
 ---
 
 ## Architectural Rules
 
 ### 1. Data Schema (Prisma)
-Follow the database model defined in [architect_review.md Section 3](./docs/architect_review.md#L84-L142):
+Follow the database model defined in [architect_review.md Section 3](./docs/architect_review.md#L87-L145):
 - **Account**: Tracks Assets & Liabilities with standard `startingBalance` and native `currency` settings.
 - **Transaction**: Stores dates, amounts, payees, and relations to Accounts and Categories.
 - **Category**: Tracks category types (`INCOME`, `EXPENSE`, `TRANSFER`) and cash flow statements grouping (`OPERATING`, `INVESTING`, `FINANCING`).
@@ -58,14 +66,14 @@ Follow the database model defined in [architect_review.md Section 3](./docs/arch
 ### 2. Core CSV Import Logic (`src/lib/csv.ts`)
 - Use `PapaParse` to parse CSV string streams.
 - Map variable bank columns dynamically using a saved header map schema.
-- Prevent duplicate transactions by checking composite uniqueness key: `(date, payee, amount, accountId)`. Skip existing matches during database inserts.
+- Prevent duplicate transactions by checking composite uniqueness key: `(date, payee, amount, description, accountId)`. Skip existing matches during database inserts.
 
 ### 3. Auto-Categorization Engine (`src/lib/rules.ts`)
 - Apply keyword rules against incoming transaction `payee` or `description` names.
 - Auto-assign matches to the matching Category. Mark unresolved items as `isReviewed = false` for manual UI categorizations.
 
 ### 4. Financial Calculations Ledger Engine (`src/lib/reports.ts`)
-Implement the formulas defined in [architect_review.md Section 4](./docs/architect_review.md#L146-L175):
+Implement the formulas defined in [architect_review.md Section 4](./docs/architect_review.md#L149-L177):
 - **Independent Currency Ledgers**: Calculate totals and groups strictly partitioned by account currency code, preventing incorrect mathematical additions between different currencies.
 - **Income Statement**: Grouped category sums of income and expense within date range, split by currency.
 - **Balance Sheet**: Cumulative sum of transaction values up to `endDate` added to accounts `startingBalance`. Group by Asset/Liability and report Net Worth, split by currency.
