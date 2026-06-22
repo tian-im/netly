@@ -1,0 +1,81 @@
+# ─────────────────────────────────────────────────────────────────
+# Netly Ledger — Manual: Docker Production Build Test
+# ─────────────────────────────────────────────────────────────────
+# Triggered manually via the GitHub Actions UI ("Run workflow").
+#
+# This workflow validates that the production Docker image builds
+# successfully using the multi-stage Dockerfile. It also performs
+# a quick smoke test: start the container, wait for the health
+# check to pass, then tear down.
+#
+# Use this before triggering the actual build-and-push workflow
+# to catch Docker-specific issues (missing files, broken stages,
+# entrypoint failures) without publishing a broken image.
+#
+# Related: test-coverage.yml (quality gate)
+# ─────────────────────────────────────────────────────────────────
+
+name: Docker Build Test (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      smoke_test:
+        description: 'Run smoke test (start container & check health)?'
+        type: boolean
+        default: true
+        required: false
+
+jobs:
+  build:
+    name: Build Production Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Set up Docker Buildx ──
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Build the production image ──
+      # Uses docker-compose.prod.yml which references the multi-stage
+      # Dockerfile. This validates all build stages:
+      #   1. deps   — yarn install
+      #   2. builder — prisma generate + next build
+      #   3. runner — standalone server assembly
+      - name: Build production Docker image
+        run: docker compose -f docker-compose.prod.yml build
+
+      # ── Smoke test (optional, enabled by default) ──
+      # Starts the container, waits up to 90s for the health check
+      # to pass (heathcheck polls /api/health every 30s), then
+      # tears everything down.
+      - name: Smoke test (start → health check → stop)
+        if: ${{ github.event.inputs.smoke_test != 'false' }}
+        run: |
+          # Create the data mount directory so the container (running as
+          # UID 1001) can write the SQLite DB and session secret.
+          # WHY: Docker creates the host directory as root if it doesn't
+          # exist, which would cause a permission-denied error when the
+          # entrypoint tries to write /app/data/.session-secret.
+          mkdir -p ./netly-data && chmod 777 ./netly-data
+
+          echo "=== Starting production container ==="
+          docker compose -f docker-compose.prod.yml up --detach --wait --wait-timeout 90
+
+          echo "=== Container is healthy! ==="
+          docker compose -f docker-compose.prod.yml ps
+
+          echo "=== Checking logs for errors ==="
+          docker compose -f docker-compose.prod.yml logs --tail 50
+
+          echo "=== Tearing down ==="
+          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans
+
+      # ── Cleanup (always run even if smoke test fails) ──
+      - name: Ensure cleanup
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down --volumes --remove-orphans 2>/dev/null || true

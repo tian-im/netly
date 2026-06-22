@@ -1,0 +1,76 @@
+# ─────────────────────────────────────────────────────────────────
+# Netly Ledger — CI: Test & Coverage Gate
+# ─────────────────────────────────────────────────────────────────
+# Runs on every push to main and every pull request targeting main.
+#
+# This workflow is the quality gate. It must pass before any
+# build-and-push workflow can proceed. The vitest configs already
+# enforce 100% coverage thresholds (statements, branches, functions,
+# lines); if coverage dips below 100%, vitest exits non-zero and
+# the check fails.
+#
+# Required by: build-and-push (future)
+# ─────────────────────────────────────────────────────────────────
+
+name: Test & Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Allow manual runs for debugging
+  workflow_dispatch:
+
+# Cancel in-progress runs when a newer push/PR arrives for the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (100% Coverage Required)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Set up Docker Buildx for layer caching ──
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Build the dev image ──
+      # We use docker compose build so the image includes all source
+      # code and dependencies. Tests run inside the container to
+      # guarantee an identical environment to local development.
+      - name: Build development image
+        run: docker compose build
+
+      # ── Generate Prisma client ──
+      # Must happen before tests because the client engines are
+      # platform-specific (compiled binaries for the container's
+      # linux/amd64 or linux/arm64 architecture).
+      - name: Generate Prisma client
+        run: docker compose run --rm -T web yarn prisma generate
+
+      # ── Run unit + library tests with 100% coverage ──
+      # Coverage thresholds are enforced in vitest.config.ts.
+      # If any threshold (statements/branches/functions/lines < 100%)
+      # is violated, vitest exits non-zero → this step fails.
+      - name: Run unit tests with coverage
+        run: docker compose run --rm -T web yarn test:coverage
+
+      # ── Run integration tests ──
+      # Integration tests cover server actions, API auth, and
+      # end-to-end flows that require a real SQLite database.
+      # These run with a separate vitest config that also enforces
+      # 100% coverage on auth API routes.
+      - name: Run integration tests
+        run: docker compose run --rm -T web yarn test:integration
+
+      # ── Cleanup ──
+      - name: Tear down containers
+        if: always()
+        run: docker compose down --volumes --remove-orphans
