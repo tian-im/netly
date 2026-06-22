@@ -1,23 +1,31 @@
 # ─────────────────────────────────────────────────────────────────
-# Netly Ledger — Manual: Docker Production Build Test
+# Netly Ledger — Docker Production Build Test
 # ─────────────────────────────────────────────────────────────────
-# Triggered manually via the GitHub Actions UI ("Run workflow").
+# Runs automatically on every PR to main, on every push to main,
+# and can also be triggered manually via workflow_dispatch.
 #
 # This workflow validates that the production Docker image builds
 # successfully using the multi-stage Dockerfile. It also performs
 # a quick smoke test: start the container, wait for the health
 # check to pass, then tear down.
 #
-# Use this before triggering the actual build-and-push workflow
-# to catch Docker-specific issues (missing files, broken stages,
-# entrypoint failures) without publishing a broken image.
+# Use this to catch Docker-specific issues (missing files, broken
+# stages, entrypoint failures) BEFORE merging and before the
+# build-and-push workflow publishes an image.
 #
-# Related: test-coverage.yml (quality gate)
+# Related: test-coverage.yml (quality gate), build-and-push.yml
 # ─────────────────────────────────────────────────────────────────
 
-name: Docker Build Test (Manual)
+name: Docker Build Test
 
 on:
+  # ── Automatic: every PR and push to main ──
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+  # ── Manual: trigger from the Actions UI (only visible from default branch) ──
   workflow_dispatch:
     inputs:
       smoke_test:
