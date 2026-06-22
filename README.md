@@ -35,6 +35,38 @@ Once running, configure your AI client (e.g. **OpenCode**, **Claude Code**, or *
 * **SSE Endpoint:** `http://localhost:3000/api/mcp`
 * **Authorization Header:** `Bearer your-secure-token-here`
 
+### One-Click AI Setup Prompt
+
+Copy the entire block below and paste it into your AI coding assistant (**Claude Code**, **OpenCode**, **OpenClaw**, etc.) for a fully automated installation with MCP configured:
+
+```text
+Set up Netly Ledger on this machine and connect yourself to it via MCP:
+
+1. Generate a secure random token and start the container:
+   TOKEN=$(openssl rand -hex 32)
+   docker run -d \
+     --name netly-ledger \
+     -p 3000:3000 \
+     -v ./netly-data:/app/data \
+     -e MCP_INITIAL_TOKEN="$TOKEN" \
+     --restart unless-stopped \
+     ghcr.io/tian-im/netly-ledger:latest
+
+2. Wait for the container to become healthy:
+   until curl -sf http://localhost:3000/api/health; do sleep 2; done
+
+3. Register yourself as an MCP client connected to Netly Ledger:
+   - SSE URL: http://localhost:3000/api/mcp
+   - Auth header: Bearer <the token from step 1>
+
+4. Verify the connection by listing the available accounts.
+
+Important: Open http://localhost:3000 in a browser afterwards, register a
+PassKey, and you're ready to start importing bank statements.
+```
+
+The AI will run the commands, configure its MCP connection, and confirm everything is working — no manual config file editing needed.
+
 ### Docker Compose
 
 ```bash
@@ -70,7 +102,7 @@ On macOS and Docker Desktop, this is handled automatically by the OS permission 
 
 ```bash
 docker compose up -d
-npm run dev        # or: docker compose exec web npm run dev
+yarn dev           # or: docker compose exec web yarn dev
 ```
 
 ## Security Considerations
@@ -100,11 +132,11 @@ For a local personal finance app, this is acceptable. The most sensitive operati
 
 ```bash
 # Tests
-npm test                  # unit tests
-npm run test:coverage     # unit tests with coverage
-npm run test:all          # unit + integration tests
+yarn test                # unit tests
+yarn test:coverage       # unit tests with coverage
+yarn test:all            # unit + integration tests
 
 # Database
-npx prisma migrate dev    # create/apply migrations
-npx prisma studio         # browse database
+yarn prisma migrate dev  # create/apply migrations
+yarn prisma studio       # browse database
 ```

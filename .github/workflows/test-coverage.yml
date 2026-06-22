@@ -3,13 +3,13 @@
 # ─────────────────────────────────────────────────────────────────
 # Runs on every push to main and every pull request targeting main.
 #
-# This workflow is the quality gate. It must pass before any
-# build-and-push workflow can proceed. The vitest configs already
-# enforce 100% coverage thresholds (statements, branches, functions,
-# lines); if coverage dips below 100%, vitest exits non-zero and
-# the check fails.
+# This workflow is the quality gate for PRs and pushes to main.
+# The vitest configs enforce 100% coverage thresholds (statements,
+# branches, functions, lines); if coverage dips below 100%, vitest
+# exits non-zero and the check fails.
 #
-# Required by: build-and-push (future)
+# Note: This workflow is independent from build-and-push (that
+# workflow now fires on VERSION file changes, not CI status).
 # ─────────────────────────────────────────────────────────────────
 
 name: Test & Coverage
