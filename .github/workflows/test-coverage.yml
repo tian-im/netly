@@ -48,27 +48,23 @@ jobs:
       - name: Build development image
         run: docker compose build
 
-      # ── Generate Prisma client ──
-      # Must happen before tests because the client engines are
-      # platform-specific (compiled binaries for the container's
-      # linux/amd64 or linux/arm64 architecture).
-      - name: Generate Prisma client
-        run: docker compose run --rm -T web yarn prisma generate
-
-      # ── Run unit + library tests with 100% coverage ──
-      # Coverage thresholds are enforced in vitest.config.ts.
-      # If any threshold (statements/branches/functions/lines < 100%)
-      # is violated, vitest exits non-zero → this step fails.
-      - name: Run unit tests with coverage
-        run: docker compose run --rm -T web yarn test:coverage
-
-      # ── Run integration tests ──
-      # Integration tests cover server actions, API auth, and
-      # end-to-end flows that require a real SQLite database.
-      # These run with a separate vitest config that also enforces
-      # 100% coverage on auth API routes.
-      - name: Run integration tests
-        run: docker compose run --rm -T web yarn test:integration
+      # ── Run all tests (unit + integration) with 100% coverage ──
+      # WHY: All three commands (prisma generate, test:coverage,
+      # test:integration) run inside the SAME container session via a
+      # single `docker compose run` invocation. If each step used its
+      # own `docker compose run`, the Prisma client generated in step
+      # N would not be visible to step N+1 because anonymous Docker
+      # volumes are not reliably shared across ephemeral containers.
+      #
+      # Coverage thresholds are enforced in vitest.config.ts and
+      # vitest.integration.config.ts. If any threshold drops below
+      # 100%, vitest exits non-zero and this step fails.
+      - name: Run all tests with 100% coverage
+        run: >
+          docker compose run --rm -T web sh -c "
+            yarn prisma generate &&
+            yarn test:all
+          "
 
       # ── Cleanup ──
       - name: Tear down containers
