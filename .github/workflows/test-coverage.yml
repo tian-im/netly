@@ -49,20 +49,26 @@ jobs:
         run: docker compose build
 
       # ── Run all tests (unit + integration) with 100% coverage ──
-      # WHY: All three commands (prisma generate, test:coverage,
-      # test:integration) run inside the SAME container session via a
-      # single `docker compose run` invocation. If each step used its
-      # own `docker compose run`, the Prisma client generated in step
-      # N would not be visible to step N+1 because anonymous Docker
-      # volumes are not reliably shared across ephemeral containers.
+      # WHY: All commands run inside the SAME container session via a
+      # single `docker compose run` invocation. If separate `run` calls
+      # were used, anonymous Docker volumes wouldn't reliably share the
+      # Prisma client or migrated database across ephemeral containers.
       #
-      # Coverage thresholds are enforced in vitest.config.ts and
-      # vitest.integration.config.ts. If any threshold drops below
-      # 100%, vitest exits non-zero and this step fails.
+      # Sequence:
+      #   1. prisma generate — produces the Prisma client for tests
+      #   2. prisma migrate deploy (test.db) — creates schema for integration tests
+      #   3. yarn test:all — runs unit tests (mock DB) + integration tests (real DB)
+      #
+      # The integration vitest config sets DATABASE_URL=file:./test.db,
+      # so we migrate that same file before the test suite runs.
+      #
+      # Coverage thresholds (100%) are enforced in vitest.config.ts and
+      # vitest.integration.config.ts; vitest exits non-zero on violation.
       - name: Run all tests with 100% coverage
         run: >
           docker compose run --rm -T web sh -c "
             yarn prisma generate &&
+            DATABASE_URL=file:./test.db yarn prisma migrate deploy &&
             yarn test:all
           "
 
