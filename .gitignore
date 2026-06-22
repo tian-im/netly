@@ -41,6 +41,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# npm lockfile — this project uses Yarn; having both npm lock and yarn.lock
+# causes confusion for CI tools and developers about which is authoritative.
+package-lock.json
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 

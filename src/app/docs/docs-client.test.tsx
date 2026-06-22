@@ -20,8 +20,10 @@ describe('DocsClient Component', () => {
   });
 
   it('renders the parsed HTML content inside the Card', () => {
-    renderDocsClient('<div data-testid="custom-content">Embedded Markdown Content</div>');
-    expect(screen.getByTestId('custom-content')).toBeInTheDocument();
+    // WHY: Only `id` attributes are allowed by the sanitizer (for heading anchors).
+    // We use a heading with an id to verify content passes through sanitization.
+    renderDocsClient('<h1 id="custom-content">Embedded Markdown Content</h1>');
     expect(screen.getByText('Embedded Markdown Content')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 });

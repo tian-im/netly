@@ -146,4 +146,64 @@ describe('DocsPage Server Component', () => {
       expect(html).toContain('<h3 id="基础设置-setup">基础设置 (Setup)</h3>');
     });
   });
+
+  describe('sanitization behavior', () => {
+    it('strips <script> tags from markdown output', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        '# Hello\n<script>alert("xss")</script>\n<p>safe content</p>'
+      );
+
+      const result = await DocsPage();
+      const html = result.props.htmlContent;
+
+      expect(html).toContain('<h1 id="hello">Hello</h1>');
+      expect(html).toContain('<p>safe content</p>');
+      expect(html).not.toContain('<script>');
+      expect(html).not.toContain('alert');
+    });
+
+    it('strips <script> tags from the error fallback HTML', async () => {
+      // Force the outer catch by making fs.readFile throw for English too
+      vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
+
+      const result = await DocsPage();
+      const html = result.props.htmlContent;
+
+      expect(html).not.toContain('<script>');
+    });
+
+    it('preserves class attributes for Tailwind styling', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        '<div class="alert alert-error">Styled content</div>'
+      );
+
+      const result = await DocsPage();
+      const html = result.props.htmlContent;
+
+      expect(html).toContain('class="alert alert-error"');
+    });
+
+    it('strips javascript: URIs from href attributes', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        '<a href="javascript:alert(1)">malicious</a>'
+      );
+
+      const result = await DocsPage();
+      const html = result.props.htmlContent;
+
+      // Either the href is stripped or the element is removed
+      expect(html).not.toContain('javascript:');
+    });
+
+    it('allows tel: links through the sanitizer', async () => {
+      vi.mocked(fs.readFile).mockResolvedValue(
+        '<a href="tel:+1234567890">Call us</a>'
+      );
+
+      const result = await DocsPage();
+      const html = result.props.htmlContent;
+
+      expect(html).toContain('href="tel:+1234567890"');
+    });
+  });
 });

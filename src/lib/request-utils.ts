@@ -21,7 +21,12 @@ export function getClientIp(request?: NextRequest): string {
     if (xRealIp) return xRealIp.trim();
   }
 
-  return (request as any).ip || '127.0.0.1';
+  // WHY: NextRequest has an optional `ip` property at runtime (populated by the
+  // Next.js server from the TCP socket), but it isn't always in the TypeScript
+  // type definitions across versions. We cast through a partial interface instead
+  // of `as any` so property access is still checked at the type level.
+  const nextReq = request as NextRequest & { ip?: string };
+  return nextReq.ip || '127.0.0.1';
 }
 
 /**

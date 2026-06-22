@@ -73,7 +73,7 @@ describe('CSRF Validation Helper', () => {
     expect(verifyCsrf(req)).toBe(false);
   });
 
-  it('checks x-forwarded-host as a fallback to Host header', () => {
+  it('uses x-forwarded-host when Host header is missing', () => {
     const req = new Request('http://localhost:3000/api/some-endpoint', {
       method: 'POST',
       headers: {
@@ -83,6 +83,30 @@ describe('CSRF Validation Helper', () => {
     });
     req.headers.delete('host');
     expect(verifyCsrf(req)).toBe(true);
+  });
+
+  it('gives x-forwarded-host priority over Host header when both are present', () => {
+    const req = new Request('http://localhost:3000/api/some-endpoint', {
+      method: 'POST',
+      headers: {
+        host: 'internal-service:3000',
+        'x-forwarded-host': 'my-netly-domain.com',
+        origin: 'https://my-netly-domain.com'
+      }
+    });
+    // x-forwarded-host wins, origin matches it → pass
+    expect(verifyCsrf(req)).toBe(true);
+
+    const reqMismatch = new Request('http://localhost:3000/api/some-endpoint', {
+      method: 'POST',
+      headers: {
+        host: 'my-netly-domain.com',
+        'x-forwarded-host': 'internal-service:3000',
+        origin: 'https://my-netly-domain.com'
+      }
+    });
+    // x-forwarded-host takes priority, origin does NOT match it → fail
+    expect(verifyCsrf(reqMismatch)).toBe(false);
   });
 
   it('returns false when request is undefined', () => {

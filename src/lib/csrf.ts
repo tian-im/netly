@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 /**
  * Verify CSRF protection for state-changing requests (POST, PUT, DELETE, PATCH).
  *
- * Checks that the Origin or Referer header matches the Host header of the request.
+ * Checks that the Origin or Referer header matches the expected host of the request.
  * Returns true if the request is safe, and false if CSRF check fails.
  */
 export function verifyCsrf(request?: Request | NextRequest): boolean {
@@ -23,7 +23,14 @@ export function verifyCsrf(request?: Request | NextRequest): boolean {
 
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
-  const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
+  // WHY: When behind a reverse proxy (Docker + Traefik/Nginx), the `host`
+  // header is often the internal container name (e.g. `netly-web:3000`)
+  // while `x-forwarded-host` carries the external domain the user actually
+  // visited. The Origin/Referer header from the browser matches the external
+  // domain, so x-forwarded-host must take priority. This matches the de facto
+  // standard for reverse-proxy setups, consistent with getClientIp's TRUST_PROXY
+  // pattern in request-utils.ts.
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
 
   if (!host) {
     return false;

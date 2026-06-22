@@ -34,6 +34,10 @@ export function checkRateLimit(
     stores.set(key, entry);
   }
 
+  // Track how many timestamps existed before filtering so we can detect
+  // when all prior timestamps have expired (used for pruning below).
+  const beforeCount = entry.timestamps.length;
+
   // Remove timestamps outside the window
   entry.timestamps = entry.timestamps.filter((ts) => now - ts < windowMs);
 
@@ -42,6 +46,16 @@ export function checkRateLimit(
   }
 
   entry.timestamps.push(now);
+
+  // WHY: Prune entries where all previous timestamps expired (beforeCount > 0)
+  // and only the just-pushed timestamp remains. Without pruning, stale entries
+  // with empty timestamp arrays accumulate in the Map forever. For a local-first
+  // app this is mostly precautionary — ~5-10 unique IPs — but it keeps the
+  // implementation clean and avoids a memory leak if ever deployed publicly.
+  if (beforeCount > 0 && entry.timestamps.length === 1) {
+    stores.delete(key);
+  }
+
   return true;
 }
 

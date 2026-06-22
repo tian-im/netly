@@ -69,7 +69,14 @@ declare global {
   var __activeMcpSessions: Map<string, WebSSETransport> | undefined;
 }
 
-// Global active sessions map, persisted across HMR in dev
+// Global active sessions map, persisted across HMR in dev.
+//
+// WHY: This is per-process, in-memory state. For a single-user local Docker
+// deployment this is sufficient — there is only one instance. If the app is
+// ever horizontally scaled (multiple replicas), MCP sessions would break
+// across instances because the session map is not shared. A future
+// enhancement could store sessions in SQLite or Redis for multi-instance
+// support, but that is out of scope for a local-first personal ledger.
 const activeSessions = globalThis.__activeMcpSessions ?? new Map<string, WebSSETransport>();
 if (process.env.NODE_ENV !== "production") {
   globalThis.__activeMcpSessions = activeSessions;
