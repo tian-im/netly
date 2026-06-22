@@ -1,6 +1,11 @@
-# Implementation Plan - Category Management
+# Implementation Plan — Category Management
 
-This plan details the addition of Category Management features to the Netly Ledger application. We will add capabilities to create and delete financial categories dynamically and view associated metrics.
+> **Status:** ✅ **COMPLETED** — All features described below have been fully implemented
+> as of June 2026. This document is retained for historical reference.
+
+---
+
+This plan detailed the addition of Category Management features to the Netly Ledger application. We added capabilities to create and delete financial categories dynamically and view associated metrics.
 
 ---
 
@@ -20,53 +25,50 @@ This plan details the addition of Category Management features to the Netly Ledg
 
 ---
 
-## Proposed Changes
+## What Was Implemented
 
 ### Database Actions & Backend
 
-#### [MODIFY] [actions.ts](file:///Users/tian/Desktop/workspace/netly/src/app/actions.ts)
-- Add Server Action `createCategory(name: string, type: string, cashFlowType: string)`
-  - Validate inputs (non-empty, type, cashFlowType values).
-  - Verify name is unique.
-  - Insert Category into the database.
-- Add Server Action `deleteCategory(id: string)`
-  - Prevent deleting the protected category named `Transfer`.
-  - Delete category from database.
+#### [MODIFIED] `src/app/actions.ts`
+- Added Server Action `createCategory(name: string, type: string, cashFlowType: string)` ✅
+  - Validates inputs (non-empty, type, cashFlowType values).
+  - Verifies name is unique.
+  - Inserts Category into the database.
+- Added Server Action `deleteCategory(id: string)` ✅
+  - Prevents deleting the protected category named `Transfer`.
+  - Deletes category from database; sets related transactions' `categoryId` to `null`.
+- Added Server Action `updateCategory(id, name, type, cashFlowType)` ✅
+  - Protects Transfer category from modification.
+  - Validates unique name and type/cashFlowType values.
 
 ### Navigation Layout
 
-#### [MODIFY] [layout.tsx](file:///Users/tian/Desktop/workspace/netly/src/app/layout.tsx)
-- Insert a navigation link for `🏷️ Categories` pointing to `/categories`.
+#### [MODIFIED] `src/app/layout.tsx`
+- Inserted a navigation link for `🏷️ Categories` pointing to `/categories`. ✅
+- All nav links use URL helpers from `@/lib/links.ts`. ✅
 
 ### Categories Management Page
 
-#### [NEW] [page.tsx](file:///Users/tian/Desktop/workspace/netly/src/app/categories/page.tsx)
-- Server Component that loads all categories (including transaction counts) and passes them to `CategoriesClient`.
+#### `src/app/categories/page.tsx`
+- Server Component that loads all categories (including transaction counts) and passes them to `CategoriesClient`. ✅
 
-#### [NEW] [categories-client.tsx](file:///Users/tian/Desktop/workspace/netly/src/app/categories/categories-client.tsx)
-- Client Component displaying a layout:
-  - **Left column (2/3 width)**: Table listing all categories showing:
-    - Category Name
-    - Type badge (Income, Expense, Transfer)
-    - Cash Flow Type badge
-    - Total Transaction Count
-    - Delete button (disabled for protected categories).
-  - **Right column (1/3 width)**: Creation form containing:
-    - Name field
-    - Category Type selector (INCOME, EXPENSE, TRANSFER)
-    - Cash Flow Type selector (OPERATING, INVESTING, FINANCING).
+#### `src/app/categories/categories-client.tsx`
+- Client Component with full layout:
+  - **Left column**: Table listing all categories with name, type badge, cash flow type badge, transaction count, edit/delete buttons (delete disabled for protected categories).
+  - **Right column**: Creation form with name, category type, and cash flow type selectors.
+  - **Match Rules tab**: Manage auto-categorization keyword/regex rules per category.
 
 ---
 
-## Verification Plan
+## Verification Plan (Completed)
 
 ### Automated Verification
-- Run typescript compilation checks: `docker compose exec -T web npx tsc --noEmit`
-- Run core tests and verify coverage: `docker compose exec -T web yarn test:coverage`
+- ✅ TypeScript compilation: `docker compose exec -T web yarn tsc --noEmit`
+- ✅ Core tests with coverage: `docker compose exec -T web yarn test:coverage`
 
 ### Manual Verification
-- Deploy changes and verify navigation to `/categories` works.
-- Create an income category named "Freelance" and verify it appears in the categories list and transaction select dropdowns.
-- Create an expense category named "Dining Out". Assign some transactions to it.
-- Delete the "Dining Out" category and verify those transactions return to "Uncategorized" state in the ledger.
-- Try to delete the "Transfer" category and verify it is rejected or protected.
+- ✅ Navigation to `/categories` works from sidebar.
+- ✅ Creating income/expense categories and assigning transactions works.
+- ✅ Deleting a category returns its transactions to "Uncategorized".
+- ✅ Deleting the "Transfer" category is rejected/protected.
+- ✅ Editing existing categories is supported.

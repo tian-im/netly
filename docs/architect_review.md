@@ -194,4 +194,4 @@ To prevent compile targets mismatch on native SQLite/Prisma bindings between a h
 2. **Volume Layout**:
    We bind-mount `./` to `/app` inside the container but map an anonymous volume to `/app/node_modules`. This maps source code updates in real-time for hot-reloading, while letting the Docker build system install container-native node binaries.
 3. **Prisma Generation hook**:
-   When the container starts, it runs `npx prisma generate` followed by `npx prisma db push` inside the container before booting the dev server. This aligns schema alterations with the local SQLite database.
+   When the container starts, it runs `yarn prisma generate` followed by `yarn prisma db push` inside the container before booting the dev server. This aligns schema alterations with the local SQLite database.
