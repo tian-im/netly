@@ -14,7 +14,10 @@ netly/
 │
 ├── messages/
 │   ├── en.json              — English i18n
-│   └── zh.json              — Chinese i18n
+│   ├── zh.json              — Chinese (Simplified) i18n
+│   ├── zh-TW.json           — Chinese (Traditional) i18n
+│   ├── ja.json              — Japanese i18n
+│   └── ko.json              — Korean i18n
 │
 ├── src/
 │   ├── app/                 — Next.js App Router
@@ -22,12 +25,12 @@ netly/
 │   │   ├── dashboard-client.tsx
 │   │   ├── layout.tsx + layout-client.tsx
 │   │   ├── providers.tsx    — LocaleContext
-│   │   ├── sidebar.tsx      — 7-route nav
+│   │   ├── sidebar.tsx      — 8-route nav
 │   │   ├── actions.ts       — All server actions (CRUD, reports, export)
 │   │   ├── dashboard-components/ (6 components)
 │   │   ├── accounts/  categories/  transactions/
 │   │   ├── import/    reports/     settings/
-│   │   ├── login/     setup/
+│   │   ├── login/     setup/       docs/
 │   │   ├── api/import/route.ts
 │   │   └── globals.css  loading.tsx  error.tsx  not-found.tsx
 │   │
@@ -38,22 +41,35 @@ netly/
 │   │   ├── reports.ts     — BS/IS/CFS generators
 │   │   ├── rules.ts       — Auto-categorization pattern matcher
 │   │   ├── currencies.ts  — Symbols + compact format
-│   │   ├── links.ts       — URL builders for reports/transactions pages
+│   │   ├── iso-4217-data.ts — Currency metadata registry
+│   │   ├── links.ts       — URL builders for all routes
+│   │   ├── dates.ts       — Date formatting & presets
+│   │   ├── locale.ts      — Locale resolution & default categories
+│   │   ├── preferences.ts — Client preference persistence
+│   │   ├── default-categories.ts — Onboarding category seeding
+│   │   ├── duplicates.ts  — Duplicate detection engine
+│   │   ├── import-utils.ts— Account import validation
+│   │   ├── mappers.ts     — Field mapping utilities
 │   │   ├── auth-session.ts— HMAC session cookies
 │   │   ├── session-secret.ts — Auto-generate + persist session secret to file
+│   │   ├── session-crypto.ts — Edge-compatible session HMAC
 │   │   ├── challenge-store.ts / webauthn.ts — PassKey auth
 │   │   ├── rate-limiter.ts — In-memory sliding-window rate limiter
 │   │   ├── csrf.ts        — CSRF validation helper
 │   │   ├── request-utils.ts— Request utilities (getClientIp, checkPayloadSize)
 │   │   ├── audit.ts       — Audit logging helper
+│   │   ├── constants.ts   — Shared constants
+│   │   ├── render-delta.tsx— Delta rendering component
+│   │   ├── translate-category.ts — Category name localisation
+│   │   ├── test-db.ts     — Test database helper
 │   │   └── translateError.ts
 │   │
 │   └── mcp-server/        — AI/LLM tool interface (MCP SDK)
 │       ├── data.ts        — fetchAndMapData() shared helper
 │       └── tools/
 │           ├── accounts.ts    (2 tools)
-│           ├── transactions.ts(4 tools)
-│           ├── categories.ts  (3 tools)
+│           ├── transactions.ts(5 tools)
+│           ├── categories.ts  (6 tools)
 │           ├── reports.ts     (4 tools)
 │           └── analysis.ts    (2 tools)
 │
@@ -82,9 +98,11 @@ lib/csv.ts + lib/rules.ts ← used by:
     └── mcp-server/tools/transactions.ts
 
 lib/links.ts (URL builders) ← used by:
+    ├── app/sidebar.tsx
     ├── app/dashboard-client.tsx
     ├── app/dashboard-components/CashFlowMetrics.tsx
-    └── app/dashboard-components/AccountBalancesTable.tsx
+    ├── app/dashboard-components/AccountBalancesTable.tsx
+    └── All pages requiring typed navigation links
 ```
 
 ## Key Module Responsibilities
@@ -93,7 +111,7 @@ lib/links.ts (URL builders) ← used by:
 |--------|---------|-------------|
 | `lib/csv.ts` | `parseCSV()`, `cleanAmount()`, `parseBankDate()` | API route, MCP tools |
 | `lib/reports.ts` | `generateBalanceSheet`, `IncomeStatement`, `CashFlowStatement` | Dashboard, MCP |
-| `lib/links.ts` | `buildReportsUrl()`, `buildAccountTransactionsUrl()`, `buildCategoryTransactionsUrl()` | Navigation across all pages — **always use instead of hardcoding paths with query params** |
+| `lib/links.ts` | `buildDashboardUrl()`, `buildReportsUrl()`, `buildAccountTransactionsUrl()`, `buildCategoryTransactionsUrl()`, `buildDocsUrl()`, `buildLoginUrl()`, `buildSetupUrl()`, etc. | Navigation across all pages — **always use instead of hardcoding paths** |
 | `lib/rules.ts` | `matchRule()` | CSV import, MCP tools |
 | `lib/auth-session.ts` | `createSessionCookie()`, `verifySessionCookie()`, `verifySessionWithDb()` | Login/setup pages |
 | `lib/session-secret.ts` | `getSessionSecret()` | `auth-session.ts` (auto-generate + file persist) |
@@ -101,5 +119,9 @@ lib/links.ts (URL builders) ← used by:
 | `lib/csrf.ts` | `verifyCsrf()` | State-changing API routes |
 | `lib/request-utils.ts` | `getClientIp()`, `checkPayloadSize()` | API and auth routes |
 | `lib/audit.ts` | `auditLog()` | Auth, import, and token routes |
-| `mcp-server/tools/transactions.ts` | `import_csv`, `list_transactions`, `categorize_uncategorized` | AI agents |
-| `mcp-server/tools/reports.ts` | `get_dashboard_summary`, `get_financial_reports`, `get_net_worth_trend` | AI agents |
+| `lib/locale.ts` | `parseAcceptLanguage()`, `resolveLocale()`, `getDefaultCategories()` | `layout.tsx`, `providers.tsx`, `docs/page.tsx` |
+| `lib/preferences.ts` | `PREFERENCES`, `getPreference()`, `setPreference()` | Client components, `providers.tsx` |
+| `lib/duplicates.ts` | `detectDuplicateGroups()` | `actions.ts`, MCP analysis tools |
+| `lib/import-utils.ts` | `validateAccountImport()`, `isAccountDuplicate()` | `actions.ts` (importAccounts) |
+| `lib/default-categories.ts` | Default category seeding based on locale | `actions.ts` (onboarding) |
+| `lib/iso-4217-data.ts` | ISO 4217 currency metadata registry | `lib/currencies.ts` |

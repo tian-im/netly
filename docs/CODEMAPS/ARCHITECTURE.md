@@ -3,7 +3,7 @@
 **Last Updated:** 2026-06-22
 **Stack:** Next.js 14 (App Router) + SQLite (Prisma) + Tailwind CSS v4 + DaisyUI v5
 **Auth:** WebAuthn (PassKeys) + Session cookies
-**i18n:** next-intl (en/zh)
+**i18n:** next-intl (en / zh / zh-TW / ja / ko)
 
 ## System Overview
 
@@ -43,20 +43,20 @@ page.tsx (RSC)
 ```
 File Upload → Auto-detect headers → Column mapping UI
     → POST /api/import → parseCSV() (papaparse)
-    → Duplicate filter (date+payee+amount+accountId composite)
+    → Duplicate filter (date+payee+amount+description+accountId composite)
     → matchRule() auto-categorization
     → db.transaction.createMany()
     → Revalidate all pages
 ```
 Duplicate prevention is enforced at **both** application level (skip check) and
-database level (`@@unique([date, payee, amount, accountId])` constraint).
+database level (`@@unique([date, payee, amount, description, accountId])` constraint).
 
 ### MCP Tool Flow
 ```
 AI/LLM → MCP SDK Server → Tools:
   - accounts: list_accounts, create_account
-  - transactions: import_csv, list_transactions, update_transaction_category, categorize_uncategorized
-  - categories: list_categories, create_category, create_category_rule
+  - transactions: import_csv, list_transactions, update_transaction_category, categorize_uncategorized, list_uncategorized
+  - categories: list_categories, get_category, get_category_stats, create_category, update_category, delete_category
   - reports: get_dashboard_summary, get_financial_reports, get_net_worth_trend, get_income_expense_breakdown
   - analysis: detect_duplicates, identify_recurring_transactions
 ```

@@ -16,6 +16,8 @@ Account ──1:N──▶ Transaction ──N:1──▶ Category
 PassKeyCredential  (WebAuthn credentials, single user)
 Session            (auth sessions)
 McpToken           (MCP API tokens)
+AuditLog           (security event audit trail)
+SetupToken         (single-use setup tokens for PassKey bootstrapping)
 ```
 
 ## Schema
@@ -79,5 +81,5 @@ transactions with the same payee and amount that differ only by reference/descri
 - **Balance Sheet**: Aggregate transactions by account up to date, compute net change from startingBalance
 - **Income Statement**: Filter transactions by date range + category type (INCOME/EXPENSE), group by category name
 - **Cash Flow Statement**: Filter by date range, group by category.cashFlowType (OPERATING/INVESTING/FINANCING)
-- **Duplicate detection**: (date, payee, amount) hash pre-computed during CSV import
+- **Duplicate detection**: Composite key comparison (`{date, payee, amount, description, accountId}`) during CSV import and at the database unique constraint level
 - **Auto-categorization**: matchRule() loops over CategoryRule patterns against payee/description

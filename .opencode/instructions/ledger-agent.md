@@ -35,14 +35,30 @@ You are a specialized senior software engineer agent tasked with implementing th
    - Format: `// WHY: <rationale>` — e.g., `// WHY: We use client-side case-insensitive comparison instead of a DB UNIQUE constraint because SQLite with Prisma doesn't support case-insensitive unique indexes, and the account count (<100) makes this safe.`
    - If you later read such a `// WHY:` comment and consider changing the code, **confirm with the user before making any changes** to ensure the original trade-off is still understood.
 
-10. **User Manual Maintenance**:
-   - The user manual consists of two files in the [`docs/`](./docs/) directory:
-     - English: [`docs/user_manual.en.md`](./docs/user_manual.en.md)
-     - Chinese: [`docs/user_manual.zh.md`](./docs/user_manual.zh.md)
-   - When you add, change, or remove a feature, check whether the user manual pages need updating. Update them as part of the same work.
-   - If you add English content, flag the equivalent Chinese page as needing translation by ensuring the `<!-- TODO: translate from en/user_manual.en.md -->` comment is present at the top of `docs/user_manual.zh.md`.
-   - If a feature change affects the user workflow enough to warrant a changelog entry, add a bullet to `docs/CHANGELOG.md` (create it if it doesn't exist).
-   - The user manual is public (no auth required); keep language clear, avoid internal jargon, and write for a non-technical audience.
+10. **Documentation Maintenance**:
+    - After ANY code change, update the corresponding documentation files. Follow this matrix:
+
+    | When you change... | Update these docs |
+    |---|---|
+    | **Prisma schema** | `architect_review.md` §3, `CODEMAPS/DATA.md`, `CODEMAPS/MODULES.md` |
+    | **Server actions** (`actions.ts`) | `CODEMAPS/MODULES.md`, `CODEMAPS/ARCHITECTURE.md` |
+    | **`src/lib/` files** (new/deleted/changed) | `CODEMAPS/MODULES.md` (layout + module table + deps) |
+    | **MCP tools** (`src/mcp-server/tools/`) | `CODEMAPS/ARCHITECTURE.md`, `CODEMAPS/MODULES.md`, user manuals §9 |
+    | **App routes/pages** (`src/app/`) | `CODEMAPS/FRONTEND.md`, `CODEMAPS/MODULES.md`, user manuals |
+    | **Sidebar/navigation** | `CODEMAPS/FRONTEND.md`, `CODEMAPS/MODULES.md` |
+    | **i18n/locales** (add/remove locale) | `CODEMAPS/ARCHITECTURE.md`, `CODEMAPS/FRONTEND.md`, `CODEMAPS/MODULES.md`, user manuals §9 |
+    | **URL helpers** (`src/lib/links.ts`) | `CODEMAPS/MODULES.md`, `CODEMAPS/FRONTEND.md` |
+    | **Auth/security** | `CODEMAPS/ARCHITECTURE.md`, user manuals §1 |
+    | **Financial reports** (`src/lib/reports.ts`) | `architect_review.md` §4, user manuals §8 |
+    | **CSV import** (`src/lib/csv.ts`) | `architect_review.md`, `CODEMAPS/ARCHITECTURE.md`, user manuals §4 |
+    | **Implementation plan completed** | Mark as `✅ COMPLETED` with date |
+    | **Any user-visible feature change** | `CHANGELOG.md` — add bullet under `## Unreleased` |
+
+    - **Codemaps** (`docs/CODEMAPS/*.md`): Must reflect the **current** codebase. Update file counts, tool counts, route counts, dependency graphs, and component lists whenever code changes.
+    - **Architect review** (`docs/architect_review.md`): Update when schema, calculation logic, or architectural decisions change.
+    - **User manuals** (`docs/user_manual.en.md`, `docs/user_manual.zh.md`): English is primary. When it changes, add `<!-- TODO: translate from en/user_manual.en.md -->` at the top of the Chinese version if it falls behind.
+    - **Changelog** (`docs/CHANGELOG.md`): Add a bullet for every completed feature, bug fix, or notable change. Format: `- Added / Changed / Fixed / Removed: <description>`.
+    - **Implementation plans** (`docs/implementation_plan*.md`): Never delete completed plans — mark them as `✅ COMPLETED` and keep for historical reference.
 
 ## References
 
@@ -51,6 +67,11 @@ Always ground your decisions and implementation steps in the following project d
 - **System Architecture Review**: [docs/architect_review.md](./docs/architect_review.md)
 - **User Manual (English)**: [docs/user_manual.en.md](./docs/user_manual.en.md)
 - **User Manual (Chinese)**: [docs/user_manual.zh.md](./docs/user_manual.zh.md)
+- **Codebase Maps**: [docs/CODEMAPS/](./docs/CODEMAPS/)
+  - [ARCHITECTURE.md](./docs/CODEMAPS/ARCHITECTURE.md) — High-level system overview
+  - [MODULES.md](./docs/CODEMAPS/MODULES.md) — Source directory layout & dependencies
+  - [DATA.md](./docs/CODEMAPS/DATA.md) — Database schema & queries
+  - [FRONTEND.md](./docs/CODEMAPS/FRONTEND.md) — Page tree & component hierarchy
 
 ---
 

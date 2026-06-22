@@ -128,10 +128,35 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
    - Team/project knowledge (architecture decisions, API changes, runbooks) → the project's existing docs structure
    - If the current task already produces the relevant docs or code comments, do not duplicate the same information elsewhere
    - If there is no obvious project doc location, ask before creating a new top-level file
-5. **Codemaps** — After any significant feature addition, refactoring, or structural change, update `docs/CODEMAPS/*.md` using the `doc-updater` agent. This keeps the token-lean architecture docs fresh for future sessions.
+5. **Documentation Maintenance** — After ANY code change, update the corresponding documentation files. Use `doc-updater` agent when available. Follow this matrix:
+
+   | When you change... | Update these docs |
+   |---|---|
+   | **Prisma schema** (`prisma/schema.prisma`) | `architect_review.md` §3, `CODEMAPS/DATA.md`, `CODEMAPS/MODULES.md` |
+   | **Server actions** (`src/app/actions.ts`) | `CODEMAPS/MODULES.md`, `CODEMAPS/ARCHITECTURE.md` |
+   | **`src/lib/` files** (new/deleted/changed) | `CODEMAPS/MODULES.md` (directory layout + module table + deps) |
+   | **MCP tools** (`src/mcp-server/tools/`) | `CODEMAPS/ARCHITECTURE.md`, `CODEMAPS/MODULES.md`, `user_manual.en.md` §9, `user_manual.zh.md` §9 |
+   | **App routes/pages** (`src/app/`) | `CODEMAPS/FRONTEND.md`, `CODEMAPS/MODULES.md`, user manuals (if user-visible) |
+   | **Sidebar/navigation** | `CODEMAPS/FRONTEND.md`, `CODEMAPS/MODULES.md` |
+   | **i18n/locales** (add/remove locale) | `CODEMAPS/ARCHITECTURE.md`, `CODEMAPS/FRONTEND.md`, `CODEMAPS/MODULES.md`, user manuals §9 |
+   | **URL helpers** (`src/lib/links.ts`) | `CODEMAPS/MODULES.md`, `CODEMAPS/FRONTEND.md` |
+   | **Auth/security** | `CODEMAPS/ARCHITECTURE.md`, user manuals §1 |
+   | **Dashboard components** | `CODEMAPS/ARCHITECTURE.md`, `CODEMAPS/FRONTEND.md` |
+   | **Financial reports** (`src/lib/reports.ts`) | `architect_review.md` §4, user manuals §8 |
+   | **CSV import** | `architect_review.md`, `CODEMAPS/ARCHITECTURE.md`, user manuals §4 |
+   | **Implementation plan completed** | Mark plan as `✅ COMPLETED` with date; keep for historical reference |
+   | **Any user-visible feature change** | `CHANGELOG.md` — add bullet under `## Unreleased` |
+
+   **Codemap rules:** `CODEMAPS/*.md` must reflect the **current** codebase. Update file counts, tool counts, route counts, dependency graphs, and component lists whenever the underlying code changes.
+
+   **Architect review rules:** `architect_review.md` defines structural truth. Update when schema, calculation logic, or architectural decisions change.
+
+   **User manual rules:** `user_manual.en.md` is the primary manual. When it changes, add `<!-- TODO: translate from en/user_manual.en.md -->` at the top of `user_manual.zh.md` if the Chinese version falls behind.
+
 6. **Verify** — Run tests (`docker compose exec -T web yarn test:coverage`) as the default verification method. Only use `browser_subagent` for web/UI verification when the user explicitly requests it.
 7. **Commit** — ONLY commit when the user explicitly requests it. Never auto-commit after completing work.
 8. **User Manual Update** — After any change to application features, workflows, configuration options, or UI layouts, the agent must update the public user manual in both `docs/user_manual.en.md` and `docs/user_manual.zh.md` to keep the user documentation synchronized with the implementation.
+9. **Changelog** — After completing any user-visible feature, bug fix, or notable change, add a concise bullet to `docs/CHANGELOG.md` under `## Unreleased`. Format: `- Added / Changed / Fixed / Removed: <description>`.
 
 ## Workflow Surface Policy
 

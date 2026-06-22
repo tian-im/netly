@@ -32,6 +32,9 @@ Netly Ledger 使用 **WebAuthn (PassKeys)** 来保护对本地账簿的访问。
   2. 点击**添加设备** / **生成设置验证码**。这将创建一个单次使用的设置验证码，有效期为 15 分钟。
   3. 在新设备上，导航到登录页面，选择**使用设置验证码**，然后输入该验证码以引导您的新凭据。
 
+### 应用内文档
+本用户手册也可以在应用内以渲染网页的形式查看，访问路径为 `/docs`。该页面可从侧边栏（📖 图标）访问，无需身份验证。
+
 ### 数据隐私与存储
 所有数据都保存在安装目录中位于 `./netly-data/netly.db` 的单文件 SQLite 数据库中（在 Docker 容器内部，此路径为 `/app/data/netly.db`）。会话签名密钥在首次运行时自动生成，并存储在 `./netly-data/.session-secret` 中。这些文件的备份和维护完全由您控制。
 
@@ -202,7 +205,7 @@ Netly Ledger 不直接连接银行 API，以此保护您的隐私。相反，您
 - **默认货币**：仪表板和报表预选的货币。
 - **默认日期范围**：仪表板分析的默认期间（例如，滚动 3 个月、今年以来）。
 - **首选日期格式**：设置您的日期显示格式（`DD/MM/YYYY`、`MM/DD/YYYY` 或 `YYYY-MM-DD`）。
-- **界面语言**：在英文和简体中文之间切换。
+- **界面语言**：在英文、简体中文、繁体中文（中文 繁體）、日文（日本語）和韩文（한국어）之间切换。
 
 ### 数据库信息与维护
 - **收缩并优化数据库**：重新组织磁盘上的数据库文件，回收未使用的数据库空间并优化索引布局。
@@ -216,25 +219,52 @@ Netly Ledger 不直接连接银行 API，以此保护您的隐私。相反，您
 - **导出完整账簿**：从报告页面下载包含所有数据的完整 CSV 压缩包。
 
 ### 模型上下文协议 (MCP) 访问
-针对使用 AI 编码助手或本地 LLM 智能体（如 OpenCode Client）的用户：
+针对使用 AI 编码助手或本地 LLM 智能体（如 OpenCode Client、Claude Code 或 OpenClaw）的用户：
 - Netly Ledger 在 `/api/mcp` 运行一个 SSE MCP 服务器。
-- **生成令牌**：在 MCP 设置卡片下，点击“生成令牌”并命名该令牌（例如“我的智能体”）。
-- **配置**：在您的 AI 工具客户端配置中将此令牌用作 Bearer Auth 标头。这授予 AI 智能体安全的、程序化的访问权限，以查询您的账户、交易账簿和类别。
+- **生成令牌**：在 MCP 设置卡片下，点击"生成令牌"并命名该令牌（例如"我的智能体"）。
+- **零 UI 引导启动**：您可以在运行 Docker 容器时设置 `MCP_INITIAL_TOKEN` 环境变量。这会立即注册一个安全的引导令牌，使 AI 智能体无需手动设置即可连接。当此功能激活时，设置界面将显示信息横幅。
+- **配置**：使用服务器 URL `http://localhost:3000/api/mcp` 和 Authorization 标头 `Bearer YOUR_TOKEN` 配置您的 AI 工具。
 
-  例如，在 **Claude Desktop** 或 **OpenCode Client** 的配置 JSON 中：
-  ```json
-  {
-    "mcpServers": {
-      "netly-ledger": {
-        "url": "http://localhost:3000/api/mcp",
-        "headers": {
-          "Authorization": "Bearer YOUR_MCP_TOKEN"
-        }
+#### OpenCode Client 配置
+将服务器条目添加到您的 `opencode.json` 配置文件中：
+```json
+{
+  "mcpServers": {
+    "netly-ledger": {
+      "type": "sse",
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
       }
     }
   }
-  ```
-- **撤销**：立即撤销任何处于活动状态的令牌以阻止访问。
+}
+```
+
+#### Claude Code 配置
+在终端中运行以下命令：
+```bash
+claude mcp add netly-ledger \
+  --sse http://localhost:3000/api/mcp \
+  --header "Authorization: Bearer YOUR_MCP_TOKEN"
+```
+
+#### OpenClaw 配置
+将服务器配置添加到您的 OpenClaw JSON 配置中：
+```json
+{
+  "mcpServers": {
+    "netly-ledger": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+- **撤销**：通过 UI 即时撤销任何活跃的数据库令牌以阻止访问。（通过环境变量配置的引导令牌需要从环境变量中移除并重启容器才能撤销访问权限）。
 
 ### 备份您的数据
 由于 Netly Ledger 100% 在您的本地计算机上运行，您的数据完全由您控制。

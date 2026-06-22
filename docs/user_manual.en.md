@@ -30,6 +30,9 @@ Netly Ledger uses **WebAuthn (PassKeys)** to secure access to your local ledger.
   2. Click **Add Device** / **Generate Setup Code**. This creates a single-use setup code that expires in 15 minutes.
   3. On the new device, navigate to the login page, select **Use setup code**, and enter the code to bootstrap your new credential.
 
+### In-App Documentation
+This user manual is also available as a rendered web page within the application at `/docs`. It is accessible from the sidebar (📖 icon) and does not require authentication.
+
 ### Data Privacy & Storage
 All data is saved in a single-file SQLite database located at `./netly-data/netly.db` in your installation directory (inside the Docker container, this is `/app/data/netly.db`). A session signing key is auto-generated on the first run and stored in `./netly-data/.session-secret`. Backup and maintenance of these files are entirely under your control.
 
@@ -200,7 +203,7 @@ Saved to your browser's local storage:
 - **Default Currency**: The currency pre-selected for dashboards and statements.
 - **Default Date Range**: The default period for the dashboard analysis (e.g. Trailing 3 Months, YTD).
 - **Preferred Date Format**: Set your date display format (`DD/MM/YYYY`, `MM/DD/YYYY`, or `YYYY-MM-DD`).
-- **Interface Language**: Switch between English and Simplified Chinese (中文 简体).
+- **Interface Language**: Switch between English, Simplified Chinese (中文 简体), Traditional Chinese (中文 繁體), Japanese (日本語), and Korean (한국어).
 
 ### Database Info & Maintenance
 - **Vacuum & Optimize Database**: Reorganizes the database file on disk, reclaiming unused database space and optimizing index layouts.
