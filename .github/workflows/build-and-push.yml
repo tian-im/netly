@@ -9,6 +9,15 @@
 #   2. test-coverage.yml passes on main → this workflow fires
 #   3. Image is built, tagged, and pushed to ghcr.io
 #
+# Architecture:
+#   Each platform (amd64, arm64) builds NATIVELY on its own runner
+#   in parallel — NO QEMU emulation. A merge job then creates a
+#   single multi-arch manifest pointing to both platform images.
+#
+#   WHY: QEMU-emulated builds (e.g. arm64 on x86) are 5-6x slower
+#   and easily exceed GitHub's 30-minute timeout. Native runners
+#   for both platforms eliminate this bottleneck entirely.
+#
 # Tags pushed:
 #   - latest          (always points to most recent main build)
 #   - <version>       (from VERSION file, e.g. 1.0.1)
@@ -35,53 +44,28 @@ on:
         default: ''
         required: false
 
-# Only proceed if the triggering workflow succeeded (or manual dispatch)
-# WHY: workflow_run fires on every completion (success/failure/cancelled).
-# We gate on success so a broken build is never pushed.
 jobs:
-  build-and-push:
-    name: Build & Push to GHCR
+  # ──────────────────────────────────────────────────────────────
+  # Compute tags once (shared by all downstream jobs)
+  # ──────────────────────────────────────────────────────────────
+  meta:
+    name: Compute tags
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 1
     # Only run if triggered manually, OR if the CI workflow succeeded
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    permissions:
-      contents: read
-      packages: write      # Required for pushing to GHCR
-
+    outputs:
+      image: ${{ steps.tags.outputs.image }}
+      version: ${{ steps.tags.outputs.version }}
+      sha_short: ${{ steps.tags.outputs.sha_short }}
     steps:
-      # ── Checkout the correct commit ──
-      # workflow_run events carry the head SHA of the triggering workflow
-      # run. workflow_dispatch uses the default branch HEAD.
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      # ── Set up QEMU for cross-platform emulation ──
-      # WHY: The production image targets linux/amd64 and linux/arm64
-      # so it runs on both x86 servers and ARM devices (e.g. Raspberry Pi).
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      # ── Set up Docker Buildx ──
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      # ── Login to GitHub Container Registry ──
-      # Uses the auto-generated GITHUB_TOKEN — no secrets to configure.
-      - name: Log in to GHCR
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # ── Extract version and compute tags ──
-      # Reads VERSION file for the semantic version tag. Falls back to
-      # the manual override input if provided (workflow_dispatch).
       - name: Compute image tags
-        id: meta
+        id: tags
         run: |
           if [ -n "${{ github.event.inputs.version_override }}" ]; then
             VERSION="${{ github.event.inputs.version_override }}"
@@ -95,37 +79,105 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
 
-          # WHY: We push three tags so consumers can pin to a specific
-          # version, track a specific commit, or float on latest.
-          TAGS="${IMAGE}:latest,${IMAGE}:${VERSION},${IMAGE}:sha-${SHA_SHORT}"
-          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
-
           echo "Image:     ${IMAGE}"
           echo "Version:   ${VERSION}"
           echo "SHA:       ${SHA_SHORT}"
-          echo "Tags:      ${TAGS}"
 
-      # ── Build and push the production image ──
-      # Uses the multi-stage Dockerfile. GitHub Actions cache is used
-      # for Docker layers to speed up subsequent builds.
-      - name: Build and push Docker image
+  # ──────────────────────────────────────────────────────────────
+  # Build each platform NATIVELY (no QEMU) in parallel
+  # ──────────────────────────────────────────────────────────────
+  # WHY: Using native ARM64 runners (ubuntu-24.04-arm) instead of
+  # QEMU emulation cuts build time from 30+ minutes to ~8 minutes.
+  # Each platform also gets its own cache scope to avoid the
+  # "Unable to reserve cache" contention error.
+  build:
+    name: Build (${{ matrix.arch }})
+    needs: meta
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # WHY: `cache-to/from` uses arch-specific scopes so the two
+      # parallel builds don't fight over the same cache key.
+      - name: Build and push (${{ matrix.arch }})
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ needs.meta.outputs.image }}:sha-${{ needs.meta.outputs.sha_short }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 
-      # ── Summary ──
-      - name: Print summary
+  # ──────────────────────────────────────────────────────────────
+  # Merge platform images into a single multi-arch manifest
+  # ──────────────────────────────────────────────────────────────
+  # WHY: docker buildx imagetools create assembles a manifest list
+  # that points to both the amd64 and arm64 images. Users pulling
+  # a single tag (e.g. :latest) automatically get the correct
+  # platform image for their architecture.
+  merge:
+    name: Merge manifests
+    needs: [meta, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      packages: write
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create multi-arch manifest
         run: |
-          echo "### 🚀 Image published to GHCR" >> $GITHUB_STEP_SUMMARY
+          IMAGE="${{ needs.meta.outputs.image }}"
+          SHA="${{ needs.meta.outputs.sha_short }}"
+          VERSION="${{ needs.meta.outputs.version }}"
+
+          docker buildx imagetools create \
+            -t "${IMAGE}:latest" \
+            -t "${IMAGE}:${VERSION}" \
+            -t "${IMAGE}:sha-${SHA}" \
+            "${IMAGE}:sha-${SHA}-amd64" \
+            "${IMAGE}:sha-${SHA}-arm64"
+
+          echo "### 🚀 Multi-arch image published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Tag | Image |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | ----- |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`latest\` | \`${{ steps.meta.outputs.image }}:latest\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`${{ steps.meta.outputs.version }}\` | \`${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`sha-${{ steps.meta.outputs.sha_short }}\` | \`${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.sha_short }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`latest\` | \`${IMAGE}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`${VERSION}\` | \`${IMAGE}:${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`sha-${SHA}\` | \`${IMAGE}:sha-${SHA}\` |" >> $GITHUB_STEP_SUMMARY

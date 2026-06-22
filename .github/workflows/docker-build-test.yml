@@ -38,7 +38,7 @@ on:
   workflow_dispatch:
     inputs:
       multi_platform:
-        description: 'Build for both linux/amd64 and linux/arm64? (slower)'
+        description: 'Build for both linux/amd64 and linux/arm64? (2 jobs, ~10 min)'
         type: boolean
         default: false
         required: false
@@ -49,74 +49,73 @@ on:
         required: false
 
 jobs:
-  build:
-    name: Build Production Image
+  # ── Native single-platform build (fast path for PRs) ──
+  build-native:
+    name: Build (native)
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.multi_platform != 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # ── Set up Docker Buildx ──
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # ── Set up QEMU for cross-platform emulation (optional) ──
-      # Only needed when testing multi-platform builds via workflow_dispatch.
-      - name: Set up QEMU
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true' }}
-        uses: docker/setup-qemu-action@v4
+      - name: Build production Docker image
+        run: docker compose -f docker-compose.prod.yml build
 
-      # ── Build the production image ──
-      # Two paths:
-      #   a) Multi-platform (manual dispatch only): uses buildx for
-      #      linux/amd64 + linux/arm64, matching the production build.
-      #      No --push, no --cache-to (avoids the cache export issue).
-      #   b) Native platform (automatic triggers + default dispatch):
-      #      uses docker compose build for speed.
-      - name: Build production Docker image (multi-platform)
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true' }}
+      - name: Smoke test (start → health check → stop)
+        if: ${{ github.event.inputs.smoke_test != 'false' }}
+        run: |
+          mkdir -p ./netly-data && chmod 777 ./netly-data
+          echo "=== Starting production container ==="
+          docker compose -f docker-compose.prod.yml up --detach --wait --wait-timeout 90
+          echo "=== Container is healthy! ==="
+          docker compose -f docker-compose.prod.yml ps
+          echo "=== Checking logs for errors ==="
+          docker compose -f docker-compose.prod.yml logs --tail 50
+          echo "=== Tearing down ==="
+          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans
+
+      - name: Ensure cleanup
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down --volumes --remove-orphans 2>/dev/null || true
+
+  # ── Multi-platform build (manual dispatch, uses native ARM runner) ──
+  # WHY: Each platform builds on its native architecture — amd64 on
+  # ubuntu-latest, arm64 on ubuntu-24.04-arm. No QEMU, no timeout.
+  # Cache scopes are platform-specific to avoid reservation conflicts.
+  build-multi:
+    name: Build (${{ matrix.arch }})
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build (${{ matrix.arch }}) — verify only, no push
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: false
-          # Load is not supported with multi-platform; just verify the build succeeds.
-          cache-from: type=gha
-          # No cache-to — avoids the "operation was canceled" issue on cache export.
-
-      - name: Build production Docker image (native)
-        if: ${{ ! (github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true') }}
-        run: docker compose -f docker-compose.prod.yml build
-
-      # ── Smoke test (optional, enabled by default) ──
-      # Only runs with native platform builds, since multi-platform
-      # images cannot be loaded into the local Docker daemon.
-      - name: Smoke test (start → health check → stop)
-        if: ${{ github.event.inputs.smoke_test != 'false' && ! (github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true') }}
-        run: |
-          # Create the data mount directory so the container (running as
-          # UID 1001) can write the SQLite DB and session secret.
-          # WHY: Docker creates the host directory as root if it doesn't
-          # exist, which would cause a permission-denied error when the
-          # entrypoint tries to write /app/data/.session-secret.
-          mkdir -p ./netly-data && chmod 777 ./netly-data
-
-          echo "=== Starting production container ==="
-          docker compose -f docker-compose.prod.yml up --detach --wait --wait-timeout 90
-
-          echo "=== Container is healthy! ==="
-          docker compose -f docker-compose.prod.yml ps
-
-          echo "=== Checking logs for errors ==="
-          docker compose -f docker-compose.prod.yml logs --tail 50
-
-          echo "=== Tearing down ==="
-          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans
-
-      # ── Cleanup (always run even if smoke test fails) ──
-      - name: Ensure cleanup
-        if: always()
-        run: docker compose -f docker-compose.prod.yml down --volumes --remove-orphans 2>/dev/null || true
+          cache-from: type=gha,scope=${{ matrix.arch }}-test
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}-test
