@@ -21,6 +21,13 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# WHY: Next.js static page generation during `yarn build` imports PrismaClient
+# at module level (src/lib/db.ts). PrismaClient validates DATABASE_URL on
+# construction, so it must be set — even though no real DB connection is
+# needed at build time. A placeholder value satisfies the validation.
+# The runner stage overrides this with the real path (file:/app/data/netly.db).
+ENV DATABASE_URL=file:./placeholder.db
+
 # Generate Prisma client so it's available during build (and traced by standalone)
 RUN npx prisma generate
 

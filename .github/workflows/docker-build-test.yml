@@ -13,21 +13,35 @@
 # stages, entrypoint failures) BEFORE merging and before the
 # build-and-push workflow publishes an image.
 #
+# Iteration workflow when fixing Docker build issues:
+#   1. Push your changes to a feature branch
+#   2. Go to Actions → Docker Build Test → Run workflow
+#   3. Select your branch, enable multi-platform, and run
+#   4. Iterate until green — no push to GHCR, no VERSION bumps
+#
 # Related: test-coverage.yml (quality gate), build-and-push.yml
 # ─────────────────────────────────────────────────────────────────
 
 name: Docker Build Test
 
 on:
-  # ── Automatic: every PR and push to main ──
+  # ── Automatic: every PR and push to main (native platform only, fast) ──
   pull_request:
     branches: [main]
   push:
     branches: [main]
 
-  # ── Manual: trigger from the Actions UI (only visible from default branch) ──
+  # ── Manual: trigger from the Actions UI on any branch ──
+  # WHY: When iterating on Docker build fixes, use workflow_dispatch from
+  # a feature branch. Enable multi-platform to verify the full production
+  # build (linux/amd64 + linux/arm64) without pushing to GHCR.
   workflow_dispatch:
     inputs:
+      multi_platform:
+        description: 'Build for both linux/amd64 and linux/arm64? (slower)'
+        type: boolean
+        default: false
+        required: false
       smoke_test:
         description: 'Run smoke test (start container & check health)?'
         type: boolean
@@ -38,7 +52,7 @@ jobs:
   build:
     name: Build Production Image
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -48,21 +62,40 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      # ── Set up QEMU for cross-platform emulation (optional) ──
+      # Only needed when testing multi-platform builds via workflow_dispatch.
+      - name: Set up QEMU
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true' }}
+        uses: docker/setup-qemu-action@v4
+
       # ── Build the production image ──
-      # Uses docker-compose.prod.yml which references the multi-stage
-      # Dockerfile. This validates all build stages:
-      #   1. deps   — yarn install
-      #   2. builder — prisma generate + next build
-      #   3. runner — standalone server assembly
-      - name: Build production Docker image
+      # Two paths:
+      #   a) Multi-platform (manual dispatch only): uses buildx for
+      #      linux/amd64 + linux/arm64, matching the production build.
+      #      No --push, no --cache-to (avoids the cache export issue).
+      #   b) Native platform (automatic triggers + default dispatch):
+      #      uses docker compose build for speed.
+      - name: Build production Docker image (multi-platform)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          # Load is not supported with multi-platform; just verify the build succeeds.
+          cache-from: type=gha
+          # No cache-to — avoids the "operation was canceled" issue on cache export.
+
+      - name: Build production Docker image (native)
+        if: ${{ ! (github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true') }}
         run: docker compose -f docker-compose.prod.yml build
 
       # ── Smoke test (optional, enabled by default) ──
-      # Starts the container, waits up to 90s for the health check
-      # to pass (heathcheck polls /api/health every 30s), then
-      # tears everything down.
+      # Only runs with native platform builds, since multi-platform
+      # images cannot be loaded into the local Docker daemon.
       - name: Smoke test (start → health check → stop)
-        if: ${{ github.event.inputs.smoke_test != 'false' }}
+        if: ${{ github.event.inputs.smoke_test != 'false' && ! (github.event_name == 'workflow_dispatch' && github.event.inputs.multi_platform == 'true') }}
         run: |
           # Create the data mount directory so the container (running as
           # UID 1001) can write the SQLite DB and session secret.

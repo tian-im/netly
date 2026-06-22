@@ -42,7 +42,7 @@ jobs:
   build-and-push:
     name: Build & Push to GHCR
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     # Only run if triggered manually, OR if the CI workflow succeeded
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
