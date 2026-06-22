@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { Bot, Trash2, Plus, Copy, AlertTriangle, Check } from 'lucide-react';
-import { Button, Input, Card } from '@/app/components/ui';
+import { Button, Input, Card, Modal } from '@/app/components/ui';
 import { McpTokenInfo } from '@/types/settings';
 
 interface McpSectionProps {
@@ -31,25 +31,6 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
-
-  // Close modals on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showAddMcpModal) {
-          setShowAddMcpModal(false);
-          setGeneratedMcpToken(null);
-          setNewMcpName('');
-        } else if (mcpTokenToRevoke) {
-          setMcpTokenToRevoke(null);
-        }
-      }
-    };
-    if (showAddMcpModal || mcpTokenToRevoke) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [showAddMcpModal, mcpTokenToRevoke]);
 
   const handleCopyToken = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -189,149 +170,163 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
       </Card>
 
       {/* Add/Generate MCP Token Modal */}
-      {showAddMcpModal && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="mcp-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="mcp-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              {generatedMcpToken ? t('mcpCreatedTitle') : t('mcpCreateBtn')}
-            </h3>
+      <Modal
+        isOpen={showAddMcpModal}
+        onClose={() => {
+          setShowAddMcpModal(false);
+          setGeneratedMcpToken(null);
+          setNewMcpName('');
+        }}
+        maxWidth="md"
+        aria-labelledby="mcp-modal-title"
+      >
+        <Modal.Header showBorder>
+          <Modal.Title color="primary" icon={<Bot className="h-5 w-5" />} id="mcp-modal-title">
+            {generatedMcpToken ? t('mcpCreatedTitle') : t('mcpCreateBtn')}
+          </Modal.Title>
+        </Modal.Header>
 
-            <div className="py-4 space-y-4">
-              {!generatedMcpToken ? (
-                <Input
-                  id="new-mcp-name"
-                  label={t('mcpNameLabel')}
-                  type="text"
-                  placeholder={t('mcpNamePlaceholder')}
-                  value={newMcpName}
-                  onChange={(e) => setNewMcpName(e.target.value)}
-                  disabled={isPending}
-                  autoFocus
-                />
-              ) : (
-                <div className="space-y-3">
-                  <div className="alert alert-success text-xs gap-2">
-                    <span>{t('mcpCreatedDesc')}</span>
-                  </div>
+        <Modal.Body className="space-y-4">
+          {!generatedMcpToken ? (
+            <Input
+              id="new-mcp-name"
+              label={t('mcpNameLabel')}
+              type="text"
+              placeholder={t('mcpNamePlaceholder')}
+              value={newMcpName}
+              onChange={(e) => setNewMcpName(e.target.value)}
+              disabled={isPending}
+              autoFocus
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="alert alert-success text-xs gap-2">
+                <span>{t('mcpCreatedDesc')}</span>
+              </div>
 
-                  <div className="form-control w-full">
-                    <span className="label-text font-semibold text-base-content/75 mb-1">
-                      {t('mcpTokenLabel')}
-                    </span>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        readOnly
-                        value={generatedMcpToken.token}
-                        className="font-mono font-bold text-center w-full text-sm bg-base-200"
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => handleCopyToken(generatedMcpToken.token)}
-                        className="btn-square px-0 shrink-0"
-                        title={copiedMcpToken ? tCommon('copiedSuccess') : tCommon('copy')}
-                        aria-label={copiedMcpToken ? tCommon('copiedSuccess') : tCommon('copy')}
-                      >
-                        {copiedMcpToken ? (
-                          <>
-                            <Check className="h-4 w-4 text-success" />
-                            <span className="sr-only">{tCommon('copiedSuccess')}</span>
-                          </>
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-base-content/60 leading-relaxed pt-2">
-                    {t('mcpInstruction')}
-                  </p>
+              <div className="form-control w-full">
+                <span className="label-text font-semibold text-base-content/75 mb-1">
+                  {t('mcpTokenLabel')}
+                </span>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    readOnly
+                    value={generatedMcpToken.token}
+                    className="font-mono font-bold text-center w-full text-sm bg-base-200"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleCopyToken(generatedMcpToken.token)}
+                    className="btn-square px-0 shrink-0"
+                    title={copiedMcpToken ? tCommon('copiedSuccess') : tCommon('copy')}
+                    aria-label={copiedMcpToken ? tCommon('copiedSuccess') : tCommon('copy')}
+                  >
+                    {copiedMcpToken ? (
+                      <>
+                        <Check className="h-4 w-4 text-success" />
+                        <span className="sr-only">{tCommon('copiedSuccess')}</span>
+                      </>
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="modal-action">
-              {!generatedMcpToken ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowAddMcpModal(false);
-                      setNewMcpName('');
-                    }}
-                    disabled={isPending}
-                  >
-                    {tCommon('cancel')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleCreateMcpToken}
-                    loading={isPending}
-                    disabled={!newMcpName.trim()}
-                    icon={<Plus className="h-4 w-4" />}
-                  >
-                    {t('mcpCreateBtn')}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    setShowAddMcpModal(false);
-                    setGeneratedMcpToken(null);
-                    setNewMcpName('');
-                  }}
-                >
-                  {tCommon('close')}
-                </Button>
-              )}
+              <p className="text-xs text-base-content/60 leading-relaxed pt-2">
+                {t('mcpInstruction')}
+              </p>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </Modal.Body>
 
-      {/* Revocation Confirmation Modal */}
-      {mcpTokenToRevoke && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="revoke-mcp-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="revoke-mcp-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              {t('mcpRevokeConfirmTitle')}
-            </h3>
-            <p className="py-4 text-base-content/80 text-sm">
-              {t('mcpRevokeConfirmDesc', { name: mcpTokenToRevoke.name })}
-            </p>
-            <div className="modal-action">
+        <Modal.Actions>
+          {!generatedMcpToken ? (
+            <>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setMcpTokenToRevoke(null)}
+                onClick={() => {
+                  setShowAddMcpModal(false);
+                  setNewMcpName('');
+                }}
                 disabled={isPending}
               >
                 {tCommon('cancel')}
               </Button>
               <Button
                 type="button"
-                variant="error"
                 size="sm"
+                onClick={handleCreateMcpToken}
                 loading={isPending}
-                onClick={async () => {
-                  await handleRevokeMcpToken(mcpTokenToRevoke.id);
-                  setMcpTokenToRevoke(null);
-                }}
+                disabled={!newMcpName.trim()}
+                icon={<Plus className="h-4 w-4" />}
               >
-                {t('mcpRevokeConfirmBtn')}
+                {t('mcpCreateBtn')}
               </Button>
-            </div>
-          </div>
-        </div>
+            </>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setShowAddMcpModal(false);
+                setGeneratedMcpToken(null);
+                setNewMcpName('');
+              }}
+            >
+              {tCommon('close')}
+            </Button>
+          )}
+        </Modal.Actions>
+      </Modal>
+
+      {/* Revocation Confirmation Modal */}
+      {mcpTokenToRevoke && (
+        <Modal
+          isOpen={true}
+          onClose={() => setMcpTokenToRevoke(null)}
+          maxWidth="md"
+          aria-labelledby="revoke-mcp-title"
+        >
+          <Modal.Header showBorder>
+            <Modal.Title color="error" icon={<AlertTriangle className="h-5 w-5" />} id="revoke-mcp-title">
+              {t('mcpRevokeConfirmTitle')}
+            </Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body>
+            <p className="text-base-content/80 text-sm">
+              {t('mcpRevokeConfirmDesc', { name: mcpTokenToRevoke.name })}
+            </p>
+          </Modal.Body>
+
+          <Modal.Actions>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setMcpTokenToRevoke(null)}
+              disabled={isPending}
+            >
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="error"
+              size="sm"
+              loading={isPending}
+              onClick={async () => {
+                await handleRevokeMcpToken(mcpTokenToRevoke.id);
+                setMcpTokenToRevoke(null);
+              }}
+            >
+              {t('mcpRevokeConfirmBtn')}
+            </Button>
+          </Modal.Actions>
+        </Modal>
       )}
     </>
   );

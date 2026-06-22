@@ -4,7 +4,6 @@ import { Marked } from 'marked';
 import { cookies, headers } from 'next/headers';
 import { parseAcceptLanguage } from '@/lib/locale';
 import { PREFERENCES } from '@/lib/preferences';
-import DOMPurify from 'isomorphic-dompurify';
 import DocsClient from './docs-client';
 
 export const revalidate = 0; // Always serve the latest user manual content
@@ -43,9 +42,12 @@ export default async function DocsPage() {
       }
     }
 
+    // WHY: We control the markdown files in docs/ — they are not user-generated content.
+    // Marked's output is safe HTML without scripts when rendering from trusted markdown.
+    // This avoids the jsdom default-stylesheet.css bundling issue that isomorphic-dompurify triggers
+    // in Next.js standalone builds.
     const htmlContent = await markedInstance.parse(markdown);
-    const sanitizedHtml = DOMPurify.sanitize(htmlContent);
-    return <DocsClient htmlContent={sanitizedHtml} />;
+    return <DocsClient htmlContent={htmlContent} />;
   } catch (error) {
     console.error('Failed to load user manual:', error);
     const fallbackHtml = `
@@ -54,7 +56,6 @@ export default async function DocsPage() {
         <span>Documentation is currently unavailable. Please verify that docs/user_manual.en.md exists and is readable.</span>
       </div>
     `;
-    const sanitizedFallback = DOMPurify.sanitize(fallbackHtml);
-    return <DocsClient htmlContent={sanitizedFallback} />;
+    return <DocsClient htmlContent={fallbackHtml} />;
   }
 }

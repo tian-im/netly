@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useTranslations, useFormatter } from 'next-intl';
 import { ArrowUpDown, ArrowUp, ArrowDown, Upload, CheckCircle } from 'lucide-react';
 import { Button, Checkbox, Select, Card } from '@/app/components/ui';
@@ -269,9 +268,9 @@ export default function TransactionTable({
                       <h3 className="font-bold text-lg text-base-content/75">{t('noDuplicatesFound')}</h3>
                       <p className="text-xs text-base-content/50 mt-1">{t('noDuplicatesFoundDesc')}</p>
                     </div>
-                    <Link href={buildTransactionsUrl()} className="btn btn-outline btn-sm mt-2">
+                    <Button href={buildTransactionsUrl()} variant="outline" size="sm" className="mt-2">
                       {t('clearFilter')}
-                    </Link>
+                    </Button>
                   </div>
                 </td>
               </tr>
@@ -285,9 +284,9 @@ export default function TransactionTable({
                     <div>
                       <h3 className="font-bold text-lg text-base-content/75">{t('noTransactions')}</h3>
                     </div>
-                    <Link href={buildImportUrl()} className="btn btn-primary btn-sm mt-2">
+                    <Button href={buildImportUrl()} variant="primary" size="sm" className="mt-2">
                       {t('uploadStatement')}
-                    </Link>
+                    </Button>
                   </div>
                 </td>
               </tr>

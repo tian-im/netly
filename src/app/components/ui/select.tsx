@@ -5,7 +5,7 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   error?: string;
   helperText?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
-  variant?: 'default' | 'primary' | 'warning' | 'error';
+  variant?: 'default' | 'primary' | 'warning' | 'error' | 'ghost';
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
@@ -17,8 +17,15 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       lg: 'select-lg',
     }[size];
 
+    // WHY: The ghost variant renders a transparent, borderless select for use in compact
+    // UI contexts like the locale switcher. Unlike other variants, it suppresses the border,
+    // focus ring, and select-bordered class.
+    const isGhost = variant === 'ghost';
+
     const variantClass = error
       ? 'select-error'
+      : isGhost
+      ? 'border-0 bg-transparent cursor-pointer'
       : {
           default: 'focus:border-primary',
           primary: 'select-primary',
@@ -28,6 +35,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     const ringClass = error
       ? 'focus:ring-error/20'
+      : isGhost
+      ? ''
       : {
           default: 'focus:ring-primary/20',
           primary: 'focus:ring-primary/20',
@@ -35,7 +44,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           error: 'focus:ring-error/20',
         }[variant];
 
-    const selectClass = `select select-bordered w-full rounded-lg focus:ring-2 ${ringClass} ${sizeClass} ${variantClass} ${className}`.trim();
+    const borderedClass = isGhost ? '' : 'select-bordered';
+    const selectClass = `select ${borderedClass} w-full rounded-lg ${ringClass ? `focus:ring-2 ${ringClass}` : 'focus:ring-0 focus:outline-none'} ${sizeClass} ${variantClass} ${className}`.trim().replace(/\s+/g, ' ');
 
     return (
       <div className="form-control w-full">

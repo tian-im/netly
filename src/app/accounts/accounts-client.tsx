@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useMemo, useRef } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLocaleContext } from '@/app/providers';
 import { createAccount, deleteAccount, updateAccount } from '../actions';
@@ -8,7 +8,7 @@ import { getCurrencySymbol, DEFAULT_CURRENCY } from '@/lib/currencies';
 import CurrencySelector from '@/app/components/CurrencySelector';
 import { translateError } from '@/lib/translateError';
 import { Wallet, ArrowUpDown, Plus, Pencil, AlertTriangle } from 'lucide-react';
-import { Button, Input, Select, Card, ToastContainer, type ToastMessage } from '@/app/components/ui';
+import { Button, Input, Select, Card, Modal, ToastContainer, type ToastMessage } from '@/app/components/ui';
 
 interface Account {
   id: string;
@@ -320,35 +320,14 @@ export default function AccountsClient({
     setShowDiscardConfirm(false);
   };
 
-  // WHY: Using a ref for isEditDirty avoids re-registering the keydown
-  // listener on every keystroke (isEditDirty recalculates via useMemo
-  // whenever the edit form fields change).
-  const isEditDirtyRef = useRef(isEditDirty);
-  isEditDirtyRef.current = isEditDirty;
-
-  // Close modals on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Check discard confirm first since it stacks above the edit modal
-        if (showDiscardConfirm) {
-          setShowDiscardConfirm(false);
-        } else if (editingAccount) {
-          if (isEditDirtyRef.current) {
-            setShowDiscardConfirm(true);
-          } else {
-            setEditingAccount(null);
-          }
-        } else if (accountToDelete) {
-          setAccountToDelete(null);
-        }
-      }
-    };
-    if (editingAccount || accountToDelete || showDiscardConfirm) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+  const handleCloseEditModal = () => {
+    if (showDiscardConfirm) return;
+    if (isEditDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      setEditingAccount(null);
     }
-  }, [editingAccount, accountToDelete, showDiscardConfirm]);
+  };
 
   const SortIndicator = ({ field }: { field: typeof sortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-base-content/20 ml-1 inline-block" />;
@@ -398,7 +377,8 @@ export default function AccountsClient({
                       placeholder={tCommon('search') || 'Search accounts...'}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="input-sm w-full pl-9"
+                      size="sm"
+                      className="w-full pl-9"
                     />
                   </div>
                 </div>
@@ -651,152 +631,154 @@ export default function AccountsClient({
       </div>
 
       {/* Edit Account Modal */}
-      {editingAccount && (
-        <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="edit-modal-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              <Pencil className="h-4 w-4" />
-              {t('editAccount')}
-            </h3>
-            
-            <form onSubmit={handleUpdateAccount} className="space-y-4 mt-4">
-              <Input
-                id="edit-account-name"
-                label={t('newAccountName')}
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                required
-                disabled={isUpdating}
-              />
+      {!!editingAccount && (
+      <Modal isOpen={!!editingAccount} onClose={handleCloseEditModal} maxWidth="md" zIndex="z-40" aria-labelledby="edit-modal-title">
+        <Modal.Header showBorder onClose={handleCloseEditModal}>
+          <Modal.Title id="edit-modal-title" color="primary" icon={<Pencil className="h-4 w-4" />}>
+            {t('editAccount')}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleUpdateAccount} className="space-y-4">
+            <Input
+              id="edit-account-name"
+              label={t('newAccountName')}
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              required
+              disabled={isUpdating}
+            />
 
-              <Select
-                id="edit-account-type"
-                label={t('newAccountType')}
-                value={editType}
-                onChange={(e) => setEditType(e.target.value as 'ASSET' | 'LIABILITY')}
+            <Select
+              id="edit-account-type"
+              label={t('newAccountType')}
+              value={editType}
+              onChange={(e) => setEditType(e.target.value as 'ASSET' | 'LIABILITY')}
+              disabled={isUpdating}
+            >
+              <option value="ASSET">{t('assetOption')}</option>
+              <option value="LIABILITY">{t('liabilityOption')}</option>
+            </Select>
+
+            <div className="form-control w-full">
+              <label className="label" htmlFor="edit-account-currency">
+                <span className="label-text font-bold">{t('newAccountCurrency')}</span>
+              </label>
+              {mounted && (
+                <CurrencySelector
+                  id="edit-account-currency"
+                  value={editCurrency}
+                  onChange={setEditCurrency}
+                  disabled={isUpdating}
+                  className="w-full"
+                />
+              )}
+            </div>
+
+            <Input
+              id="edit-account-balance"
+              label={`${t('newAccountBalance')} (${getCurrencySymbol(editCurrency)})`}
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={editBalance}
+              onChange={(e) => setEditBalance(e.target.value)}
+              disabled={isUpdating}
+              helperText={t('balanceHelp')}
+            />
+
+            <Modal.Actions>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleCancelEdit}
                 disabled={isUpdating}
               >
-                <option value="ASSET">{t('assetOption')}</option>
-                <option value="LIABILITY">{t('liabilityOption')}</option>
-              </Select>
-
-              <div className="form-control w-full">
-                <label className="label" htmlFor="edit-account-currency">
-                  <span className="label-text font-bold">{t('newAccountCurrency')}</span>
-                </label>
-                {mounted && (
-                  <CurrencySelector
-                    id="edit-account-currency"
-                    value={editCurrency}
-                    onChange={setEditCurrency}
-                    disabled={isUpdating}
-                    className="w-full"
-                  />
-                )}
-              </div>
-
-              <Input
-                id="edit-account-balance"
-                label={`${t('newAccountBalance')} (${getCurrencySymbol(editCurrency)})`}
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={editBalance}
-                onChange={(e) => setEditBalance(e.target.value)}
-                disabled={isUpdating}
-                helperText={t('balanceHelp')}
-              />
-
-              <div className="modal-action">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleCancelEdit}
-                  disabled={isUpdating}
-                >
-                  {tCommon('cancel')}
-                </Button>
-                <Button
-                  type="submit"
-                  loading={isUpdating}
-                  disabled={!editName.trim()}
-                >
-                  {t('saveChanges')}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+                {tCommon('cancel')}
+              </Button>
+              <Button
+                type="submit"
+                loading={isUpdating}
+                disabled={!editName.trim()}
+              >
+                {t('saveChanges')}
+              </Button>
+            </Modal.Actions>
+          </form>
+        </Modal.Body>
+      </Modal>
       )}
       </div>
 
       {/* Delete Confirmation Modal */}
-      {accountToDelete && (
-        <div className="modal modal-open z-40" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="delete-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              {t('confirmDelete')}
-            </h3>
-            <p className="py-4 text-base-content/80 text-sm">
-              {t('deleteWarning', { name: accountToDelete.name })}
-            </p>
-            <div className="modal-action">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setAccountToDelete(null)}
-                disabled={deletingAccountId !== null}
-              >
-                {tCommon('cancel')}
-              </Button>
-              <Button
-                type="button"
-                variant="error"
-                size="sm"
-                onClick={handleDeleteConfirm}
-                loading={deletingAccountId !== null}
-              >
-                {t('deleteAccountBtn')}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {!!accountToDelete && (
+      <Modal isOpen={!!accountToDelete} onClose={() => setAccountToDelete(null)} maxWidth="md" zIndex="z-40" aria-labelledby="delete-modal-title">
+        <Modal.Header onClose={() => setAccountToDelete(null)}>
+          <Modal.Title id="delete-modal-title" color="error" icon={<AlertTriangle className="h-5 w-5" />}>
+            {t('confirmDelete')}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-base-content/80 text-sm">
+            {t('deleteWarning', { name: accountToDelete.name })}
+          </p>
+        </Modal.Body>
+        <Modal.Actions>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setAccountToDelete(null)}
+            disabled={deletingAccountId !== null}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="error"
+            size="sm"
+            onClick={handleDeleteConfirm}
+            loading={deletingAccountId !== null}
+          >
+            {t('deleteAccountBtn')}
+          </Button>
+        </Modal.Actions>
+      </Modal>
       )}
 
       {/* Discard Changes Confirmation Modal */}
       {showDiscardConfirm && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="discard-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="discard-modal-title" className="font-bold text-lg text-warning flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              {tCommon('confirm') || 'Confirm'}
-            </h3>
-            <p className="py-4 text-base-content/80 text-sm">
-              {tCommon('discardChangesConfirm')}
-            </p>
-            <div className="modal-action">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleDiscardCancel}
-              >
-                {tCommon('cancel')}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleDiscardConfirm}
-              >
-                {tCommon('confirm')}
-              </Button>
-            </div>
-          </div>
-        </div>
+      <Modal isOpen={showDiscardConfirm} onClose={handleDiscardCancel} maxWidth="md" zIndex="z-50" aria-labelledby="discard-modal-title">
+        <Modal.Header onClose={handleDiscardCancel}>
+          <Modal.Title id="discard-modal-title" color="warning" icon={<AlertTriangle className="h-5 w-5" />}>
+            {tCommon('confirm') || 'Confirm'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-base-content/80 text-sm">
+            {tCommon('discardChangesConfirm')}
+          </p>
+        </Modal.Body>
+        <Modal.Actions>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleDiscardCancel}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleDiscardConfirm}
+          >
+            {tCommon('confirm')}
+          </Button>
+        </Modal.Actions>
+      </Modal>
       )}
 
       {/* Toasts Notification Container */}

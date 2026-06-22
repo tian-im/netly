@@ -32,9 +32,12 @@ describe('Button Component', () => {
 
     rerender(<Button variant="error">Error</Button>);
     expect(screen.getByRole('button').className).toContain('btn-error');
+    // WHY: DaisyUI v5 default error/success-content colors are dark; we enforce text-white for solid-background buttons
+    expect(screen.getByRole('button').className).toContain('text-white');
 
     rerender(<Button variant="success">Success</Button>);
     expect(screen.getByRole('button').className).toContain('btn-success');
+    expect(screen.getByRole('button').className).toContain('text-white');
   });
 
   it('applies sizes correctly', () => {
@@ -107,6 +110,7 @@ describe('Button Component', () => {
   it('applies accent variant class correctly', () => {
     render(<Button variant="accent">Accent</Button>);
     expect(screen.getByRole('button').className).toContain('btn-accent');
+    expect(screen.getByRole('button').className).toContain('text-white');
   });
 
   it('applies outline-accent variant class correctly', () => {
@@ -121,6 +125,7 @@ describe('Button Component', () => {
 
     rerender(<Button variant="warning">Warning</Button>);
     expect(screen.getByRole('button').className).toContain('btn-warning');
+    expect(screen.getByRole('button').className).toContain('text-white');
 
     rerender(<Button variant="link">Link</Button>);
     expect(screen.getByRole('button').className).toContain('btn-link');

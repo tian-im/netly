@@ -116,7 +116,8 @@ export default function FilterBar({
               placeholder={t('filter.searchPlaceholder')}
               value={localSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="input-sm w-full pl-9"
+              size="sm"
+              className="w-full pl-9"
               aria-label="Search payee or memo"
             />
           </div>

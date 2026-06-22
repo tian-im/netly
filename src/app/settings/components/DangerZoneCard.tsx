@@ -1,10 +1,10 @@
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { AlertTriangle, Trash2, LogOut, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { buildLoginUrl } from '@/lib/links';
 import { resetDatabase } from '../../actions';
-import { Button, Input, Card } from '@/app/components/ui';
+import { Button, Input, Card, Modal } from '@/app/components/ui';
 
 interface DangerZoneCardProps {
   accountsCount: number;
@@ -27,20 +27,6 @@ export default function DangerZoneCard({
   const [showWipeModal, setShowWipeModal] = useState(false);
   const [wipeConfirmInput, setWipeConfirmInput] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // Close modal on Escape
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowWipeModal(false);
-        setWipeConfirmInput('');
-      }
-    };
-    if (showWipeModal) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [showWipeModal]);
 
   const handleResetDbConfirm = async () => {
     if (wipeConfirmInput.trim().toUpperCase() !== 'WIPE') return;
@@ -73,6 +59,11 @@ export default function DangerZoneCard({
     } finally {
       setIsLoggingOut(false);
     }
+  };
+
+  const closeWipeModal = () => {
+    setShowWipeModal(false);
+    setWipeConfirmInput('');
   };
 
   return (
@@ -121,62 +112,58 @@ export default function DangerZoneCard({
       </Card>
 
       {/* Wipe Confirmation Modal */}
-      {showWipeModal && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="wipe-modal-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="wipe-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-error" />
-              {t('wipeConfirmTitle')}
-            </h3>
-
-            <div className="py-4 text-sm text-base-content/80 space-y-3">
-              <p>{t('wipeConfirmWarning')}</p>
-              <ul className="list-disc list-inside space-y-1 pl-2 font-semibold text-error/95">
-                <li>{t('wipeConfirmAccounts', { count: accountsCount })}</li>
-                <li>{t('wipeConfirmTransactions', { count: transactionsCount })}</li>
-                <li>{t('wipeConfirmRules', { count: rulesCount })}</li>
-              </ul>
-              <p>{t('wipeConfirmPermanent')}</p>
-              <Input
-                id="wipe-confirm-input"
-                label={t.rich('wipeConfirmPrompt', {
-                  word: (chunks) => <strong className="text-error">{chunks}</strong>
-                })}
-                type="text"
-                value={wipeConfirmInput}
-                onChange={(e) => setWipeConfirmInput(e.target.value)}
-                className="font-bold"
-                disabled={isPending}
-              />
-            </div>
-
-            <div className="modal-action">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowWipeModal(false);
-                  setWipeConfirmInput('');
-                }}
-                disabled={isPending}
-              >
-                {tCommon('cancel')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline-error"
-                size="sm"
-                onClick={handleResetDbConfirm}
-                loading={isPending}
-                disabled={wipeConfirmInput.trim().toUpperCase() !== 'WIPE'}
-              >
-                {t('wipeAllBtn')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showWipeModal}
+        onClose={closeWipeModal}
+        aria-labelledby="wipe-modal-title"
+      >
+        <Modal.Header showBorder onClose={closeWipeModal}>
+          <Modal.Title color="error" icon={<ShieldAlert className="h-5 w-5" />} id="wipe-modal-title">
+            {t('wipeConfirmTitle')}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="space-y-3">
+          <p>{t('wipeConfirmWarning')}</p>
+          <ul className="list-disc list-inside space-y-1 pl-2 font-semibold text-error/95">
+            <li>{t('wipeConfirmAccounts', { count: accountsCount })}</li>
+            <li>{t('wipeConfirmTransactions', { count: transactionsCount })}</li>
+            <li>{t('wipeConfirmRules', { count: rulesCount })}</li>
+          </ul>
+          <p>{t('wipeConfirmPermanent')}</p>
+          <Input
+            id="wipe-confirm-input"
+            label={t.rich('wipeConfirmPrompt', {
+              word: (chunks) => <strong className="text-error">{chunks}</strong>
+            })}
+            type="text"
+            value={wipeConfirmInput}
+            onChange={(e) => setWipeConfirmInput(e.target.value)}
+            className="font-bold"
+            disabled={isPending}
+          />
+        </Modal.Body>
+        <Modal.Actions>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={closeWipeModal}
+            disabled={isPending}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline-error"
+            size="sm"
+            onClick={handleResetDbConfirm}
+            loading={isPending}
+            disabled={wipeConfirmInput.trim().toUpperCase() !== 'WIPE'}
+          >
+            {t('wipeAllBtn')}
+          </Button>
+        </Modal.Actions>
+      </Modal>
     </>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useFormatter } from 'next-intl';
 import { translateError } from '@/lib/translateError';
 import { KeyRound, Trash2, Plus, Copy, AlertTriangle, Check } from 'lucide-react';
-import { Button, Input, Card } from '@/app/components/ui';
+import { Button, Input, Card, Modal } from '@/app/components/ui';
 import { PassKeyInfo } from '@/types/settings';
 
 interface PassKeySectionProps {
@@ -37,27 +37,6 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       if (urlTimeoutRef.current) clearTimeout(urlTimeoutRef.current);
     };
   }, []);
-
-  // Close modals on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showAddPassKeyModal) {
-          setShowAddPassKeyModal(false);
-          setNewDeviceName('');
-        } else if (showSetupTokenModal) {
-          setShowSetupTokenModal(false);
-          setSetupToken(null);
-        } else if (passKeyToDelete) {
-          setPassKeyToDelete(null);
-        }
-      }
-    };
-    if (showAddPassKeyModal || showSetupTokenModal || passKeyToDelete) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [showAddPassKeyModal, showSetupTokenModal, passKeyToDelete]);
 
   const handleCopyToken = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -247,188 +226,215 @@ export default function PassKeySection({ initialPassKeys, showToast }: PassKeySe
       </Card>
 
       {/* Add PassKey Modal */}
-      {showAddPassKeyModal && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="add-passkey-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="add-passkey-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              <KeyRound className="h-5 w-5" />
-              {tPasskey('modalTitle')}
-            </h3>
-            <div className="py-4 space-y-3">
-              <p className="text-sm text-base-content/80">{tPasskey('modalDesc')}</p>
-              <Input
-                id="new-passkey-name"
-                label={tPasskey('deviceName')}
-                type="text"
-                placeholder={tPasskey('deviceNamePlaceholder')}
-                value={newDeviceName}
-                onChange={(e) => setNewDeviceName(e.target.value)}
-                disabled={isPending}
-                autoFocus
-              />
-            </div>
-            <div className="modal-action">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowAddPassKeyModal(false);
-                  setNewDeviceName('');
-                }}
-                disabled={isPending}
-              >
-                {tCommon('cancel')}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleAddPassKey}
-                disabled={!newDeviceName.trim()}
-                loading={isPending}
-                icon={<Plus className="h-4 w-4" />}
-              >
-                {tPasskey('registerBtn')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showAddPassKeyModal}
+        onClose={() => {
+          setShowAddPassKeyModal(false);
+          setNewDeviceName('');
+        }}
+        aria-labelledby="add-passkey-title"
+      >
+        <Modal.Header
+          showBorder
+          onClose={() => {
+            setShowAddPassKeyModal(false);
+            setNewDeviceName('');
+          }}
+        >
+          <Modal.Title icon={<KeyRound className="h-5 w-5" />} id="add-passkey-title">
+            {tPasskey('modalTitle')}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="space-y-3">
+          <p className="text-sm text-base-content/80">{tPasskey('modalDesc')}</p>
+          <Input
+            id="new-passkey-name"
+            label={tPasskey('deviceName')}
+            type="text"
+            placeholder={tPasskey('deviceNamePlaceholder')}
+            value={newDeviceName}
+            onChange={(e) => setNewDeviceName(e.target.value)}
+            disabled={isPending}
+            autoFocus
+          />
+        </Modal.Body>
+        <Modal.Actions>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setShowAddPassKeyModal(false);
+              setNewDeviceName('');
+            }}
+            disabled={isPending}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleAddPassKey}
+            disabled={!newDeviceName.trim()}
+            loading={isPending}
+            icon={<Plus className="h-4 w-4" />}
+          >
+            {tPasskey('registerBtn')}
+          </Button>
+        </Modal.Actions>
+      </Modal>
 
       {/* Setup Token Modal */}
-      {showSetupTokenModal && setupToken && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="setup-token-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="setup-token-title" className="font-bold text-lg text-primary flex items-center gap-2">
-              <KeyRound className="h-5 w-5" />
+      {setupToken && (
+        <Modal
+          isOpen={showSetupTokenModal}
+          onClose={() => {
+            setShowSetupTokenModal(false);
+            setSetupToken(null);
+          }}
+          aria-labelledby="setup-token-title"
+        >
+          <Modal.Header
+            showBorder
+            onClose={() => {
+              setShowSetupTokenModal(false);
+              setSetupToken(null);
+            }}
+          >
+            <Modal.Title icon={<KeyRound className="h-5 w-5" />} id="setup-token-title">
               {tPasskey('setupTokenModalTitle')}
-            </h3>
-            <div className="py-4 space-y-4">
-              <p className="text-sm text-base-content/80">{tPasskey('setupTokenModalDesc')}</p>
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="space-y-4">
+            <p className="text-sm text-base-content/80">{tPasskey('setupTokenModalDesc')}</p>
 
-              <div className="space-y-3">
-                {/* Code field */}
-                <div className="form-control w-full">
-                  <span className="label-text font-semibold text-base-content/75 mb-1">
-                    {tPasskey('setupTokenLabel')}
-                  </span>
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      readOnly
-                      value={setupToken.token}
-                      className="font-mono font-bold text-center tracking-wider w-full text-lg bg-base-200"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => handleCopyToken(setupToken.token)}
-                      className="btn-square px-0 shrink-0"
-                      title={copiedToken ? tCommon('copiedSuccess') : tCommon('copy')}
-                      aria-label={copiedToken ? tCommon('copiedSuccess') : tCommon('copy')}
-                    >
-                      {copiedToken ? (
-                        <>
-                          <Check className="h-4 w-4 text-success" />
-                          <span className="sr-only">{tCommon('copiedSuccess')}</span>
-                        </>
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* URL field */}
-                <div className="form-control w-full">
-                  <span className="label-text font-semibold text-base-content/75 mb-1">
-                    {tPasskey('setupUrlLabel')}
-                  </span>
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      readOnly
-                      value={setupToken.url}
-                      className="text-xs w-full bg-base-200"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => handleCopyUrl(setupToken.url)}
-                      className="btn-square px-0 shrink-0"
-                      title={copiedUrl ? tCommon('copiedSuccess') : tCommon('copy')}
-                      aria-label={copiedUrl ? tCommon('copiedSuccess') : tCommon('copy')}
-                    >
-                      {copiedUrl ? (
-                        <>
-                          <Check className="h-4 w-4 text-success" />
-                          <span className="sr-only">{tCommon('copiedSuccess')}</span>
-                        </>
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="alert alert-warning text-xs mt-2 gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-warning-content" />
-                <span className="text-warning-content font-semibold">
-                  {tPasskey('setupTokenExpires')}
+            <div className="space-y-3">
+              {/* Code field */}
+              <div className="form-control w-full">
+                <span className="label-text font-semibold text-base-content/75 mb-1">
+                  {tPasskey('setupTokenLabel')}
                 </span>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    readOnly
+                    value={setupToken.token}
+                    className="font-mono font-bold text-center tracking-wider w-full text-lg bg-base-200"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleCopyToken(setupToken.token)}
+                    className="btn-square px-0 shrink-0"
+                    title={copiedToken ? tCommon('copiedSuccess') : tCommon('copy')}
+                    aria-label={copiedToken ? tCommon('copiedSuccess') : tCommon('copy')}
+                  >
+                    {copiedToken ? (
+                      <>
+                        <Check className="h-4 w-4 text-success" />
+                        <span className="sr-only">{tCommon('copiedSuccess')}</span>
+                      </>
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* URL field */}
+              <div className="form-control w-full">
+                <span className="label-text font-semibold text-base-content/75 mb-1">
+                  {tPasskey('setupUrlLabel')}
+                </span>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    readOnly
+                    value={setupToken.url}
+                    className="text-xs w-full bg-base-200"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleCopyUrl(setupToken.url)}
+                    className="btn-square px-0 shrink-0"
+                    title={copiedUrl ? tCommon('copiedSuccess') : tCommon('copy')}
+                    aria-label={copiedUrl ? tCommon('copiedSuccess') : tCommon('copy')}
+                  >
+                    {copiedUrl ? (
+                      <>
+                        <Check className="h-4 w-4 text-success" />
+                        <span className="sr-only">{tCommon('copiedSuccess')}</span>
+                      </>
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="modal-action">
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  setShowSetupTokenModal(false);
-                  setSetupToken(null);
-                }}
-              >
-                {tCommon('close')}
-              </Button>
+
+            <div className="alert alert-warning text-xs mt-2 gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-warning-content" />
+              <span className="text-warning-content font-semibold">
+                {tPasskey('setupTokenExpires')}
+              </span>
             </div>
-          </div>
-        </div>
+          </Modal.Body>
+          <Modal.Actions>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setShowSetupTokenModal(false);
+                setSetupToken(null);
+              }}
+            >
+              {tCommon('close')}
+            </Button>
+          </Modal.Actions>
+        </Modal>
       )}
 
       {/* Delete PassKey Confirmation Modal */}
       {passKeyToDelete && (
-        <div className="modal modal-open z-50" role="dialog" aria-modal="true" aria-labelledby="delete-passkey-title">
-          <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-            <h3 id="delete-passkey-title" className="font-bold text-lg text-error flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+        <Modal
+          isOpen={true}
+          onClose={() => setPassKeyToDelete(null)}
+          aria-labelledby="delete-passkey-title"
+        >
+          <Modal.Header showBorder onClose={() => setPassKeyToDelete(null)}>
+            <Modal.Title color="error" icon={<AlertTriangle className="h-5 w-5" />} id="delete-passkey-title">
               {tPasskey('removeConfirmTitle')}
-            </h3>
-            <p className="py-4 text-base-content/80 text-sm">
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p className="text-base-content/80 text-sm">
               {tPasskey('removeConfirmWarning', { name: passKeyToDelete.deviceName || tPasskey('unnamed') })}
             </p>
-            <div className="modal-action">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setPassKeyToDelete(null)}
-                disabled={isPending}
-              >
-                {tCommon('cancel')}
-              </Button>
-              <Button
-                type="button"
-                variant="error"
-                size="sm"
-                loading={isPending}
-                onClick={async () => {
-                  await handleDeletePassKey(passKeyToDelete.id);
-                  setPassKeyToDelete(null);
-                }}
-              >
-                {tPasskey('removeConfirmBtn')}
-              </Button>
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+          <Modal.Actions>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setPassKeyToDelete(null)}
+              disabled={isPending}
+            >
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="error"
+              size="sm"
+              loading={isPending}
+              onClick={async () => {
+                await handleDeletePassKey(passKeyToDelete.id);
+                setPassKeyToDelete(null);
+              }}
+            >
+              {tPasskey('removeConfirmBtn')}
+            </Button>
+          </Modal.Actions>
+        </Modal>
       )}
     </>
   );

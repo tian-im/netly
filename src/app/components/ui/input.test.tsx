@@ -76,4 +76,39 @@ describe('Input Component', () => {
     expect(screen.getByPlaceholderText('Normal').className).toContain('focus:ring-error/20');
     expect(screen.getByPlaceholderText('Normal').className).not.toContain('focus:ring-primary/20');
   });
+
+  // WHY: Input must support a size prop consistent with Select, Button, Checkbox, and Radio.
+  // This eliminates raw input-sm class overrides in call sites.
+  it('applies the correct size class for standard inputs', () => {
+    const { rerender } = render(<Input placeholder="test" size="xs" />);
+    expect(screen.getByPlaceholderText('test').className).toContain('input-xs');
+
+    rerender(<Input placeholder="test" size="sm" />);
+    expect(screen.getByPlaceholderText('test').className).toContain('input-sm');
+
+    rerender(<Input placeholder="test" size="md" />);
+    expect(screen.getByPlaceholderText('test').className).toContain('input-md');
+
+    rerender(<Input placeholder="test" size="lg" />);
+    expect(screen.getByPlaceholderText('test').className).toContain('input-lg');
+  });
+
+  it('defaults to md size when no size prop is provided', () => {
+    render(<Input placeholder="test" />);
+    expect(screen.getByPlaceholderText('test').className).toContain('input-md');
+  });
+
+  it('applies the correct size class for file inputs', () => {
+    const { rerender } = render(<Input type="file" size="xs" data-testid="f" />);
+    expect(screen.getByTestId('f').className).toContain('file-input-xs');
+
+    rerender(<Input type="file" size="sm" data-testid="f" />);
+    expect(screen.getByTestId('f').className).toContain('file-input-sm');
+
+    rerender(<Input type="file" size="md" data-testid="f" />);
+    expect(screen.getByTestId('f').className).toContain('file-input-md');
+
+    rerender(<Input type="file" size="lg" data-testid="f" />);
+    expect(screen.getByTestId('f').className).toContain('file-input-lg');
+  });
 });

@@ -267,7 +267,7 @@ export default function ReportsClient({
                   type="date"
                   value={startDateStr}
                   onChange={(e) => setStartDateStr(e.target.value)}
-                  className="input-sm"
+                  size="sm"
                 />
               </div>
               <div className="flex-1">
@@ -276,7 +276,7 @@ export default function ReportsClient({
                   type="date"
                   value={endDateStr}
                   onChange={(e) => setEndDateStr(e.target.value)}
-                  className="input-sm"
+                  size="sm"
                 />
               </div>
               <div className="flex-1">

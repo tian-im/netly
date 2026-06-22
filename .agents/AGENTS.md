@@ -141,7 +141,7 @@ Troubleshoot failures: check test isolation → verify mocks → fix implementat
 
 ## Command Execution
 
-> **RULE: ALL commands (npm, npx, prisma, tsc, vitest, sqlite3, etc.) MUST be run inside the container via `docker compose exec -T web <command>`. Never run them directly on the host machine.**
+> **RULE: ALL commands (yarn, prisma, tsc, vitest, sqlite3, etc.) MUST be run inside the container via `docker compose exec -T web <command>`. Never run them directly on the host machine.**
 
 | Host command | Docker equivalent |
 |---|---|

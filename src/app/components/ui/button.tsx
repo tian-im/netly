@@ -24,17 +24,20 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, Bu
       secondary: 'btn-secondary text-secondary-content',
       outline: 'btn-outline',
       ghost: 'btn-ghost',
-      error: 'btn-error text-error-content',
-      success: 'btn-success text-success-content',
+      // WHY: DaisyUI v5 sets --btn-fg to dark content colors by default (e.g. error-content = oklch(27%)).
+      // We override with text-white so all solid-background buttons consistently use white text,
+      // matching the primary/secondary/neutral pattern where content colors are already light.
+      error: 'btn-error text-white',
+      success: 'btn-success text-white',
       'outline-primary': 'btn-outline btn-primary',
       'outline-secondary': 'btn-outline btn-secondary',
       'outline-error': 'btn-outline btn-error hover:text-white',
       neutral: 'btn-neutral text-neutral-content',
-      warning: 'btn-warning text-warning-content',
+      warning: 'btn-warning text-white',
       link: 'btn-link p-0 h-auto min-h-0 text-left justify-start',
       tab: 'tab',
       segmented: 'bg-transparent text-base-content/70 hover:bg-base-300 border-0',
-      accent: 'btn-accent text-accent-content',
+      accent: 'btn-accent text-white',
       'outline-accent': 'btn-outline btn-accent hover:text-white',
     }[variant];
 

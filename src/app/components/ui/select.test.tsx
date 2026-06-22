@@ -110,4 +110,15 @@ describe('Select Component', () => {
     expect(screen.getByTestId('select').className).toContain('focus:ring-error/20');
     expect(screen.getByTestId('select').className).not.toContain('select-primary');
   });
+
+  it('applies ghost variant with no border, background, or ring', () => {
+    render(<Select variant="ghost" size="xs" data-testid="select" />);
+    const select = screen.getByTestId('select');
+    expect(select.className).not.toContain('select-bordered');
+    expect(select.className).not.toContain('focus:ring-2');
+    expect(select.className).toContain('border-0');
+    expect(select.className).toContain('bg-transparent');
+    expect(select.className).toContain('cursor-pointer');
+    expect(select.className).toContain('select-xs');
+  });
 });

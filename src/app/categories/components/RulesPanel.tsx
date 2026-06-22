@@ -142,7 +142,7 @@ export default function RulesPanel({
                 placeholder={t('merchantKeywordPlaceholder')}
                 value={newRulePattern}
                 onChange={(e) => setNewRulePattern(e.target.value)}
-                className="input-sm"
+                size="sm"
                 required
                 disabled={isCreatingRule || categories.length === 0}
                 helperText={t('regexHint')}

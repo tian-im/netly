@@ -84,7 +84,8 @@ export default function CategoryTable({
             placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="input-sm w-full pr-8"
+            size="sm"
+            className="w-full pr-8"
           />
           {searchQuery && (
             <Button

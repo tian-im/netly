@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
-import { Button } from '@/app/components/ui';
+import { Button, Modal } from '@/app/components/ui';
 
 interface DeleteRuleModalProps {
   ruleToDelete: { id: string; catId: string; pattern: string };
@@ -21,41 +21,44 @@ export default function DeleteRuleModal({
   const tCommon = useTranslations('common');
 
   return (
-    <div
-      className="modal modal-open z-40"
-      role="dialog"
-      aria-modal="true"
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      zIndex="z-40"
       aria-labelledby="delete-rule-modal-title"
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
     >
-      <div className="modal-box border border-base-200 shadow-2xl bg-base-100 max-w-md">
-        <h3 id="delete-rule-modal-title" className="font-bold text-lg text-error flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" /> {t('ruleDeleteConfirm')}
-        </h3>
-        <p className="py-4 text-base-content/80 text-sm">
-          {t('ruleDeleteWarning', { pattern: ruleToDelete.pattern })}
-        </p>
-        <div className="modal-action">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            disabled={isDeleting}
-          >
-            {tCommon('cancel')}
-          </Button>
-          <Button
-            type="button"
-            variant="error"
-            size="sm"
-            loading={isDeleting}
-            onClick={onConfirm}
-          >
-            {t('delete')}
-          </Button>
-        </div>
-      </div>
-    </div>
+      <Modal.Header showBorder onClose={onClose}>
+        <Modal.Title
+          color="error"
+          icon={<AlertTriangle className="h-5 w-5" />}
+          id="delete-rule-modal-title"
+        >
+          {t('ruleDeleteConfirm')}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {t('ruleDeleteWarning', { pattern: ruleToDelete.pattern })}
+      </Modal.Body>
+      <Modal.Actions>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          disabled={isDeleting}
+        >
+          {tCommon('cancel')}
+        </Button>
+        <Button
+          type="button"
+          variant="error"
+          size="sm"
+          loading={isDeleting}
+          onClick={onConfirm}
+        >
+          {t('delete')}
+        </Button>
+      </Modal.Actions>
+    </Modal>
   );
 }
