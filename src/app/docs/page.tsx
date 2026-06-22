@@ -59,15 +59,21 @@ export default async function DocsPage() {
     const cookieLocale = cookies().get(PREFERENCES.locale.key)?.value;
     const headerLocale = parseAcceptLanguage(headers().get('Accept-Language'));
     const locale = cookieLocale || headerLocale;
-    const lang = locale.startsWith('zh') ? 'zh' : 'en';
+    // WHY: Lookup map for locale-to-doc-prefix. Each locale that has its own
+    // user manual file is listed explicitly. Unrecognised locales and generic
+    // 'zh' fall back to 'en' or 'zh' respectively via the startsWith check.
+    const DOC_LOCALE_MAP: Record<string, string> = { 'zh-TW': 'zh-TW', ja: 'ja', ko: 'ko' };
+    const docLocale = DOC_LOCALE_MAP[locale] ?? (locale.startsWith('zh') ? 'zh' : 'en');
 
-    const filePath = path.join(process.cwd(), 'docs', `user_manual.${lang}.md`);
+    const filePath = path.join(process.cwd(), 'docs', `user_manual.${docLocale}.md`);
     let markdown: string;
     try {
       markdown = await fs.readFile(filePath, 'utf-8');
     } catch (readError) {
-      if (lang !== 'en') {
-        const fallbackPath = path.join(process.cwd(), 'docs', 'user_manual.en.md');
+      if (docLocale !== 'en') {
+        // Fall back to zh for zh-TW, then en for everything else
+        const fallbackLocale = docLocale === 'zh-TW' ? 'zh' : 'en';
+        const fallbackPath = path.join(process.cwd(), 'docs', `user_manual.${fallbackLocale}.md`);
         markdown = await fs.readFile(fallbackPath, 'utf-8');
       } else {
         throw readError;

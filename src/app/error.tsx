@@ -8,13 +8,16 @@ import { Button } from '@/app/components/ui';
 const TRANSLATIONS = {
   en: { title: 'Application Error', desc: 'An unexpected error occurred in the system.', tryAgain: 'Try Again', dashboard: 'Dashboard' },
   zh: { title: '应用错误', desc: '系统发生了意外错误，请稍后重试。', tryAgain: '重试', dashboard: '仪表盘' },
+  'zh-TW': { title: '應用錯誤', desc: '系統發生了意外錯誤，請稍後重試。', tryAgain: '重試', dashboard: '儀表板' },
+  ja: { title: 'アプリケーションエラー', desc: 'システムで予期しないエラーが発生しました。', tryAgain: '再試行', dashboard: 'ダッシュボード' },
+  ko: { title: '애플리케이션 오류', desc: '시스템에 예상치 못한 오류가 발생했습니다.', tryAgain: '다시 시도', dashboard: '대시보드' },
 } as const;
 
 // WHY: Using the unified getPreference instead of ad-hoc document.cookie regex.
 // This follows the cookie-first hierarchy and keeps the cookie key in one place.
-function getInitialLocale(): 'en' | 'zh' {
+function getInitialLocale(): keyof typeof TRANSLATIONS {
   const val = getPreference(PREFERENCES.locale);
-  if (val === 'zh') return 'zh';
+  if (val === 'zh-TW' || val === 'zh' || val === 'ja' || val === 'ko') return val;
   return 'en';
 }
 

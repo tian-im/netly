@@ -2,28 +2,37 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
+import type { Locale } from '@/lib/locale';
 import en from '../../messages/en.json';
 import zh from '../../messages/zh.json';
+import zhTW from '../../messages/zh-TW.json';
+import ja from '../../messages/ja.json';
+import ko from '../../messages/ko.json';
 import { PREFERENCES, setPreference } from '@/lib/preferences';
 
-type Locale = 'en' | 'zh';
-const messages: Record<Locale, any> = { en, zh };
+const messages: Record<Locale, any> = { en, zh, 'zh-TW': zhTW, ja, ko };
 
 const LocaleContext = createContext<{
   locale: Locale;
   setLocale: (locale: Locale) => void;
 }>({ locale: 'en', setLocale: () => {} });
 
+// WHY: Map document titles per locale for browser tab display.
+// zh and zh-TW share Chinese title; ja and ko get their own localized titles.
+const DOCUMENT_TITLES: Record<Locale, string> = {
+  en: 'Netly Ledger - Financial Statements & Bank CSV Analyzer',
+  zh: 'Netly Ledger - 财务报表与银行 CSV 分析工具',
+  'zh-TW': 'Netly Ledger - 財務報表與銀行CSV分析工具',
+  ja: 'Netly Ledger - 財務諸表と銀行CSV分析ツール',
+  ko: 'Netly Ledger - 재무제표 및 은행 CSV 분석기',
+};
+
 export function LocaleProvider({ children, ssrLocale = 'en' }: { children: ReactNode; ssrLocale?: string }) {
   const [locale, setLocale] = useState<Locale>(ssrLocale as Locale);
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    if (locale === 'zh') {
-      document.title = 'Netly Ledger - 财务报表与银行 CSV 分析工具';
-    } else {
-      document.title = 'Netly Ledger - Financial Statements & Bank CSV Analyzer';
-    }
+    document.title = DOCUMENT_TITLES[locale] ?? DOCUMENT_TITLES.en;
   }, [locale]);
 
   // WHY: One-time cleanup for the legacy netly_theme cookie/localStorage key

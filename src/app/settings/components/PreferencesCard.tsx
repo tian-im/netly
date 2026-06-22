@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import CurrencySelector from '@/app/components/CurrencySelector';
 import { PREFERENCES, getPreference, setPreference } from '@/lib/preferences';
 import { Card, Select } from '@/app/components/ui';
+import type { Locale } from '@/lib/locale';
 
 interface PreferencesCardProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
@@ -163,12 +164,15 @@ export default function PreferencesCard({ showToast, initialPreferences }: Prefe
             id="language-select"
             label={t('languageLabel')}
             value={locale}
-            onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
+            onChange={(e) => setLocale(e.target.value as Locale)}
             size="sm"
             aria-label={t('languageToggleAriaLabel')}
           >
             <option value="en">{t('languages.en')}</option>
             <option value="zh">{t('languages.zh')}</option>
+            <option value="zh-TW">{t('languages.zh-TW')}</option>
+            <option value="ja">{t('languages.ja')}</option>
+            <option value="ko">{t('languages.ko')}</option>
           </Select>
         </div>
       </Card.Body>

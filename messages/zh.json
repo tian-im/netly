@@ -614,7 +614,10 @@
     "signOutBtn": "登出",
     "languages": {
       "en": "English",
-      "zh": "中文 (简体)"
+      "zh": "中文 (简体)",
+      "zh-TW": "中文 (繁體)",
+      "ja": "日本語",
+      "ko": "한국어"
     },
     "mcpRevokeConfirmTitle": "确认撤销访问令牌",
     "mcpRevokeConfirmDesc": "您确定要撤销 MCP 访问令牌 \"{name}\" 吗？如果当前有活跃的 AI 代理集成正在使用此令牌，该集成将立即失效。",

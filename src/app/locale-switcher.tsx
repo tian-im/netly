@@ -4,10 +4,12 @@ import { useLocaleContext } from './providers';
 import { useTranslations } from 'next-intl';
 import { Languages } from 'lucide-react';
 import { Select } from '@/app/components/ui';
+import type { Locale } from '@/lib/locale';
 
 export default function LocaleSwitcher() {
   const { locale, setLocale } = useLocaleContext();
   const t = useTranslations('nav');
+  const tSettings = useTranslations('settings');
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-base-200/40 rounded-lg border border-base-200">
@@ -15,14 +17,17 @@ export default function LocaleSwitcher() {
       <span className="text-xs font-bold text-base-content/60 uppercase tracking-wider">{t('languageLabel')}</span>
       <Select
         value={locale}
-        onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
+        onChange={(e) => setLocale(e.target.value as Locale)}
         variant="ghost"
         size="xs"
         className="max-w-xs font-bold text-xs"
         aria-label={t('languageToggleAriaLabel')}
       >
-        <option value="en">English</option>
-        <option value="zh">中文 (简体)</option>
+        <option value="en">{tSettings('languages.en')}</option>
+        <option value="zh">{tSettings('languages.zh')}</option>
+        <option value="zh-TW">{tSettings('languages.zh-TW')}</option>
+        <option value="ja">{tSettings('languages.ja')}</option>
+        <option value="ko">{tSettings('languages.ko')}</option>
       </Select>
     </div>
   );

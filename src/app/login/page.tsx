@@ -9,12 +9,14 @@ import { useLocaleContext } from '../providers';
 import { translateError } from '@/lib/translateError';
 import { buildSetupUrl, buildDashboardUrl, buildDocsUrl } from '@/lib/links';
 import { Button, Input, Select, Card } from '@/app/components/ui';
+import type { Locale } from '@/lib/locale';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
   const t = useTranslations('passkey.login');
   const tNav = useTranslations('nav');
+  const tSettings = useTranslations('settings');
   const tErrors = useTranslations('errors');
   const { locale, setLocale } = useLocaleContext();
 
@@ -133,13 +135,16 @@ export default function LoginPage() {
           <div className="absolute top-4 right-4 z-10">
             <Select
               value={locale}
-              onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
+              onChange={(e) => setLocale(e.target.value as Locale)}
               size="xs"
-              className="!w-24"
+              className="!w-32"
               aria-label="Language Selector"
             >
-              <option value="en">English</option>
-              <option value="zh">中文</option>
+              <option value="en">{tSettings('languages.en')}</option>
+              <option value="zh">{tSettings('languages.zh')}</option>
+              <option value="zh-TW">{tSettings('languages.zh-TW')}</option>
+              <option value="ja">{tSettings('languages.ja')}</option>
+              <option value="ko">{tSettings('languages.ko')}</option>
             </Select>
           </div>
 
@@ -167,13 +172,16 @@ export default function LoginPage() {
         <div className="absolute top-4 right-4 z-10">
           <Select
             value={locale}
-            onChange={(e) => setLocale(e.target.value as 'en' | 'zh')}
+            onChange={(e) => setLocale(e.target.value as Locale)}
             size="xs"
-            className="!w-24"
+            className="!w-32"
             aria-label="Language Selector"
           >
-            <option value="en">English</option>
-            <option value="zh">中文</option>
+            <option value="en">{tSettings('languages.en')}</option>
+            <option value="zh">{tSettings('languages.zh')}</option>
+            <option value="zh-TW">{tSettings('languages.zh-TW')}</option>
+            <option value="ja">{tSettings('languages.ja')}</option>
+            <option value="ko">{tSettings('languages.ko')}</option>
           </Select>
         </div>
 

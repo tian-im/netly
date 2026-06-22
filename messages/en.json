@@ -612,7 +612,10 @@
     "signOutBtn": "Sign Out",
     "languages": {
       "en": "English",
-      "zh": "中文 (简体)"
+      "zh": "中文 (简体)",
+      "zh-TW": "中文 (繁體)",
+      "ja": "日本語",
+      "ko": "한국어"
     },
     "mcpRevokeConfirmTitle": "Confirm Token Revocation",
     "mcpRevokeConfirmDesc": "Are you sure you want to revoke the MCP access token \"{name}\"? If this token is currently in use by an active AI agent integration, it will stop working immediately.",
