@@ -214,25 +214,52 @@ Saved to your browser's local storage:
 - **Export Full Ledger**: From the reports page, download a comprehensive CSV pack containing all data.
 
 ### Model Context Protocol (MCP) Access
-For users who use AI coding assistants or local LLM agents (such as OpenCode Client):
+For users who use AI coding assistants or local LLM agents (such as Claude Code, OpenCode Client, or OpenClaw):
 - Netly Ledger runs an SSE MCP server at `/api/mcp`.
 - **Generate Token**: Under the MCP settings card, click "Generate Token" and name the token (e.g. "My Agent").
-- **Configuration**: Use this token as a Bearer Auth header in your AI tool client configuration. This grants the AI agent secure, programmatic access to query your accounts, transaction ledger, and categories.
+- **Zero-UI Bootstrapping**: You can set the `MCP_INITIAL_TOKEN` environment variable when running the Docker container. This registers a secure bootstrap token immediately, allowing AI agents to connect without manual setup. When active, an information banner is displayed in the Settings UI.
+- **Configuration**: Configure your AI tool using the server URL `http://localhost:3000/api/mcp` and the Authorization header `Bearer YOUR_TOKEN`.
 
-  For example, in **Claude Desktop** or **OpenCode Client**'s configuration JSON:
-  ```json
-  {
-    "mcpServers": {
-      "netly-ledger": {
-        "url": "http://localhost:3000/api/mcp",
-        "headers": {
-          "Authorization": "Bearer YOUR_MCP_TOKEN"
-        }
+#### OpenCode Client Configuration
+Add the server entry to your `opencode.json` configuration file:
+```json
+{
+  "mcpServers": {
+    "netly-ledger": {
+      "type": "sse",
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
       }
     }
   }
-  ```
-- **Revocation**: Revoke any active token instantly to block access.
+}
+```
+
+#### Claude Code Configuration
+Run the following command in your terminal:
+```bash
+claude mcp add netly-ledger \
+  --sse http://localhost:3000/api/mcp \
+  --header "Authorization: Bearer YOUR_MCP_TOKEN"
+```
+
+#### OpenClaw Configuration
+Add the server configuration to your OpenClaw JSON config:
+```json
+{
+  "mcpServers": {
+    "netly-ledger": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_TOKEN"
+      }
+    }
+  }
+}
+```
+
+- **Revocation**: Revoke any active database token instantly via the UI to block access. (Environment-configured bootstrap tokens must be removed from the environment variables and the container restarted to revoke access).
 
 ### Backing Up Your Data
 Since Netly Ledger runs 100% on your local machine, your data is completely under your control.

@@ -8,12 +8,32 @@ Local Bank CSV Statement Analyzer & Personal Ledger.
 
 ```bash
 docker run -d \
+  --name netly-ledger \
   -p 3000:3000 \
   -v ./netly-data:/app/data \
-  ghcr.io/yourusername/netly-ledger:latest
+  --restart unless-stopped \
+  ghcr.io/tian-im/netly-ledger:latest
 ```
 
 Then open **http://localhost:3000** in your browser.
+
+### Connect your AI assistant (Zero-UI Bootstrapping)
+
+You can pass an initial token at startup to let your AI assistants connect automatically without needing to visit the settings dashboard first:
+
+```bash
+docker run -d \
+  --name netly-ledger \
+  -p 3000:3000 \
+  -v ./netly-data:/app/data \
+  -e MCP_INITIAL_TOKEN=your-secure-token-here \
+  --restart unless-stopped \
+  ghcr.io/tian-im/netly-ledger:latest
+```
+
+Once running, configure your AI client (e.g. **OpenCode**, **Claude Code**, or **OpenClaw**) to use the SSE endpoint:
+* **SSE Endpoint:** `http://localhost:3000/api/mcp`
+* **Authorization Header:** `Bearer your-secure-token-here`
 
 ### Docker Compose
 

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,6 +11,22 @@ import { buildAccountsUrl, buildTransactionsUrl, buildCategoriesUrl } from '@/li
 // Make React Testing Library aware
 // @ts-ignore
 global.IS_REACT_ACT_ENVIRONMENT = true;
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async (url) => {
+    if (url === '/api/mcp/bootstrap-status') {
+      return {
+        ok: true,
+        json: async () => ({ active: false }),
+      } as Response;
+    }
+    return { ok: false, json: async () => ({}) } as Response;
+  }));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 // Mock server actions
 const mockVacuumDatabase = vi.fn();
@@ -467,7 +484,13 @@ describe('PassKeySection API & interactive behaviors', () => {
           ],
         } as Response;
       }
-      return { ok: false } as Response;
+      if (url === '/api/mcp/bootstrap-status') {
+        return {
+          ok: true,
+          json: async () => ({ active: false }),
+        } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
     });
   });
 
@@ -497,7 +520,13 @@ describe('PassKeySection API & interactive behaviors', () => {
       if (url === '/api/auth/credentials') {
         return { ok: true, json: async () => ({}) } as Response;
       }
-      return { ok: false } as Response;
+      if (url === '/api/mcp/bootstrap-status') {
+        return {
+          ok: true,
+          json: async () => ({ active: false }),
+        } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
     });
 
     renderSettingsClient({
@@ -549,6 +578,15 @@ describe('McpSection API & interactive behaviors', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cleanup();
+    vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+      if (url === '/api/mcp/bootstrap-status') {
+        return {
+          ok: true,
+          json: async () => ({ active: false }),
+        } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
+    });
   });
 
   it('generates a new token and copies to clipboard', async () => {
@@ -559,7 +597,13 @@ describe('McpSection API & interactive behaviors', () => {
           json: async () => ({ token: 'mock-sse-token-123', name: 'OpenCode Client' }),
         } as Response;
       }
-      return { ok: false } as Response;
+      if (url === '/api/mcp/bootstrap-status') {
+        return {
+          ok: true,
+          json: async () => ({ active: false }),
+        } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
     });
 
     renderSettingsClient();
@@ -589,9 +633,15 @@ describe('McpSection API & interactive behaviors', () => {
   it('prompts revocation warning modal and revokes access token', async () => {
     const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
       if (url === '/api/mcp/tokens') {
-        return { ok: true } as Response;
+        return { ok: true, json: async () => ({}) } as Response;
       }
-      return { ok: false } as Response;
+      if (url === '/api/mcp/bootstrap-status') {
+        return {
+          ok: true,
+          json: async () => ({ active: false }),
+        } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
     });
 
     renderSettingsClient();
@@ -621,6 +671,24 @@ describe('McpSection API & interactive behaviors', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => {
       expect(screen.queryByText('Confirm Token Revocation')).toBeNull();
+    });
+  });
+
+  it('renders the bootstrap token banner when bootstrap token is active', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+      if (url === '/api/mcp/bootstrap-status') {
+        return {
+          ok: true,
+          json: async () => ({ active: true }),
+        } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
+    });
+
+    renderSettingsClient();
+
+    await waitFor(() => {
+      expect(screen.getByText(/A bootstrap MCP token is configured via environment variable/i)).toBeInTheDocument();
     });
   });
 });

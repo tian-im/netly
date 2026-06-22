@@ -609,6 +609,7 @@
     "mcpRevokeFailed": "撤销 MCP 访问令牌失败",
     "mcpLastUsed": "最后使用: {date}",
     "mcpNeverUsed": "从未被使用",
+    "mcpBootstrapActive": "已通过环境变量配置引导 MCP 令牌。无需手动创建令牌。",
     "signOutLabel": "登出您的账户",
     "signOutBtn": "登出",
     "languages": {

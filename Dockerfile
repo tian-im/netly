@@ -67,6 +67,10 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# ── Copy VERSION and user docs (not traced by Next.js standalone) ──
+COPY --from=builder /app/VERSION ./VERSION
+COPY --from=builder /app/docs ./docs
+
 # ── Copy entrypoint ──
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh

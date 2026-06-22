@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getTestDb, clearTestDb } from '@/lib/test-db';
-import { GET, POST } from './route';
+import { GET, POST, resetBootstrapCache } from './route';
 import { NextRequest } from 'next/server';
 import { createHash } from 'crypto';
 
@@ -164,5 +164,67 @@ describe('MCP SSE & JSON-RPC Route Handler', () => {
     expect(callResponse.id).toBe(2);
     expect(callResponse.result.content).toBeDefined();
     expect(callResponse.result.content[0].type).toBe('text');
+  });
+
+  describe('MCP_INITIAL_TOKEN Bootstrap Authentication', () => {
+    beforeEach(() => {
+      resetBootstrapCache();
+      vi.unstubAllEnvs();
+    });
+
+    afterEach(() => {
+      resetBootstrapCache();
+      vi.unstubAllEnvs();
+    });
+
+    it('falls through to database lookup when MCP_INITIAL_TOKEN is unset', async () => {
+      vi.stubEnv('MCP_INITIAL_TOKEN', '');
+      const req = mockRequest('http://localhost:3000/api/mcp', 'GET', undefined, 'netly_test_secret_1234567890');
+      const res = await GET(req);
+      expect(res.status).toBe(200); // Authenticated via DB
+    });
+
+    it('rejects authentication when MCP_INITIAL_TOKEN is set but Bearer token is incorrect', async () => {
+      vi.stubEnv('MCP_INITIAL_TOKEN', 'bootstrap-secret-token-123');
+      const req = mockRequest('http://localhost:3000/api/mcp', 'GET', undefined, 'wrong-token');
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
+
+    it('authenticates successfully and bypasses DB check when Bearer token matches MCP_INITIAL_TOKEN', async () => {
+      vi.stubEnv('MCP_INITIAL_TOKEN', 'bootstrap-secret-token-123');
+      
+      let dbCalled = false;
+      const originalFindUnique = db.mcpToken.findUnique;
+      db.mcpToken.findUnique = (async (...args: any[]) => {
+        dbCalled = true;
+        return originalFindUnique.apply(db.mcpToken, args as any);
+      }) as any;
+
+      try {
+        const req = mockRequest('http://localhost:3000/api/mcp', 'GET', undefined, 'bootstrap-secret-token-123');
+        const res = await GET(req);
+        expect(res.status).toBe(200);
+        expect(res.headers.get('Content-Type')).toBe('text/event-stream');
+
+        expect(dbCalled).toBe(false);
+      } finally {
+        db.mcpToken.findUnique = originalFindUnique;
+      }
+    });
+
+    it('ignores MCP_INITIAL_TOKEN if it is less than 8 characters', async () => {
+      vi.stubEnv('MCP_INITIAL_TOKEN', 'short');
+      const req = mockRequest('http://localhost:3000/api/mcp', 'GET', undefined, 'short');
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
+
+    it('ignores MCP_INITIAL_TOKEN if it is whitespace only', async () => {
+      vi.stubEnv('MCP_INITIAL_TOKEN', '       ');
+      const req = mockRequest('http://localhost:3000/api/mcp', 'GET', undefined, '       ');
+      const res = await GET(req);
+      expect(res.status).toBe(401);
+    });
   });
 });

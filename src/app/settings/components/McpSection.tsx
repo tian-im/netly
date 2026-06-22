@@ -25,9 +25,25 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
   const [mcpTokenToRevoke, setMcpTokenToRevoke] = useState<McpTokenInfo | null>(null);
 
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isBootstrapActive, setIsBootstrapActive] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/mcp/bootstrap-status', { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.active === 'boolean') {
+          setIsBootstrapActive(data.active);
+        }
+      })
+      .catch((err: any) => {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+        }
+      });
+
     return () => {
+      controller.abort();
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
@@ -98,6 +114,12 @@ export default function McpSection({ initialMcpTokens, showToast }: McpSectionPr
             {t('mcpTitle')}
           </Card.Title>
           <p className="text-xs text-base-content/60 mb-4">{t('mcpDesc')}</p>
+
+          {isBootstrapActive && (
+            <div className="alert alert-info text-xs gap-2 mb-4">
+              <span>{t('mcpBootstrapActive')}</span>
+            </div>
+          )}
 
           {mcpTokens.length > 0 && (
             <div className="mb-4">

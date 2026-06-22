@@ -607,6 +607,7 @@
     "mcpRevokeFailed": "Failed to revoke MCP token",
     "mcpLastUsed": "Last used: {date}",
     "mcpNeverUsed": "Never used",
+    "mcpBootstrapActive": "A bootstrap MCP token is configured via environment variable. No manual token creation is needed.",
     "signOutLabel": "Sign out of your account",
     "signOutBtn": "Sign Out",
     "languages": {

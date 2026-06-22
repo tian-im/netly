@@ -6,6 +6,8 @@ import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { McpToken } from "@prisma/client";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { getClientIp, checkPayloadSize } from "@/lib/request-utils";
+import { getAppVersion } from "@/lib/version";
+import { MIN_BOOTSTRAP_TOKEN_LENGTH } from "@/lib/constants";
 
 import { registerTransactionTools } from "@/mcp-server/tools/transactions";
 import { registerCategoryTools } from "@/mcp-server/tools/categories";
@@ -76,7 +78,7 @@ if (process.env.NODE_ENV !== "production") {
 function createMcpServer(): McpServer {
   const mcpServer = new McpServer({
     name: "netly-ledger",
-    version: "1.0.0",
+    version: getAppVersion(),
   });
 
   registerTransactionTools(mcpServer);
@@ -88,6 +90,28 @@ function createMcpServer(): McpServer {
   return mcpServer;
 }
 
+// ── MCP Bootstrap Token (env-var based, no DB row) ──
+
+export let cachedBootstrapHash: string | null | undefined = undefined;
+
+export function resetBootstrapCache(): void {
+  cachedBootstrapHash = undefined;
+}
+
+function getBootstrapHash(): string | null {
+  if (cachedBootstrapHash !== undefined) return cachedBootstrapHash;
+
+  const raw = process.env.MCP_INITIAL_TOKEN?.trim();
+  // WHY: minimum length prevents accidental short/whitespace tokens from matching.
+  if (!raw || raw.length < MIN_BOOTSTRAP_TOKEN_LENGTH) {
+    cachedBootstrapHash = null;
+    return null;
+  }
+
+  cachedBootstrapHash = createHash("sha256").update(raw).digest("hex");
+  return cachedBootstrapHash;
+}
+
 // Shared authentication helper
 async function validateAuth(request: NextRequest): Promise<McpToken | null> {
   const authHeader = request.headers.get("Authorization");
@@ -97,6 +121,20 @@ async function validateAuth(request: NextRequest): Promise<McpToken | null> {
 
   const token = authHeader.substring(7).trim();
   const hashedToken = createHash("sha256").update(token).digest("hex");
+
+  // WHY: MCP_INITIAL_TOKEN lets AI agents self-bootstrap MCP access at
+  // install time — no manual UI visit required. Checked before DB to
+  // avoid a query on every request when only the bootstrap token is in use.
+  const bootstrapHash = getBootstrapHash();
+  if (bootstrapHash && hashedToken === bootstrapHash) {
+    return {
+      id: "bootstrap",
+      name: "auto-generated",
+      token: bootstrapHash,
+      lastUsedAt: null,
+      createdAt: new Date(),
+    };
+  }
 
   const mcpToken = await db.mcpToken.findUnique({
     where: { token: hashedToken },

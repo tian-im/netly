@@ -1,5 +1,7 @@
 # Netly Ledger — 用户手册与参考指南
 
+<!-- TODO: translate from en/user_manual.en.md -->
+
 欢迎使用 **Netly Ledger**，这是一个本地优先、注重隐私的个人财务引擎。Netly Ledger 100% 在您的设备上运行：所有账户、交易和规则都存储在本地 SQLite 数据库中。没有云端服务器，没有广告，也没有跟踪您财务生活的遥测技术。
 
 本手册详细介绍了 Netly Ledger 中的每个功能、工作流和设置。
