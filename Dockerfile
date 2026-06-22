@@ -64,12 +64,23 @@ COPY --from=builder /app/prisma ./prisma
 # already includes @prisma/client (production dep). We only need the extra
 # prisma CLI packages (dev deps) for `prisma migrate deploy` at runtime.
 # prisma generate runs again in the entrypoint as a safety net.
+# WHY: node_modules/.bin includes the prisma CLI binary needed by npx.
+# Without it, the entrypoint logs "prisma: not found" and the health check
+# fails because migrations never run.
+COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # ── Copy VERSION and user docs (not traced by Next.js standalone) ──
 COPY --from=builder /app/VERSION ./VERSION
 COPY --from=builder /app/docs ./docs
+
+# ── Make Prisma generated client writable by the non-root user ──
+# WHY: The entrypoint runs `prisma generate` as a safety net (see entrypoint.sh).
+# If the generated client files (from the builder stage) are owned by root,
+# the nextjs user cannot overwrite them and gets EACCES. The chown is recursive
+# to cover /app/node_modules/.prisma/client/ and any other prisma artifacts.
+RUN chown -R nextjs:nodejs /app/node_modules/.prisma /app/node_modules/.bin /app/node_modules/@prisma /app/node_modules/prisma
 
 # ── Copy entrypoint ──
 COPY entrypoint.sh /app/entrypoint.sh

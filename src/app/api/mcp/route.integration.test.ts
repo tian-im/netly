@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getTestDb, clearTestDb } from '@/lib/test-db';
-import { GET, POST, resetBootstrapCache } from './route';
+import { GET, POST } from './route';
+import { resetBootstrapCache } from '@/lib/mcp-bootstrap';
 import { NextRequest } from 'next/server';
 import { createHash } from 'crypto';
 

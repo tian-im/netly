@@ -1,0 +1,78 @@
+# ─────────────────────────────────────────────────────────────────
+# Netly Ledger — CI: Test & Coverage Gate
+# ─────────────────────────────────────────────────────────────────
+# Runs on every push to main and every pull request targeting main.
+#
+# This workflow is the quality gate. It must pass before any
+# build-and-push workflow can proceed. The vitest configs already
+# enforce 100% coverage thresholds (statements, branches, functions,
+# lines); if coverage dips below 100%, vitest exits non-zero and
+# the check fails.
+#
+# Required by: build-and-push (future)
+# ─────────────────────────────────────────────────────────────────
+
+name: Test & Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Allow manual runs for debugging
+  workflow_dispatch:
+
+# Cancel in-progress runs when a newer push/PR arrives for the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (100% Coverage Required)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # ── Set up Docker Buildx for layer caching ──
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # ── Build the dev image ──
+      # We use docker compose build so the image includes all source
+      # code and dependencies. Tests run inside the container to
+      # guarantee an identical environment to local development.
+      - name: Build development image
+        run: docker compose build
+
+      # ── Run all tests (unit + integration) with 100% coverage ──
+      # WHY: All commands run inside the SAME container session via a
+      # single `docker compose run` invocation. If separate `run` calls
+      # were used, anonymous Docker volumes wouldn't reliably share the
+      # Prisma client or migrated database across ephemeral containers.
+      #
+      # Sequence:
+      #   1. prisma generate — produces the Prisma client for tests
+      #   2. prisma migrate deploy (test.db) — creates schema for integration tests
+      #   3. yarn test:all — runs unit tests (mock DB) + integration tests (real DB)
+      #
+      # The integration vitest config sets DATABASE_URL=file:./test.db,
+      # so we migrate that same file before the test suite runs.
+      #
+      # Coverage thresholds (100%) are enforced in vitest.config.ts and
+      # vitest.integration.config.ts; vitest exits non-zero on violation.
+      - name: Run all tests with 100% coverage
+        run: >
+          docker compose run --rm -T web sh -c "
+            yarn prisma generate &&
+            DATABASE_URL=file:./test.db yarn prisma migrate deploy &&
+            yarn test:all
+          "
+
+      # ── Cleanup ──
+      - name: Tear down containers
+        if: always()
+        run: docker compose down --volumes --remove-orphans
