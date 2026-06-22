@@ -31,7 +31,7 @@ Netly Ledger uses **WebAuthn (PassKeys)** to secure access to your local ledger.
   3. On the new device, navigate to the login page, select **Use setup code**, and enter the code to bootstrap your new credential.
 
 ### Data Privacy & Storage
-All data is saved in a single-file SQLite database located at `prisma/dev.db` in your installation directory. A session signing key is auto-generated on the first run and stored locally in `.session-secret`. Backup and maintenance of this file are entirely under your control.
+All data is saved in a single-file SQLite database located at `./netly-data/netly.db` in your installation directory (inside the Docker container, this is `/app/data/netly.db`). A session signing key is auto-generated on the first run and stored in `./netly-data/.session-secret`. Backup and maintenance of these files are entirely under your control.
 
 ---
 
@@ -263,10 +263,10 @@ Add the server configuration to your OpenClaw JSON config:
 
 ### Backing Up Your Data
 Since Netly Ledger runs 100% on your local machine, your data is completely under your control.
-- **Database Location**: Your financial data is stored in a single SQLite database file at `prisma/dev.db` relative to the workspace directory.
-- **Session Secrets**: Active sessions and PassKey verification challenges rely on the `.session-secret` file generated in the workspace root.
-- **Creating a Backup**: Simply make a copy of the `prisma/dev.db` and `.session-secret` files and store them in a secure secondary location (such as an encrypted drive or private cloud storage). Make sure the server container is stopped or idle before copying to prevent partial writes.
-- **Restoring Data**: To restore your data, replace the `prisma/dev.db` and `.session-secret` files in your workspace directory with your backed-up copies.
+- **Database Location**: Your financial data is stored in a single SQLite database file at `./netly-data/netly.db` relative to the directory where you ran `docker compose up`.
+- **Session Secrets**: Active sessions and PassKey verification challenges rely on the `.session-secret` file stored in `./netly-data/`.
+- **Creating a Backup**: Simply make a copy of the entire `./netly-data/` directory and store it in a secure secondary location (such as an encrypted drive or private cloud storage). Make sure the server container is stopped or idle before copying to prevent partial writes.
+- **Restoring Data**: To restore your data, replace the `./netly-data/` directory with your backed-up copy.
 
 ### Submitting Issues & Feedback
 If you encounter any bugs, have feature requests, or want to provide general feedback, please lodge an issue on our GitHub repository:
