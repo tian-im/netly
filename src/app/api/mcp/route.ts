@@ -7,13 +7,13 @@ import { McpToken } from "@prisma/client";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { getClientIp, checkPayloadSize } from "@/lib/request-utils";
 import { getAppVersion } from "@/lib/version";
-import { MIN_BOOTSTRAP_TOKEN_LENGTH } from "@/lib/constants";
 
 import { registerTransactionTools } from "@/mcp-server/tools/transactions";
 import { registerCategoryTools } from "@/mcp-server/tools/categories";
 import { registerAccountTools } from "@/mcp-server/tools/accounts";
 import { registerReportTools } from "@/mcp-server/tools/reports";
 import { registerAnalysisTools } from "@/mcp-server/tools/analysis";
+import { getBootstrapHash } from "@/lib/mcp-bootstrap";
 
 export const runtime = "nodejs";
 
@@ -95,28 +95,6 @@ function createMcpServer(): McpServer {
   registerAnalysisTools(mcpServer);
 
   return mcpServer;
-}
-
-// ── MCP Bootstrap Token (env-var based, no DB row) ──
-
-export let cachedBootstrapHash: string | null | undefined = undefined;
-
-export function resetBootstrapCache(): void {
-  cachedBootstrapHash = undefined;
-}
-
-function getBootstrapHash(): string | null {
-  if (cachedBootstrapHash !== undefined) return cachedBootstrapHash;
-
-  const raw = process.env.MCP_INITIAL_TOKEN?.trim();
-  // WHY: minimum length prevents accidental short/whitespace tokens from matching.
-  if (!raw || raw.length < MIN_BOOTSTRAP_TOKEN_LENGTH) {
-    cachedBootstrapHash = null;
-    return null;
-  }
-
-  cachedBootstrapHash = createHash("sha256").update(raw).digest("hex");
-  return cachedBootstrapHash;
 }
 
 // Shared authentication helper
