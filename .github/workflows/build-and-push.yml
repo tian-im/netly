@@ -2,12 +2,13 @@
 # Netly Ledger — Build & Push to GHCR
 # ─────────────────────────────────────────────────────────────────
 # Automatically builds and pushes the production Docker image to
-# GitHub Container Registry (ghcr.io) after CI passes on main.
+# GitHub Container Registry (ghcr.io) when VERSION changes on main.
 #
 # Trigger chain:
-#   1. Push/PR to main → test-coverage.yml runs (quality gate)
-#   2. test-coverage.yml passes on main → this workflow fires
-#   3. Image is built, tagged, and pushed to ghcr.io
+#   1. VERSION file is changed and pushed to main → this workflow fires
+#   2. Image is built, tagged, and pushed to ghcr.io
+#
+# Manual runs (via workflow_dispatch) allow publishing without a VERSION change.
 #
 # Architecture:
 #   Each platform (amd64, arm64) builds NATIVELY on its own runner
@@ -29,13 +30,16 @@
 name: Build & Push
 
 on:
-  # ── Automated: only after test-coverage passes on main ──
-  workflow_run:
-    workflows: ["Test & Coverage"]
-    types: [completed]
+  # ── Automated: only when VERSION file changes on push to main ──
+  # WHY: Publishing a new image should be an explicit decision —
+  # bumping the VERSION file is the canonical signal to cut a release.
+  # This avoids building/pushing on every main push.
+  push:
     branches: [main]
+    paths:
+      - 'VERSION'
 
-  # ── Manual: trigger from the Actions UI (bypasses CI gate) ──
+  # ── Manual: trigger from the Actions UI (no VERSION change needed) ──
   workflow_dispatch:
     inputs:
       version_override:
@@ -52,8 +56,9 @@ jobs:
     name: Compute tags
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    # Only run if triggered manually, OR if the CI workflow succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # WHY: The only triggers are workflow_dispatch and push (VERSION change),
+    # so the meta job always runs. The condition exists for future trigger additions.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
     outputs:
       image: ${{ steps.tags.outputs.image }}
       version: ${{ steps.tags.outputs.version }}
@@ -61,8 +66,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Compute image tags
         id: tags
@@ -72,7 +75,7 @@ jobs:
           else
             VERSION=$(cat VERSION)
           fi
-          SHA_SHORT=$(echo "${{ github.event.workflow_run.head_sha || github.sha }}" | cut -c1-7)
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
           IMAGE="ghcr.io/${{ github.repository_owner }}/netly-ledger"
 
           echo "image=${IMAGE}" >> $GITHUB_OUTPUT
@@ -112,8 +115,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
